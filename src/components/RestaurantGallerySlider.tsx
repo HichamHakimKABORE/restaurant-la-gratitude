@@ -10,8 +10,8 @@ export default function RestaurantGallerySlider() {
   const [activeImageId, setActiveImageId] = useState<number | null>(null);
   const [secondsRemaining, setSecondsRemaining] = useState<number>(0);
   
-  const pauseTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pauseTimerRef = useRef<any>(null);
+  const countdownIntervalRef = useRef<any>(null);
 
   useEffect(() => {
     fetch('/api/gallery', { cache: 'no-store' })
