@@ -7,6 +7,11 @@ export async function GET() {
   try {
     const sql = await ensureNeonSchema();
     if (sql) {
+      await sql`
+        UPDATE restaurant_settings
+        SET phone = '+226 02 80 99 06', whatsapp = '22602809906'
+        WHERE id = 1 AND (phone LIKE '%60%18%' OR whatsapp LIKE '%6018%' OR phone IS NULL);
+      `;
       const rows = await sql`SELECT * FROM restaurant_settings WHERE id = 1`;
       if (rows.length > 0) {
         return NextResponse.json({ source: 'neon', settings: rows[0] });

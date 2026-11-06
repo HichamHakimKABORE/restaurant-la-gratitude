@@ -28,9 +28,12 @@ export default function AccueilClientPage() {
   );
 
   const isDailyCustomized = availableDailyDishes.length > 0;
+  const availableGeneralDishes = dishes.filter(d => d.is_available_today);
   const displayedDailyDishes = isDailyCustomized
     ? availableDailyDishes
-    : dishes.filter(d => d.is_available_today);
+    : availableGeneralDishes.length > 0
+      ? availableGeneralDishes
+      : dishes;
 
   const rotatingDishes = displayedDailyDishes;
 

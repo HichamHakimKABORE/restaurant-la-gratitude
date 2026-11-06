@@ -14,7 +14,12 @@ export default function MenuDuJourPage() {
   );
 
   const isCustomized = dailyPrepared.length > 0;
-  const listToDisplay = isCustomized ? dailyPrepared : dishes.filter(d => d.is_available_today);
+  const availableGeneral = dishes.filter(d => d.is_available_today);
+  const listToDisplay = isCustomized
+    ? dailyPrepared
+    : availableGeneral.length > 0
+      ? availableGeneral
+      : dishes;
 
   return (
     <ClientShell>

@@ -206,6 +206,8 @@ declare global {
   // eslint-disable-next-line no-var
   var _gratitudeGallery: GalleryImage[] | undefined;
   // eslint-disable-next-line no-var
+  var _gratitudeMenuHistory: DailyMenuRecord[] | undefined;
+  // eslint-disable-next-line no-var
   var _gratitudeSchemaReady: boolean | undefined;
   // eslint-disable-next-line no-var
   var _gratitudeSchemaPromise: Promise<ReturnType<typeof getNeonClient>> | undefined;
@@ -217,6 +219,8 @@ declare global {
   var _settingsCache: { data: RestaurantSettings; ts: number } | undefined;
   // eslint-disable-next-line no-var
   var _galleryCache: { data: GalleryImage[]; ts: number } | undefined;
+  // eslint-disable-next-line no-var
+  var _menuHistoryCache: { data: DailyMenuRecord[]; ts: number } | undefined;
 }
 
 export function getMemoryDishes(): Dish[] {
