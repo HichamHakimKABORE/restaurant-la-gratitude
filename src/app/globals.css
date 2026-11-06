@@ -49,8 +49,11 @@ body {
   animation: marquee 32s linear infinite;
 }
 
-.animate-marquee:hover {
-  animation-play-state: paused;
+.animate-marquee:hover,
+.animate-marquee.is-paused,
+.marquee-paused {
+  animation-play-state: paused !important;
+  -webkit-animation-play-state: paused !important;
 }
 
 .scrollbar-none::-webkit-scrollbar {
