@@ -56,6 +56,20 @@ export async function POST(request: Request) {
       notes
     } = body;
 
+    if (!customer_name?.trim() || !customer_phone?.trim() || !order_detail?.trim()) {
+      return NextResponse.json(
+        { error: 'Le nom, le numéro de téléphone et la précision (table / adresse / heure) sont obligatoires' },
+        { status: 400 }
+      );
+    }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { error: 'Le panier ne peut pas être vide' },
+        { status: 400 }
+      );
+    }
+
     const code = `#CMD-2026-${Math.floor(100 + Math.random() * 900)}`;
     const sql = await ensureNeonSchema();
 

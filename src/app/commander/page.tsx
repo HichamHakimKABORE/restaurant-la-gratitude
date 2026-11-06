@@ -15,19 +15,47 @@ export default function CommanderPage() {
 
   // Mode de réception : Sur place | À emporter | Livraison
   const [orderType, setOrderType] = useState<'Sur place' | 'À emporter' | 'Livraison'>('Sur place');
-  const [orderDetail, setOrderDetail] = useState('Table 1');
+  const [orderDetail, setOrderDetail] = useState('');
 
   // Mode de paiement : Espèces | Orange Money | Moov Money
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Orange Money' | 'Moov Money'>('Espèces');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const handleConfirmOrder = async () => {
     if (cart.length === 0) {
-      showToast('Votre panier est vide. Ajoutez d’abord des plats.');
+      setFormError('Votre panier est vide. Ajoutez d’abord des plats.');
+      showToast('Votre panier est vide.');
       return;
     }
 
+    if (!customerName.trim()) {
+      setFormError('Veuillez renseigner votre nom pour valider la commande.');
+      showToast('Votre nom est obligatoire.');
+      return;
+    }
+
+    const cleanPhoneDigits = customerPhone.replace(/\D/g, '');
+    if (!customerPhone.trim() || cleanPhoneDigits.length < 8) {
+      setFormError('Veuillez renseigner un numéro de téléphone valide (au moins 8 chiffres).');
+      showToast('Numéro de téléphone obligatoire.');
+      return;
+    }
+
+    if (!orderDetail.trim()) {
+      const precisionText =
+        orderType === 'Sur place'
+          ? 'votre numéro de table'
+          : orderType === 'À emporter'
+          ? 'l’heure de retrait souhaitée'
+          : 'votre quartier / adresse de livraison';
+      setFormError(`Veuillez préciser ${precisionText}.`);
+      showToast(`Précisez ${precisionText}.`);
+      return;
+    }
+
+    setFormError('');
     setSubmitting(true);
     let createdOrderCode = `#CMD-2026-${Math.floor(100 + Math.random() * 900)}`;
     const nowStr = new Date().toLocaleString('fr-FR');
@@ -231,9 +259,8 @@ export default function CommanderPage() {
                     type="button"
                     onClick={() => {
                       setOrderType(mode);
-                      if (mode === 'Sur place') setOrderDetail('Table 1');
-                      if (mode === 'À emporter') setOrderDetail('Dans 20 min');
-                      if (mode === 'Livraison') setOrderDetail('Zagtouli');
+                      setOrderDetail('');
+                      setFormError('');
                     }}
                     className={`py-2 px-2 rounded-xl font-extrabold text-xs border-2 transition ${
                       orderType === mode
@@ -255,11 +282,16 @@ export default function CommanderPage() {
                   : orderType === 'À emporter'
                   ? 'Heure souhaitée de retrait :'
                   : 'Quartier / Adresse exacte de livraison :'}
+                <span className="text-rose-600 font-extrabold ml-1">*</span>
               </label>
               <input
                 type="text"
+                required
                 value={orderDetail}
-                onChange={e => setOrderDetail(e.target.value)}
+                onChange={e => {
+                  setOrderDetail(e.target.value);
+                  if (formError) setFormError('');
+                }}
                 placeholder={
                   orderType === 'Sur place'
                     ? 'Ex: Table 3 (Terrasse)'
@@ -267,30 +299,54 @@ export default function CommanderPage() {
                     ? 'Ex: Dans 30 minutes (13h15)'
                     : 'Ex: Zagtouli, côté pharmacie...'
                 }
-                className="w-full px-3.5 py-2 rounded-xl border border-stone-300 bg-white font-semibold"
+                className={`w-full px-3.5 py-2 rounded-xl border font-semibold transition ${
+                  formError && !orderDetail.trim()
+                    ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200'
+                    : 'border-stone-300 bg-white'
+                }`}
               />
             </div>
 
             {/* 2. Coordonnées client */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
-                <label className="font-bold block mb-1">Votre Nom</label>
+                <label className="font-bold block mb-1">
+                  Votre Nom <span className="text-rose-600 font-extrabold">*</span>
+                </label>
                 <input
                   type="text"
+                  required
                   value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
+                  onChange={e => {
+                    setCustomerName(e.target.value);
+                    if (formError) setFormError('');
+                  }}
                   placeholder="Ex: Ouédraogo Salif"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white"
+                  className={`w-full px-3 py-2 rounded-xl border transition ${
+                    formError && !customerName.trim()
+                      ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200'
+                      : 'border-stone-300 bg-white'
+                  }`}
                 />
               </div>
               <div>
-                <label className="font-bold block mb-1">Votre Téléphone</label>
+                <label className="font-bold block mb-1">
+                  Votre Téléphone <span className="text-rose-600 font-extrabold">*</span>
+                </label>
                 <input
-                  type="text"
+                  type="tel"
+                  required
                   value={customerPhone}
-                  onChange={e => setCustomerPhone(e.target.value)}
-                  placeholder="Ex: +226 70 00 00 00"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white"
+                  onChange={e => {
+                    setCustomerPhone(e.target.value);
+                    if (formError) setFormError('');
+                  }}
+                  placeholder="Ex: 70 00 00 00"
+                  className={`w-full px-3 py-2 rounded-xl border transition ${
+                    formError && (!customerPhone.trim() || customerPhone.replace(/\D/g, '').length < 8)
+                      ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200'
+                      : 'border-stone-300 bg-white'
+                  }`}
                 />
               </div>
             </div>
@@ -351,6 +407,15 @@ export default function CommanderPage() {
           </div>
 
           <div className="space-y-2.5 pt-1">
+            {formError && (
+              <div className="p-3 rounded-xl bg-rose-100 border-2 border-rose-400 text-rose-900 text-xs font-bold text-center flex items-center justify-center gap-2">
+                <svg className="w-4 h-4 shrink-0 text-rose-600" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span>{formError}</span>
+              </div>
+            )}
+
             <button
               disabled={submitting}
               onClick={handleConfirmOrder}
