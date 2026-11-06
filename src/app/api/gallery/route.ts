@@ -8,6 +8,8 @@ import {
 import { isAdminRequest } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
 const GALLERY_CACHE_TTL_MS = 10000;
 

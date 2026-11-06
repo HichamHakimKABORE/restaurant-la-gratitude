@@ -26,6 +26,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0;
 
 function jsonError(
   message: string,
@@ -363,7 +364,27 @@ export async function POST(request: Request) {
 
     const order = finalRows[0];
 
-    // 6) Journal d'audit (ne bloque jamais la commande).
+    // 6) Insertion normalisée dans order_items pour statistiques & réconciliation (P1-5)
+    try {
+      for (const it of pricing.items) {
+        await sql`
+          INSERT INTO order_items (order_id, dish_id, item_name, option_name, unit_price_cfa, qty, total_cfa)
+          VALUES (
+            ${id},
+            ${it.id},
+            ${it.name},
+            ${it.selectedOption || null},
+            ${it.price},
+            ${it.qty},
+            ${it.price * it.qty}
+          )
+        `;
+      }
+    } catch (itemErr) {
+      console.error('order_items insert error:', itemErr);
+    }
+
+    // 7) Journal d'audit (ne bloque jamais la commande).
     try {
       await sql`
         INSERT INTO order_events (order_id, from_status, to_status, action, actor, ip)

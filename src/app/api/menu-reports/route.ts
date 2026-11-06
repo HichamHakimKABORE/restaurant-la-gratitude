@@ -9,6 +9,8 @@ import {
 import { isAdminRequest } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
 export async function GET(request: Request) {
   if (!(await isAdminRequest(request))) {

@@ -5,6 +5,7 @@ import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const revalidate = 0;
 
 const TOKEN_PATTERN = /^[a-f0-9]{32,64}$/i;
 

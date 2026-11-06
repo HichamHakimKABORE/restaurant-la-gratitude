@@ -103,7 +103,18 @@ export default function AdminShell({
 
     checkOrders();
     const timer = setInterval(checkOrders, 7000);
-    return () => clearInterval(timer);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkOrders();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [router, showToast]);
 
   const handleLogout = async () => {
@@ -169,14 +180,15 @@ export default function AdminShell({
               playOrderChime();
               setSoundEnabled(true);
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 shadow transition ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 shadow transition inline-flex items-center gap-1.5 ${
               soundEnabled
                 ? 'bg-emerald-600 border-emerald-300 text-white'
                 : 'bg-[#eab308] border-amber-200 text-[#2b1810] hover:brightness-110'
             }`}
             title="À activer une fois par session : les navigateurs bloquent le son sans interaction."
           >
-            {soundEnabled ? '🔔 Alerte sonore active' : '🔔 Activer l’alerte sonore'}
+            <BellIcon className="w-4 h-4 shrink-0" />
+            <span>{soundEnabled ? 'Alerte sonore active' : 'Activer l’alerte sonore'}</span>
           </button>
         </div>
       </header>

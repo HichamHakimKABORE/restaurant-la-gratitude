@@ -138,7 +138,18 @@ export default function AdminCommandesPage() {
               <tr key={order.id} className="hover:bg-stone-50">
                 <td className="p-3">
                   <div className="font-extrabold text-[#2b1810]">{order.order_code}</div>
-                  <div className="font-bold text-stone-700">{order.customer_name}</div>
+                  <div className="text-[11px] text-stone-500 font-medium">
+                    {order.created_at
+                      ? new Intl.DateTimeFormat('fr-FR', {
+                          timeZone: 'Africa/Ouagadougou',
+                          day: '2-digit',
+                          month: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        }).format(new Date(order.created_at))
+                      : ''}
+                  </div>
+                  <div className="font-bold text-stone-700 mt-0.5">{order.customer_name}</div>
                   <div className="text-xs text-stone-500">{order.customer_phone}</div>
                 </td>
                 <td className="p-3">

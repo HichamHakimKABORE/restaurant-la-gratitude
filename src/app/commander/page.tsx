@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { WhatsAppIcon, CheckIcon, ClockIcon } from '@/components/Icons';
-import { RESTAURANT_PHONE_DISPLAY } from '@/lib/constants';
+import {
+  RESTAURANT_PHONE_DISPLAY,
+  RESTAURANT_TABLES,
+  DELIVERY_ZONES,
+  type DeliveryZone
+} from '@/lib/constants';
 
 export default function CommanderPage() {
   const router = useRouter();
@@ -16,7 +21,17 @@ export default function CommanderPage() {
 
   // Mode de réception : Sur place | À emporter | Livraison
   const [orderType, setOrderType] = useState<'Sur place' | 'À emporter' | 'Livraison'>('Sur place');
+  const [selectedTable, setSelectedTable] = useState<string>(RESTAURANT_TABLES[0].name);
+  const [customTable, setCustomTable] = useState<string>('');
+  const [pickupPreset, setPickupPreset] = useState<string>('Au plus vite (~15-25 min)');
+  const [customPickupTime, setCustomPickupTime] = useState<string>('');
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('zagtouli_centre');
+  const [deliveryAddress, setDeliveryAddress] = useState<string>('');
   const [orderDetail, setOrderDetail] = useState('');
+
+  const currentZone = DELIVERY_ZONES.find(z => z.id === selectedZoneId) || DELIVERY_ZONES[0];
+  const deliveryFee = orderType === 'Livraison' ? currentZone.fee_cfa : 0;
+  const finalTotal = totalPrice + deliveryFee;
 
   // Mode de paiement : Espèces | Orange Money | Moov Money
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Orange Money' | 'Moov Money'>('Espèces');
@@ -48,16 +63,41 @@ export default function CommanderPage() {
       return;
     }
 
-    if (!orderDetail.trim()) {
-      const precisionText =
-        orderType === 'Sur place'
-          ? 'votre numéro de table'
-          : orderType === 'À emporter'
-          ? 'l’heure de retrait souhaitée'
-          : 'votre quartier / adresse de livraison';
-      setFormError(`Veuillez préciser ${precisionText}.`);
-      showToast(`Précisez ${precisionText}.`);
-      return;
+    let resolvedDetail = '';
+    if (orderType === 'Sur place') {
+      resolvedDetail =
+        selectedTable === 'Autre emplacement'
+          ? customTable.trim()
+          : selectedTable;
+      if (!resolvedDetail) {
+        setFormError('Veuillez préciser votre numéro de table ou votre emplacement.');
+        showToast('Numéro de table requis.');
+        return;
+      }
+    } else if (orderType === 'À emporter') {
+      resolvedDetail =
+        pickupPreset === 'Heure précise'
+          ? (customPickupTime.trim() ? `Retrait à ${customPickupTime.trim()}` : '')
+          : pickupPreset;
+      if (!resolvedDetail) {
+        setFormError('Veuillez préciser l’heure de retrait souhaitée.');
+        showToast('Heure de retrait requise.');
+        return;
+      }
+    } else {
+      if (totalPrice < currentZone.min_order_cfa) {
+        setFormError(
+          `Montant minimum de commande pour cette zone : ${formatCFA(currentZone.min_order_cfa)} (votre panier : ${formatCFA(totalPrice)}).`
+        );
+        showToast('Montant minimum non atteint pour cette zone.');
+        return;
+      }
+      if (!deliveryAddress.trim()) {
+        setFormError('Veuillez renseigner votre quartier et un repère précis (porte, rue, repère).');
+        showToast('Adresse de livraison obligatoire.');
+        return;
+      }
+      resolvedDetail = `${currentZone.name} — ${deliveryAddress.trim()}`;
     }
 
     if (paymentMethod !== 'Espèces' && paymentRef.trim().length < 4) {
@@ -94,7 +134,7 @@ export default function CommanderPage() {
           customer_name: customerName,
           customer_phone: customerPhone,
           order_type: orderType,
-          order_detail: orderDetail,
+          order_detail: resolvedDetail,
           payment_method: paymentMethod,
           payment_ref: paymentRef.trim() || undefined,
           items: cart.map(c => ({
@@ -102,7 +142,7 @@ export default function CommanderPage() {
             selectedOption: c.selectedOption,
             qty: c.qty
           })),
-          total_cfa: totalPrice,
+          total_cfa: finalTotal,
           notes
         })
       });
@@ -300,38 +340,125 @@ export default function CommanderPage() {
             </div>
 
             {/* Détail selon le mode choisi */}
-            <div>
-              <label className="font-bold block mb-1">
-                {orderType === 'Sur place'
-                  ? 'Numéro de table ou emplacement :'
-                  : orderType === 'À emporter'
-                  ? 'Heure souhaitée de retrait :'
-                  : 'Quartier / Adresse exacte de livraison :'}
-                <span className="text-rose-600 font-extrabold ml-1">*</span>
-              </label>
-              <input
-                type="text"
-                required
-                maxLength={160}
-                value={orderDetail}
-                onChange={e => {
-                  setOrderDetail(e.target.value);
-                  if (formError) setFormError('');
-                }}
-                placeholder={
-                  orderType === 'Sur place'
-                    ? 'Ex: Table 3 (Terrasse)'
-                    : orderType === 'À emporter'
-                    ? 'Ex: Dans 30 minutes (13h15)'
-                    : 'Ex: Zagtouli, côté pharmacie...'
-                }
-                className={`w-full px-3.5 py-2 rounded-xl border font-semibold transition ${
-                  formError && !orderDetail.trim()
-                    ? 'border-rose-500 bg-rose-50 ring-2 ring-rose-200'
-                    : 'border-stone-300 bg-white'
-                }`}
-              />
-            </div>
+            {orderType === 'Sur place' && (
+              <div className="space-y-2">
+                <label className="font-bold block text-stone-700">
+                  Choisissez votre table ou zone : <span className="text-rose-600 font-extrabold">*</span>
+                </label>
+                <select
+                  value={selectedTable}
+                  onChange={e => {
+                    setSelectedTable(e.target.value);
+                    if (formError) setFormError('');
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white font-bold text-xs sm:text-sm text-[#2b1810]"
+                >
+                  <optgroup label="Terrasse Ombragée & Jardin">
+                    {RESTAURANT_TABLES.filter(t => t.zone === 'Terrasse').map(t => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Salle Climatisée">
+                    {RESTAURANT_TABLES.filter(t => t.zone === 'Salle Climatisée').map(t => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Bar & Autre">
+                    {RESTAURANT_TABLES.filter(t => t.zone === 'Bar').map(t => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                    <option value="Autre emplacement">Autre emplacement (préciser ci-dessous)</option>
+                  </optgroup>
+                </select>
+
+                {selectedTable === 'Autre emplacement' && (
+                  <input
+                    type="text"
+                    value={customTable}
+                    onChange={e => setCustomTable(e.target.value)}
+                    placeholder="Précisez votre emplacement (ex: À côté de la pergola...)"
+                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs mt-1"
+                  />
+                )}
+              </div>
+            )}
+
+            {orderType === 'À emporter' && (
+              <div className="space-y-2">
+                <label className="font-bold block text-stone-700">
+                  Délai souhaité pour le retrait : <span className="text-rose-600 font-extrabold">*</span>
+                </label>
+                <select
+                  value={pickupPreset}
+                  onChange={e => {
+                    setPickupPreset(e.target.value);
+                    if (formError) setFormError('');
+                  }}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white font-bold text-xs sm:text-sm text-[#2b1810]"
+                >
+                  <option value="Au plus vite (~15-25 min)">Au plus vite (~15 à 25 minutes)</option>
+                  <option value="Dans 30 minutes">Dans 30 minutes</option>
+                  <option value="Dans 45 minutes">Dans 45 minutes</option>
+                  <option value="Dans 1 heure">Dans 1 heure</option>
+                  <option value="Heure précise">Indiquer une heure précise...</option>
+                </select>
+
+                {pickupPreset === 'Heure précise' && (
+                  <input
+                    type="text"
+                    value={customPickupTime}
+                    onChange={e => setCustomPickupTime(e.target.value)}
+                    placeholder="Ex: 12h45 ou 19h30"
+                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs mt-1"
+                  />
+                )}
+              </div>
+            )}
+
+            {orderType === 'Livraison' && (
+              <div className="space-y-2.5">
+                <div>
+                  <label className="font-bold block text-stone-700 mb-1">
+                    Zone de livraison : <span className="text-rose-600 font-extrabold">*</span>
+                  </label>
+                  <select
+                    value={selectedZoneId}
+                    onChange={e => {
+                      setSelectedZoneId(e.target.value);
+                      if (formError) setFormError('');
+                    }}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-white font-bold text-xs sm:text-sm text-[#2b1810]"
+                  >
+                    {DELIVERY_ZONES.map(z => (
+                      <option key={z.id} value={z.id}>
+                        {z.name} — Délai : {z.eta}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-stone-700 text-xs flex justify-between items-center">
+                  <span>Frais : <strong>{formatCFA(currentZone.fee_cfa)}</strong></span>
+                  <span>Minimum : <strong>{formatCFA(currentZone.min_order_cfa)}</strong></span>
+                </div>
+
+                <div>
+                  <label className="font-bold block text-stone-700 mb-1">
+                    Adresse ou repère précis de livraison : <span className="text-rose-600 font-extrabold">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={deliveryAddress}
+                    onChange={e => {
+                      setDeliveryAddress(e.target.value);
+                      if (formError) setFormError('');
+                    }}
+                    placeholder="Ex: Zagtouli vers la station Shell, portail bleu..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* 2. Coordonnées client */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
@@ -449,9 +576,21 @@ export default function CommanderPage() {
             </div>
           </div>
 
-          <div className="flex justify-between items-center pt-3 border-t border-[#dec6a7] font-extrabold text-base">
-            <span>Total à payer :</span>
-            <span className="text-xl text-[#881313] whitespace-nowrap">{formatCFA(totalPrice)}</span>
+          <div className="space-y-1.5 pt-3 border-t border-[#dec6a7] text-xs">
+            <div className="flex justify-between items-center text-stone-600 font-semibold">
+              <span>Sous-total plats :</span>
+              <span>{formatCFA(totalPrice)}</span>
+            </div>
+            {orderType === 'Livraison' && (
+              <div className="flex justify-between items-center text-stone-600 font-semibold">
+                <span>Frais de livraison ({currentZone.name.split('(')[0].trim()}) :</span>
+                <span>{formatCFA(deliveryFee)}</span>
+              </div>
+            )}
+            <div className="flex justify-between items-center pt-1.5 border-t border-[#dec6a7]/60 font-extrabold text-base text-[#2b1810]">
+              <span>Total à régler :</span>
+              <span className="text-xl text-[#881313] whitespace-nowrap">{formatCFA(finalTotal)}</span>
+            </div>
           </div>
 
           <div className="space-y-2.5 pt-1">

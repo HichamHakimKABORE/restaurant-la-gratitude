@@ -8,6 +8,8 @@ import {
 import { isAdminRequest } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
 const CACHE_TTL_MS = 10000; // 10 seconds server RAM cache (invalidated immediately on any write)
 

@@ -231,7 +231,16 @@ export default function MesCommandesPage() {
                           {order.customer_name} ({order.customer_phone})
                         </span>
                         <span className="text-xs text-amber-200">
-                          {new Date(order.created_at).toLocaleString('fr-FR')}
+                          {order.created_at
+                            ? new Intl.DateTimeFormat('fr-FR', {
+                                timeZone: 'Africa/Ouagadougou',
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              }).format(new Date(order.created_at))
+                            : ''}
                         </span>
                       </div>
                     </div>

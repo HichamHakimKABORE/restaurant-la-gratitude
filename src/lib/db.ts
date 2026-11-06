@@ -388,6 +388,23 @@ export async function ensureNeonSchema() {
       `;
       await sql`CREATE INDEX IF NOT EXISTS order_events_order_id_idx ON order_events(order_id)`;
 
+      // P1-5 : Table normalisée des articles commandés pour inventaire et stats fiables
+      await sql`
+        CREATE TABLE IF NOT EXISTS order_items (
+          id SERIAL PRIMARY KEY,
+          order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+          dish_id INTEGER,
+          item_name VARCHAR(150) NOT NULL,
+          option_name VARCHAR(100),
+          unit_price_cfa INTEGER NOT NULL,
+          qty INTEGER NOT NULL CHECK (qty > 0),
+          total_cfa INTEGER NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS order_items_order_id_idx ON order_items(order_id)`;
+      await sql`CREATE INDEX IF NOT EXISTS order_items_dish_id_idx ON order_items(dish_id)`;
+
       await sql`
         CREATE TABLE IF NOT EXISTS restaurant_settings (
           id INTEGER PRIMARY KEY DEFAULT 1,
