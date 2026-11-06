@@ -29,6 +29,22 @@ export interface RestaurantSettings {
   opening_hours: string;
 }
 
+export interface GalleryImage {
+  id: number;
+  title: string;
+  image_url: string;
+  display_order: number;
+  created_at?: string;
+}
+
+export const INITIAL_GALLERY_IMAGES: GalleryImage[] = [
+  { id: 1, title: 'Ambiance chaleureuse à Zagtouli', image_url: '/images/dishes_grid_1.jpg', display_order: 1 },
+  { id: 2, title: 'Nos grillades & pizzas au four', image_url: '/images/dishes_grid_2.jpg', display_order: 2 },
+  { id: 3, title: 'Fraîcheur des ingrédients', image_url: '/images/dishes_grid_3.jpg', display_order: 3 },
+  { id: 4, title: 'Boissons fraîches & accueil convivial', image_url: '/images/dishes_grid_4.jpg', display_order: 4 },
+  { id: 5, title: 'Monument des Martyrs & Fierté', image_url: '/images/monument_exact.jpg', display_order: 5 }
+];
+
 export const INITIAL_SETTINGS: RestaurantSettings = {
   id: 1,
   restaurant_name: 'Restaurant La Gratitude',
@@ -117,6 +133,8 @@ declare global {
   // eslint-disable-next-line no-var
   var _gratitudeSettings: RestaurantSettings | undefined;
   // eslint-disable-next-line no-var
+  var _gratitudeGallery: GalleryImage[] | undefined;
+  // eslint-disable-next-line no-var
   var _gratitudeSchemaReady: boolean | undefined;
   // eslint-disable-next-line no-var
   var _gratitudeSchemaPromise: Promise<ReturnType<typeof getNeonClient>> | undefined;
@@ -126,6 +144,8 @@ declare global {
   var _ordersCache: { data: Order[]; ts: number } | undefined;
   // eslint-disable-next-line no-var
   var _settingsCache: { data: RestaurantSettings; ts: number } | undefined;
+  // eslint-disable-next-line no-var
+  var _galleryCache: { data: GalleryImage[]; ts: number } | undefined;
 }
 
 export function getMemoryDishes(): Dish[] {
@@ -149,6 +169,13 @@ export function getMemorySettings(): RestaurantSettings {
   return global._gratitudeSettings;
 }
 
+export function getMemoryGallery(): GalleryImage[] {
+  if (!global._gratitudeGallery) {
+    global._gratitudeGallery = INITIAL_GALLERY_IMAGES.map(g => ({ ...g }));
+  }
+  return global._gratitudeGallery;
+}
+
 export function getNeonClient() {
   const url = process.env.DATABASE_URL;
   if (!url || url.trim() === '') return null;
@@ -166,6 +193,10 @@ export function invalidateOrdersCache() {
 
 export function invalidateSettingsCache() {
   global._settingsCache = undefined;
+}
+
+export function invalidateGalleryCache() {
+  global._galleryCache = undefined;
 }
 
 export async function ensureNeonSchema() {
@@ -226,8 +257,30 @@ export async function ensureNeonSchema() {
         )
       `;
 
+      await sql`
+        CREATE TABLE IF NOT EXISTS restaurant_gallery (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(180) NOT NULL DEFAULT 'Photo du Restaurant',
+          image_url TEXT NOT NULL,
+          display_order INTEGER NOT NULL DEFAULT 100,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+
       const countRows = await sql`SELECT COUNT(*)::int AS cnt FROM dishes`;
       const count = countRows[0]?.cnt ?? 0;
+
+      // Seed gallery if empty
+      const galCountRows = await sql`SELECT COUNT(*)::int AS cnt FROM restaurant_gallery`;
+      const galCount = galCountRows[0]?.cnt ?? 0;
+      if (galCount === 0) {
+        for (const g of INITIAL_GALLERY_IMAGES) {
+          await sql`
+            INSERT INTO restaurant_gallery (title, image_url, display_order)
+            VALUES (${g.title}, ${g.image_url}, ${g.display_order})
+          `;
+        }
+      }
 
       // Remove old demo orders if present
       await sql`

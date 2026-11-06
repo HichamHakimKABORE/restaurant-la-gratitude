@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useCart, formatCFA } from './CartContext';
 import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon } from './Icons';
+import RestaurantGallerySlider from './RestaurantGallerySlider';
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -37,24 +38,24 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* 1. TOP OFFICIAL HEADER BANNER */}
-      <header className="relative z-10 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-4 border-[#801313] shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      {/* 1. TOP OFFICIAL HEADER BANNER (Fixe en haut - ne bouge pas quand on scrolle) */}
+      <header className="sticky top-0 z-40 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 sm:border-b-4 border-[#801313] shadow-md">
+        <div className="max-w-7xl mx-auto px-3 sm:px-8 py-2 sm:py-3.5 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
           {/* Left: Vrai Logo Version 1 + Nom */}
-          <Link href="/" className="flex items-center gap-4">
+          <Link href="/" className="flex items-center gap-2.5 sm:gap-4">
             <img
               src="/images/logo_gratitude.jpg"
               alt="Logo Officiel Restaurant La Gratitude"
-              className="w-16 h-16 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-[#d99b26] shadow-xl bg-white shrink-0"
+              className="w-12 h-12 sm:w-20 sm:h-20 rounded-full object-cover border-2 sm:border-4 border-[#d99b26] shadow-md bg-white shrink-0"
             />
             <div>
-              <span className="block text-base sm:text-xl font-bold text-[#2b1810] tracking-tight leading-none">
+              <span className="block text-xs sm:text-base font-bold text-[#2b1810] tracking-tight leading-none">
                 Restaurant
               </span>
-              <h1 className="font-script text-3xl sm:text-5xl text-[#991b1b] leading-tight drop-shadow-sm">
+              <h1 className="font-script text-2xl sm:text-4xl text-[#991b1b] leading-tight drop-shadow-sm">
                 La Gratitude
               </h1>
-              <p className="font-script text-xs sm:text-base text-[#3f2314]">
+              <p className="font-script text-[11px] sm:text-sm text-[#3f2314]">
                 Bon goût, bonne humeur !
               </p>
             </div>
@@ -71,51 +72,51 @@ export default function ClientShell({ children }: { children: React.ReactNode })
           </div>
 
           {/* Right: Zagtouli, Téléphone, WhatsApp */}
-          <div className="flex items-center gap-4">
-            <div className="space-y-1.5 text-xs sm:text-sm border-l-2 border-[#801313]/25 pl-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="space-y-1 text-xs sm:text-sm border-l-2 border-[#801313]/25 pl-3 sm:pl-4">
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[#991b1b] text-white flex items-center justify-center shrink-0">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#991b1b] text-white flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </span>
                 <div>
-                  <strong className="block leading-tight">Zagtouli, route de Bobo</strong>
-                  <span className="text-xs text-[#6b4c3b]">Ouagadougou - Burkina Faso</span>
+                  <strong className="block leading-tight text-xs sm:text-sm">Zagtouli, route de Bobo</strong>
+                  <span className="text-[10px] sm:text-xs text-[#6b4c3b]">Ouagadougou - Burkina Faso</span>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[#991b1b] text-white flex items-center justify-center shrink-0">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#991b1b] text-white flex items-center justify-center shrink-0">
+                  <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </span>
-                <a href="tel:+22660186525" className="font-extrabold text-sm sm:text-base text-[#2b1810] hover:text-[#991b1b]">
+                <a href="tel:+22660186525" className="font-extrabold text-xs sm:text-base text-[#2b1810] hover:text-[#991b1b]">
                   +226 60 18 65 25
                 </a>
                 <a
                   href="https://wa.me/22660186525"
                   target="_blank"
                   rel="noreferrer"
-                  className="w-7 h-7 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition"
+                  className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition"
                   title="WhatsApp"
                 >
-                  <WhatsAppIcon className="w-4 h-4" />
+                  <WhatsAppIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </a>
               </div>
             </div>
 
             {/* Vraie Photo du Monument des Martyrs & Drapeau du Burkina Faso */}
-            <div className="hidden sm:flex items-center gap-2.5 bg-[#f3dcb9]/75 px-3 py-2 rounded-2xl border-2 border-[#d99b26] shadow-md shrink-0">
+            <div className="hidden sm:flex items-center gap-2 bg-[#f3dcb9]/75 px-2.5 py-1.5 rounded-2xl border-2 border-[#d99b26] shadow-sm shrink-0">
               <img
                 src="/images/monument_exact.jpg"
                 alt="Monument des Martyrs — Ouagadougou"
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover object-top border border-[#b47b22] shadow-sm bg-white"
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover object-top border border-[#b47b22] shadow-sm bg-white"
               />
               <svg
-                className="w-12 h-8 rounded shadow-sm border border-black/20 shrink-0"
+                className="w-9 h-6 sm:w-11 sm:h-7 rounded shadow-sm border border-black/20 shrink-0"
                 viewBox="0 0 60 40"
                 aria-label="Drapeau du Burkina Faso"
               >
@@ -131,16 +132,16 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         </div>
 
         {/* Navigation Bar (Separate Dedicated Pages) */}
-        <nav className="bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] px-4 sm:px-8 py-2.5 border-t border-white/15">
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto text-xs sm:text-sm">
+        <nav className="bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] px-3 sm:px-8 py-2 border-t border-white/15">
+          <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none text-xs sm:text-sm">
               {navItems.map(item => {
                 const isActive = pathname === item.href;
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-3.5 py-1.5 rounded-lg font-extrabold transition shrink-0 ${
+                    className={`px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-lg font-extrabold transition shrink-0 ${
                       isActive
                         ? 'bg-[#eab308] text-[#2b1810] shadow'
                         : 'text-amber-100 hover:bg-white/10 font-semibold'
@@ -171,37 +172,40 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         {children}
       </main>
 
-      {/* 3. FOOTER PROMISE BAR */}
-      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-4 border-[#eab308] mt-8 pb-20 sm:pb-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4 text-xs sm:text-sm">
-          <div className="flex flex-wrap items-center gap-6">
-            <div className="flex items-center gap-2 font-bold">
-              <span className="w-7 h-7 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center">
-                <ChefHatIcon className="w-4 h-4" />
+      {/* GALERIE DÉFILANTE DES PHOTOS DU RESTAURANT */}
+      <RestaurantGallerySlider />
+
+      {/* 3. FOOTER PROMISE BAR (Format compact et allégé en hauteur) */}
+      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-4 pb-16 sm:pb-2">
+        <div className="max-w-7xl mx-auto px-3 sm:px-8 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-[11px] sm:text-xs">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-1.5 font-bold">
+              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <ChefHatIcon className="w-3 h-3" />
               </span>
               <span>Cuisine de qualité</span>
             </div>
-            <div className="flex items-center gap-2 font-bold">
-              <span className="w-7 h-7 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center">
-                <StarIcon className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 font-bold">
+              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <StarIcon className="w-3 h-3" />
               </span>
               <span>Service rapide</span>
             </div>
-            <div className="flex items-center gap-2 font-bold">
-              <span className="w-7 h-7 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center">
-                <ThumbUpIcon className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 font-bold">
+              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <ThumbUpIcon className="w-3 h-3" />
               </span>
               <span>Des prix abordables</span>
             </div>
-            <div className="flex items-center gap-2 font-bold">
-              <span className="w-7 h-7 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center">
-                <HeartIcon className="w-4 h-4" />
+            <div className="flex items-center gap-1.5 font-bold">
+              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <HeartIcon className="w-3 h-3" />
               </span>
               <span>Votre satisfaction, notre priorité</span>
             </div>
           </div>
 
-          <div className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#facc15] via-[#eab308] to-[#ca8a04] text-[#2b1810] font-script text-base sm:text-lg shadow-md">
+          <div className="px-3 py-1 rounded-full bg-gradient-to-r from-[#facc15] via-[#eab308] to-[#ca8a04] text-[#2b1810] font-script text-xs sm:text-sm shadow-sm">
             Restaurant La Gratitude... Toujours avec vous !
           </div>
         </div>

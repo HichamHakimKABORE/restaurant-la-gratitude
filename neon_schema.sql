@@ -43,6 +43,14 @@ CREATE TABLE IF NOT EXISTS restaurant_settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS restaurant_gallery (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(180) NOT NULL DEFAULT 'Photo du Restaurant',
+  image_url TEXT NOT NULL,
+  display_order INTEGER NOT NULL DEFAULT 100,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO restaurant_settings (id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours)
 VALUES (
   1,
