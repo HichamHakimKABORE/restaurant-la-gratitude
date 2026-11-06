@@ -108,15 +108,15 @@ export default function ClientShell({ children }: { children: React.ReactNode })
               </div>
             </div>
 
-            {/* Vraie Photo du Monument des Martyrs & Drapeau du Burkina Faso */}
-            <div className="hidden sm:flex items-center gap-2 bg-[#f3dcb9]/75 px-2.5 py-1.5 rounded-2xl border-2 border-[#d99b26] shadow-sm shrink-0">
+            {/* Vraie Photo du Monument des Martyrs & Drapeau du Burkina Faso (Visible sur Téléphone et Ordinateur) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-[#f3dcb9]/80 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl sm:rounded-2xl border-2 border-[#d99b26] shadow-sm shrink-0">
               <img
                 src="/images/monument_exact.jpg"
                 alt="Monument des Martyrs — Ouagadougou"
-                className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover object-top border border-[#b47b22] shadow-sm bg-white"
+                className="w-10 h-10 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl object-cover object-top border border-[#b47b22] shadow-sm bg-white"
               />
               <svg
-                className="w-9 h-6 sm:w-11 sm:h-7 rounded shadow-sm border border-black/20 shrink-0"
+                className="w-8 h-5 sm:w-11 sm:h-7 rounded shadow-sm border border-black/20 shrink-0"
                 viewBox="0 0 60 40"
                 aria-label="Drapeau du Burkina Faso"
               >
