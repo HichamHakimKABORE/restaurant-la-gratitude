@@ -37,6 +37,77 @@ export interface GalleryImage {
   created_at?: string;
 }
 
+export interface DailyMenuDishItem {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  stock_status: StockStatus;
+  is_available_today: boolean;
+}
+
+export interface DailyMenuRecord {
+  id: number;
+  menu_date: string; // YYYY-MM-DD
+  dishes_json: DailyMenuDishItem[];
+  total_dishes: number;
+  notes?: string;
+  created_at?: string;
+  orders_count?: number;
+  revenue_cfa?: number;
+}
+
+export const INITIAL_MENU_HISTORY: DailyMenuRecord[] = [
+  {
+    id: 1,
+    menu_date: '2026-11-06',
+    total_dishes: 8,
+    notes: 'Service régulier du midi & soir',
+    created_at: '2026-11-06T07:30:00Z',
+    dishes_json: [
+      { id: 1, name: 'Riz gras', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 2, name: 'Riz sauce d’arachide', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 3, name: 'Riz sauce tomate', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 4, name: 'Tô sauce boulvanka', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 5, name: 'Soupe de poulet', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
+      { id: 6, name: 'Soupe de poisson', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
+      { id: 9, name: 'Brochettes Kaya (x5)', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 12, name: 'Alloco doré', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true }
+    ]
+  },
+  {
+    id: 2,
+    menu_date: '2026-11-05',
+    total_dishes: 7,
+    notes: 'Forte affluence sur les grillades',
+    created_at: '2026-11-05T07:15:00Z',
+    dishes_json: [
+      { id: 1, name: 'Riz gras', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 3, name: 'Riz sauce tomate', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 8, name: 'Soupe de boyaux', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
+      { id: 9, name: 'Brochettes Kaya (x5)', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 10, name: 'Brochette Filet (x1)', category: 'Grillades', price: 500, stock_status: 'available', is_available_today: true },
+      { id: 11, name: 'Brochettes Merguez (x4)', category: 'Grillades', price: 2000, stock_status: 'available', is_available_today: true },
+      { id: 12, name: 'Alloco doré', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true }
+    ]
+  },
+  {
+    id: 3,
+    menu_date: '2026-11-04',
+    total_dishes: 6,
+    notes: 'Menu traditionnel du Chef',
+    created_at: '2026-11-04T07:20:00Z',
+    dishes_json: [
+      { id: 1, name: 'Riz gras', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 2, name: 'Riz sauce d’arachide', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 4, name: 'Tô sauce boulvanka', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 5, name: 'Soupe de poulet', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
+      { id: 14, name: 'Assiette de Frites', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true },
+      { id: 15, name: 'Omelette Gratitude', category: 'Plats', price: 2000, stock_status: 'available', is_available_today: true }
+    ]
+  }
+];
+
 export const INITIAL_GALLERY_IMAGES: GalleryImage[] = [
   { id: 1, title: 'Ambiance chaleureuse à Zagtouli', image_url: '/images/dishes_grid_1.jpg', display_order: 1 },
   { id: 2, title: 'Nos grillades & pizzas au four', image_url: '/images/dishes_grid_2.jpg', display_order: 2 },
@@ -176,6 +247,16 @@ export function getMemoryGallery(): GalleryImage[] {
   return global._gratitudeGallery;
 }
 
+export function getMemoryMenuHistory(): DailyMenuRecord[] {
+  if (!global._gratitudeMenuHistory) {
+    global._gratitudeMenuHistory = INITIAL_MENU_HISTORY.map(m => ({
+      ...m,
+      dishes_json: [...m.dishes_json]
+    }));
+  }
+  return global._gratitudeMenuHistory;
+}
+
 export function getNeonClient() {
   const url = process.env.DATABASE_URL;
   if (!url || url.trim() === '') return null;
@@ -197,6 +278,10 @@ export function invalidateSettingsCache() {
 
 export function invalidateGalleryCache() {
   global._galleryCache = undefined;
+}
+
+export function invalidateMenuHistoryCache() {
+  global._menuHistoryCache = undefined;
 }
 
 export async function ensureNeonSchema() {
@@ -266,6 +351,31 @@ export async function ensureNeonSchema() {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         )
       `;
+
+      await sql`
+        CREATE TABLE IF NOT EXISTS daily_menu_history (
+          id SERIAL PRIMARY KEY,
+          menu_date DATE UNIQUE NOT NULL,
+          dishes_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+          total_dishes INTEGER NOT NULL DEFAULT 0,
+          notes TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+
+      // Seed daily menu history if empty
+      const historyCountRows = await sql`SELECT COUNT(*)::int AS cnt FROM daily_menu_history`;
+      const histCount = historyCountRows[0]?.cnt ?? 0;
+      if (histCount === 0) {
+        for (const h of INITIAL_MENU_HISTORY) {
+          await sql`
+            INSERT INTO daily_menu_history (menu_date, dishes_json, total_dishes, notes, created_at)
+            VALUES (${h.menu_date}, ${JSON.stringify(h.dishes_json)}::jsonb, ${h.total_dishes}, ${h.notes || ''}, ${h.created_at || 'NOW()'})
+            ON CONFLICT (menu_date) DO NOTHING
+          `;
+        }
+      }
 
       const countRows = await sql`SELECT COUNT(*)::int AS cnt FROM dishes`;
       const count = countRows[0]?.cnt ?? 0;

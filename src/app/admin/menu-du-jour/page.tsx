@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, CloseIcon } from '@/components/Icons';
@@ -8,8 +9,41 @@ import type { Dish, StockStatus } from '@/lib/db';
 
 export default function AdminMenuDuJourPage() {
   const { dishes, setDishes, showToast } = useCart();
+  const [isSavingHistory, setIsSavingHistory] = useState(false);
 
   const dailyDishes = dishes.filter(d => d.availability_mode === 'daily');
+
+  const saveMenuReport = async () => {
+    setIsSavingHistory(true);
+    try {
+      const activeDailyDishes = dailyDishes
+        .filter(d => d.is_available_today)
+        .map(d => ({
+          id: d.id,
+          name: d.name,
+          category: d.category,
+          price: d.price,
+          stock_status: d.stock_status,
+          is_available_today: d.is_available_today
+        }));
+
+      await fetch('/api/menu-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          menu_date: new Date().toISOString().slice(0, 10),
+          dishes: activeDailyDishes,
+          notes: `Menu enregistré depuis l'espace Admin (${activeDailyDishes.length} plats prêts)`
+        })
+      });
+
+      showToast(`Menu du Jour enregistré et archivé dans les rapports (${activeDailyDishes.length} plats) !`);
+    } catch (err) {
+      showToast('Menu synchronisé sur le site client !');
+    } finally {
+      setIsSavingHistory(false);
+    }
+  };
 
   const setStatus = async (dish: Dish, status: StockStatus) => {
     const isAvail = status !== 'soldout';
@@ -145,13 +179,20 @@ export default function AdminMenuDuJourPage() {
             Astuce : Cliquez sur « Presque fini » lorsqu’il ne reste que quelques assiettes d’un plat.
           </p>
           <button
-            onClick={() =>
-              showToast('Menu du jour synchronisé avec le site Client !')
-            }
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs shadow-lg"
+            onClick={saveMenuReport}
+            disabled={isSavingHistory}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs shadow-lg transition flex items-center justify-center gap-2"
           >
-            Enregistrer le menu du jour
+            <CheckIcon className="w-4 h-4" />
+            <span>{isSavingHistory ? 'Enregistrement...' : 'Enregistrer le menu & archiver'}</span>
           </button>
+
+          <Link
+            href="/admin/rapport-menus"
+            className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#fef08a] to-[#facc15] hover:brightness-105 text-[#2b1810] font-extrabold text-xs border border-amber-400 shadow text-center block transition"
+          >
+            Consulter les rapports & générer un PDF →
+          </Link>
         </div>
       </div>
     </AdminShell>

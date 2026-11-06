@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { PhoneIcon, BoltIcon, CheckIcon } from '@/components/Icons';
+import { PhoneIcon, BoltIcon, CheckIcon, ChefHatIcon } from '@/components/Icons';
 import type { Dish } from '@/lib/db';
 
 export default function MenuDuJourPage() {
@@ -13,19 +13,24 @@ export default function MenuDuJourPage() {
     d => d.availability_mode === 'daily' && d.is_available_today
   );
 
+  const isCustomized = dailyPrepared.length > 0;
+  const listToDisplay = isCustomized ? dailyPrepared : dishes.filter(d => d.is_available_today);
+
   return (
     <ClientShell>
       <div className="bg-white/90 backdrop-blur-[2px] rounded-2xl border-2 border-[#eab308] shadow-lg overflow-hidden relative">
         <div className="bg-gradient-to-r from-[#7c1d12] via-[#991b1b] to-[#680e0e] text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#eab308]">
           <div>
             <span className="px-3 py-1 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-xs">
-              Ardoise du Jour en Direct
+              {isCustomized ? 'Ardoise du Jour en Direct' : 'Sélection du Chef'}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold mt-2">
-              Menu du Jour — Préparé Aujourd’hui
+              Menu du Jour — {isCustomized ? 'Préparé Aujourd’hui' : 'Spécialités Disponibles'}
             </h2>
             <p className="text-xs sm:text-sm text-amber-100 mt-1">
-              Voici les plats que le Chef a préparés et cochés ce matin à Zagtouli.
+              {isCustomized
+                ? 'Voici les plats que le Chef a préparés et cochés ce matin à Zagtouli.'
+                : 'Le Chef prépare les plats du jour. Voici nos spécialités prêtes à la commande !'}
             </p>
           </div>
 
@@ -38,14 +43,18 @@ export default function MenuDuJourPage() {
           </a>
         </div>
 
-        <div className="p-5 sm:p-6">
-          {dailyPrepared.length === 0 ? (
-            <div className="py-12 text-center text-sm text-stone-500">
-              Aucun plat du jour n’est coché pour le moment.
+        <div className="p-5 sm:p-6 space-y-4">
+          {!isCustomized && (
+            <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-[#2b1810] text-xs flex items-center gap-3">
+              <ChefHatIcon className="w-5 h-5 text-[#881313] shrink-0" />
+              <p>
+                <strong>Menu du Jour en cours de préparation :</strong> Découvrez en attendant notre sélection de spécialités prêtes à être commandées immédiatement !
+              </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {dailyPrepared.map(dish => (
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {listToDisplay.map(dish => (
                 <div
                   key={dish.id}
                   onClick={() => openDishSelector(dish)}
@@ -87,7 +96,6 @@ export default function MenuDuJourPage() {
                 </div>
               ))}
             </div>
-          )}
         </div>
       </div>
     </ClientShell>

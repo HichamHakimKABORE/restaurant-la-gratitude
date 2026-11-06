@@ -51,6 +51,16 @@ CREATE TABLE IF NOT EXISTS restaurant_gallery (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS daily_menu_history (
+  id SERIAL PRIMARY KEY,
+  menu_date DATE UNIQUE NOT NULL,
+  dishes_json JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total_dishes INTEGER NOT NULL DEFAULT 0,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 INSERT INTO restaurant_settings (id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours)
 VALUES (
   1,

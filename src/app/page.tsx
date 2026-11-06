@@ -27,9 +27,12 @@ export default function AccueilClientPage() {
     d => d.availability_mode === 'daily' && d.is_available_today
   );
 
-  const rotatingDishes = availableDailyDishes.length > 0
+  const isDailyCustomized = availableDailyDishes.length > 0;
+  const displayedDailyDishes = isDailyCustomized
     ? availableDailyDishes
     : dishes.filter(d => d.is_available_today);
+
+  const rotatingDishes = displayedDailyDishes;
 
   useEffect(() => {
     if (rotatingDishes.length <= 1) return;
@@ -215,12 +218,24 @@ export default function AccueilClientPage() {
           <div className="bg-gradient-to-r from-[#7c1d12] to-[#9a2c1d] text-white px-4 py-3 flex items-center justify-between border-b border-[#eab308]">
             <span className="font-extrabold text-sm">Menu du Jour</span>
             <span className="px-2.5 py-0.5 rounded bg-[#eab308] text-[#2b1810] font-extrabold text-xs">
-              Aujourd’hui
+              {isDailyCustomized ? 'Aujourd’hui' : 'Sélection du Chef'}
             </span>
           </div>
 
           <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto">
-            {availableDailyDishes.slice(0, 8).map(dish => (
+            {!isDailyCustomized && (
+              <div className="p-2.5 rounded-xl bg-amber-100/90 border border-amber-300 text-[#2b1810] text-[11px] space-y-1 mb-2">
+                <p className="font-extrabold flex items-center gap-1 text-[#801313]">
+                  <ChefHatIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span>Menu du jour en préparation</span>
+                </p>
+                <p className="text-stone-700 leading-snug">
+                  Voici nos spécialités immédiatement disponibles pour vous régaler aujourd’hui !
+                </p>
+              </div>
+            )}
+
+            {displayedDailyDishes.slice(0, 8).map(dish => (
               <div
                 key={dish.id}
                 onClick={() => openDishSelector(dish)}
