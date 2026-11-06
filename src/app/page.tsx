@@ -61,46 +61,52 @@ export default function AccueilClientPage() {
 
   return (
     <ClientShell>
-      {/* Hero Banner (Ultra Compact & Défilement des repas du Menu du Jour) */}
-      <section className="rounded-xl overflow-hidden border border-[#801313] shadow-md bg-gradient-to-r from-[#2a1208] via-[#3a150a] to-[#2a1208] text-white p-2.5 sm:p-4 md:p-5 grid grid-cols-1 md:grid-cols-12 gap-2.5 sm:gap-4 items-center">
-        <div className="md:col-span-7 space-y-1 sm:space-y-2">
-          <div className="flex flex-wrap items-baseline gap-1.5 leading-none">
-            <span className="font-script text-xs sm:text-base text-amber-200">
+      {/* Hero Banner (Ultra Compact & Côte à côte même sur smartphone) */}
+      <section className="relative rounded-xl overflow-hidden border border-[#801313] shadow-md bg-gradient-to-r from-[#2a1208] via-[#3a150a] to-[#2a1208] text-white p-2.5 sm:p-4 grid grid-cols-12 gap-2 sm:gap-4 items-center">
+        {/* Filigrane discret du logo dans la bannière */}
+        <div className="absolute -right-4 -bottom-4 w-32 h-32 sm:w-48 sm:h-48 opacity-15 pointer-events-none rounded-full overflow-hidden select-none">
+          <img src="/images/logo_gratitude.jpg" alt="" className="w-full h-full object-cover" />
+        </div>
+
+        {/* Partie Gauche: Textes & Boutons (7 colonnes sur mobile et desktop) */}
+        <div className="col-span-7 space-y-1 z-10">
+          <div className="leading-tight">
+            <span className="font-script text-[11px] sm:text-sm text-amber-200 block">
               Bienvenue au
             </span>
-            <h2 className="font-script text-lg sm:text-2xl md:text-3xl text-[#facc15] drop-shadow">
+            <h2 className="font-script text-base sm:text-2xl md:text-3xl text-[#facc15] drop-shadow leading-tight">
               Restaurant La Gratitude
             </h2>
           </div>
-          <p className="font-script text-[11px] sm:text-xs md:text-sm text-amber-100 leading-tight">
+          <p className="font-script text-[10px] sm:text-xs text-amber-100 leading-tight">
             Une cuisine savoureuse, un service de qualité !
           </p>
-          <p className="hidden sm:block text-[11px] text-amber-100/80 max-w-lg leading-relaxed">
-            Découvrez en direct les plats préparés aujourd’hui par notre Chef à Zagtouli (route de Bobo), ainsi que nos spécialités permanentes.
+          <p className="hidden md:block text-[11px] text-amber-100/80 max-w-lg leading-relaxed">
+            Découvrez en direct les plats préparés aujourd’hui par notre Chef à Zagtouli (route de Bobo).
           </p>
           <div className="pt-0.5 flex flex-wrap gap-1.5">
             <Link
               href="/menu"
-              className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-[10px] sm:text-xs shadow inline-flex items-center gap-1"
+              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-[9px] sm:text-xs shadow inline-flex items-center gap-1"
             >
-              <span>Découvrir le menu</span>
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <span>Menu</span>
+              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/menu-du-jour"
-              className="px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-[10px] sm:text-xs inline-flex items-center gap-1"
+              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-[9px] sm:text-xs inline-flex items-center gap-1"
             >
               <span>Menu du Jour ({availableDailyDishes.length})</span>
             </Link>
           </div>
         </div>
 
-        {/* Cadre repas du Menu du Jour (Taille encore plus diminuée et élégante) */}
-        <div className="md:col-span-5 flex flex-col items-center">
+        {/* Partie Droite: Cadre repas du Menu du Jour (5 colonnes côte à côte) */}
+        <div className="col-span-5 flex flex-col items-center justify-center z-10">
           {currentDish ? (
-            <div className="w-full max-w-[240px] sm:max-w-[280px] flex flex-col items-center gap-1">
+            <div className="w-full max-w-[210px] sm:max-w-[260px] flex flex-col items-center gap-1">
               <div
                 onClick={() => openDishSelector(currentDish)}
                 className="w-full h-24 sm:h-32 md:h-36 rounded-lg overflow-hidden border border-[#eab308] shadow-md relative cursor-pointer group bg-black/40"
@@ -114,32 +120,32 @@ export default function AccueilClientPage() {
                 />
 
                 {/* Badge Haut Gauche: Menu du Jour */}
-                <div className="absolute top-1.5 left-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] text-[9px] font-extrabold shadow">
+                <div className="absolute top-1 left-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] text-[8px] sm:text-[9px] font-extrabold shadow">
                   <ChefHatIcon className="w-2.5 h-2.5" />
-                  <span>Menu du Jour</span>
+                  <span className="hidden xs:inline">Jour</span>
                 </div>
 
                 {/* Badge Haut Droit: Prix CFA (non-sécable) */}
-                <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-[#801313]/95 text-white font-extrabold text-[10px] border border-amber-300 shadow whitespace-nowrap">
+                <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-[#801313]/95 text-white font-extrabold text-[9px] sm:text-[10px] border border-amber-300 shadow whitespace-nowrap">
                   {formatCFA(currentDish.price)}
                 </div>
 
                 {/* Overlay Bas: Nom du plat et bouton commander */}
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1.5 sm:p-2 flex items-end justify-between gap-1">
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-1 sm:p-1.5 flex items-end justify-between gap-1">
                   <div className="min-w-0">
-                    <p className="text-white font-extrabold text-[11px] sm:text-xs truncate drop-shadow leading-tight">
+                    <p className="text-white font-extrabold text-[10px] sm:text-xs truncate drop-shadow leading-tight">
                       {currentDish.name}
                     </p>
-                    <p className="text-[#facc15] font-bold text-[9px] flex items-center gap-0.5">
-                      <span>Cliquer pour commander</span>
-                      <svg className="w-2.5 h-2.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                    <p className="text-[#facc15] font-bold text-[8px] sm:text-[9px] flex items-center gap-0.5">
+                      <span>Commander</span>
+                      <svg className="w-2 h-2 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
                     </p>
                   </div>
                 </div>
 
-                {/* Flèches manuelles de défilement (gauche / droite) */}
+                {/* Flèches de défilement (gauche / droite) */}
                 {rotatingDishes.length > 1 && (
                   <>
                     <button
@@ -149,9 +155,9 @@ export default function AccueilClientPage() {
                         e.stopPropagation();
                         prevSlide();
                       }}
-                      className="absolute left-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition"
+                      className="absolute left-0.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition"
                     >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
@@ -162,9 +168,9 @@ export default function AccueilClientPage() {
                         e.stopPropagation();
                         nextSlide();
                       }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition"
+                      className="absolute right-0.5 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition"
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -175,7 +181,7 @@ export default function AccueilClientPage() {
               {/* Indicateurs / Puces de pagination des plats */}
               {rotatingDishes.length > 1 && (
                 <div className="flex items-center gap-1">
-                  {rotatingDishes.slice(0, 8).map((d, idx) => (
+                  {rotatingDishes.slice(0, 6).map((d, idx) => (
                     <button
                       key={d.id}
                       type="button"
@@ -183,7 +189,7 @@ export default function AccueilClientPage() {
                       onClick={() => setCurrentSlideIdx(idx)}
                       className={`h-1 rounded-full transition-all ${
                         (currentSlideIdx % rotatingDishes.length) === idx
-                          ? 'w-3 bg-[#facc15]'
+                          ? 'w-2.5 bg-[#facc15]'
                           : 'w-1 bg-white/40 hover:bg-white/70'
                       }`}
                     />
@@ -192,15 +198,9 @@ export default function AccueilClientPage() {
               )}
             </div>
           ) : (
-            <div className="w-48 h-24 rounded-lg overflow-hidden border border-[#eab308] shadow-md">
+            <div className="w-36 h-20 rounded-lg overflow-hidden border border-[#eab308] shadow-md">
               <div
                 className="w-full h-full dish-photo quad-tl"
-                style={{ backgroundImage: `url('/images/dishes_grid_1.jpg')` }}
-              />
-            </div>
-          )}
-        </div>
-      </section>
                 style={{ backgroundImage: `url('/images/dishes_grid_1.jpg')` }}
               />
             </div>

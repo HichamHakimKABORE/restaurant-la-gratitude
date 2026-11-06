@@ -22,17 +22,17 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7efe4] text-[#2b1810] relative overflow-x-hidden">
-      {/* FILIGRANE DU LOGO EN ARRIÈRE-PLAN (Bien visible et élégant) */}
+      {/* FILIGRANE DU LOGO EN ARRIÈRE-PLAN (Parfaitement visible) */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden select-none"
       >
         <div className="relative flex items-center justify-center">
-          <div className="w-[330px] h-[330px] sm:w-[520px] sm:h-[520px] lg:w-[680px] lg:h-[680px] rounded-full border-4 border-[#d99b26]/40 p-3 sm:p-5 shadow-2xl bg-gradient-to-b from-[#fffcf7]/40 to-[#f3dfc1]/40">
+          <div className="w-[300px] h-[300px] sm:w-[480px] sm:h-[480px] lg:w-[620px] lg:h-[620px] rounded-full border-4 border-[#d99b26]/60 p-2 shadow-2xl">
             <img
               src="/images/logo_gratitude.jpg"
               alt=""
-              className="w-full h-full rounded-full object-cover opacity-[0.32] saturate-125 contrast-110 mix-blend-multiply"
+              className="w-full h-full rounded-full object-cover opacity-55 saturate-125 contrast-125 mix-blend-multiply"
             />
           </div>
         </div>
