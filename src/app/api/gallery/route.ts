@@ -88,6 +88,44 @@ export async function POST(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json();
+    const { id, title, display_order } = body;
+    if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+
+    const sql = await ensureNeonSchema();
+    invalidateGalleryCache();
+
+    if (sql) {
+      await sql`
+        UPDATE restaurant_gallery
+        SET title = ${title || 'Photo Restaurant La Gratitude'},
+            display_order = COALESCE(${display_order !== undefined ? Number(display_order) : null}, display_order)
+        WHERE id = ${Number(id)}
+      `;
+      const rows = (await sql`
+        SELECT id, title, image_url, display_order, created_at
+        FROM restaurant_gallery
+        ORDER BY display_order ASC, id DESC
+      `) as GalleryImage[];
+      global._galleryCache = { data: rows, ts: Date.now() };
+      return NextResponse.json({ ok: true, source: 'neon', images: rows });
+    } else {
+      const mem = getMemoryGallery();
+      const img = mem.find(i => i.id === Number(id));
+      if (img) {
+        if (title !== undefined) img.title = title;
+        if (display_order !== undefined) img.display_order = Number(display_order);
+      }
+      return NextResponse.json({ ok: true, source: 'memory', images: mem });
+    }
+  } catch (error) {
+    console.error('PATCH /api/gallery error:', error);
+    return NextResponse.json({ error: 'Failed to update image' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

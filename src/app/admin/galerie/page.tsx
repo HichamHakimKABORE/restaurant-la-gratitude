@@ -2,9 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
-import { CameraIcon, CloseIcon } from '@/components/Icons';
+import { CameraIcon, CloseIcon, PencilIcon, CheckIcon } from '@/components/Icons';
 import { useCart } from '@/components/CartContext';
 import { INITIAL_GALLERY_IMAGES, type GalleryImage } from '@/lib/db';
+
+const SUGGESTIONS = [
+  'Restaurant La Gratitude — Zagtouli',
+  'Notre terrasse ombragée',
+  'Nos délicieuses grillades & brochettes',
+  'Ambiance conviviale & chaleureuse',
+  'Salle climatisée moderne',
+  'Aire de jeux pour enfants',
+  'Équipe du Restaurant La Gratitude',
+  'Monument des Martyrs & Fierté nationale'
+];
 
 function compressImageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -43,10 +54,15 @@ function compressImageToBase64(file: File): Promise<string> {
 
 export default function AdminGaleriePage() {
   const [images, setImages] = useState<GalleryImage[]>(INITIAL_GALLERY_IMAGES);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [previewData, setPreviewData] = useState<string>('');
+  
+  // State for editing image description
+  const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
+
   const { showToast } = useCart();
 
   const loadGallery = async () => {
@@ -121,10 +137,44 @@ export default function AdminGaleriePage() {
     }
   };
 
+  // Open modal to change description
+  const openEditModal = (img: GalleryImage) => {
+    setEditingImage(img);
+    setEditTitle(img.title || '');
+  };
+
+  // Save updated description
+  const handleUpdateTitle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingImage) return;
+
+    setIsUpdating(true);
+    try {
+      const res = await fetch('/api/gallery', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingImage.id,
+          title: editTitle.trim() || 'Restaurant La Gratitude — Zagtouli'
+        })
+      });
+      const data = await res.json();
+      if (data.images) {
+        setImages(data.images);
+      }
+      showToast('Description mise à jour avec succès !');
+      setEditingImage(null);
+    } catch {
+      showToast('Erreur lors de la mise à jour de la description.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   return (
     <AdminShell
       title="Galerie Photos du Restaurant"
-      subtitle="Ajoutez des photos de votre restaurant (terrasse, salle, grillades, clients, équipe) qui défileront en bas de la page client"
+      subtitle="Ajoutez des photos et cliquez sur n’importe quelle photo pour modifier sa description en direct"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Formulaire d'ajout rapide (depuis téléphone ou PC) */}
@@ -202,12 +252,17 @@ export default function AdminGaleriePage() {
 
         {/* Liste des photos actuellement publiées */}
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-base text-[#2b1810]">
-              Photos actuellement dans le défilement ({images.length})
-            </h3>
-            <span className="text-xs text-stone-500">
-              Défilement continu automatique sur le site client
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="font-extrabold text-base text-[#2b1810]">
+                Photos du défilement ({images.length})
+              </h3>
+              <p className="text-xs text-[#881313] font-bold">
+                Astuce : Cliquez sur une photo pour modifier sa description !
+              </p>
+            </div>
+            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-[#2b1810] font-extrabold border border-amber-300">
+              Défilement actif
             </span>
           </div>
 
@@ -220,7 +275,9 @@ export default function AdminGaleriePage() {
               {images.map(img => (
                 <div
                   key={img.id}
-                  className="group relative bg-white rounded-2xl overflow-hidden border border-stone-200 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                  onClick={() => openEditModal(img)}
+                  className="group relative bg-white rounded-2xl overflow-hidden border-2 border-stone-200 hover:border-[#881313] shadow-sm hover:shadow-lg transition flex flex-col justify-between cursor-pointer select-none"
+                  title="Cliquer pour changer la description"
                 >
                   <div className="h-32 sm:h-36 w-full overflow-hidden bg-stone-100 relative">
                     <img
@@ -228,18 +285,39 @@ export default function AdminGaleriePage() {
                       alt={img.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
+
+                    {/* Badge / Overlay au survol */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center gap-1 text-white p-2 text-center pointer-events-none">
+                      <span className="w-8 h-8 rounded-full bg-white text-[#881313] flex items-center justify-center shadow">
+                        <PencilIcon className="w-4 h-4" />
+                      </span>
+                      <span className="text-[11px] font-extrabold text-amber-200">
+                        Changer la description
+                      </span>
+                    </div>
+
+                    {/* Bouton supprimer */}
                     <button
-                      onClick={() => handleDelete(img.id, img.title)}
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white flex items-center justify-center shadow transition"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(img.id, img.title);
+                      }}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white flex items-center justify-center shadow transition z-10"
                       title="Supprimer cette photo"
                     >
                       <CloseIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                  <div className="p-2.5">
-                    <p className="font-bold text-xs text-[#2b1810] truncate">
+
+                  {/* Description au bas de la carte avec crayon */}
+                  <div className="p-2.5 bg-gradient-to-b from-white to-[#fffcf7] flex items-center justify-between gap-1.5 border-t border-stone-100">
+                    <p className="font-extrabold text-xs text-[#2b1810] truncate flex-1">
                       {img.title || 'Photo du Restaurant'}
                     </p>
+                    <span className="text-[#881313] shrink-0 opacity-70 group-hover:opacity-100 transition">
+                      <PencilIcon className="w-3.5 h-3.5" />
+                    </span>
                   </div>
                 </div>
               ))}
@@ -247,6 +325,100 @@ export default function AdminGaleriePage() {
           )}
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* MODAL POUR MODIFIER LA DESCRIPTION D'UNE PHOTO (AU CLIC SUR L'IMAGE) */}
+      {/* ========================================================================= */}
+      {editingImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in"
+          onClick={() => setEditingImage(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border-2 border-[#eab308] space-y-4 p-5 sm:p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Entête Modal */}
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <h3 className="font-extrabold text-base text-[#2b1810] flex items-center gap-2">
+                <PencilIcon className="w-5 h-5 text-[#881313]" />
+                <span>Modifier la description de la photo</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setEditingImage(null)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center font-bold"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Aperçu de la photo */}
+            <div className="h-44 sm:h-52 w-full rounded-xl overflow-hidden border-2 border-[#d99b26] shadow-inner bg-stone-100">
+              <img
+                src={editingImage.image_url}
+                alt={editingImage.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Formulaire de modification */}
+            <form onSubmit={handleUpdateTitle} className="space-y-4">
+              <div>
+                <label className="font-extrabold text-xs text-stone-700 block mb-1.5">
+                  Nouvelle description ou légende de la photo :
+                </label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  placeholder="Ex: Restaurant La Gratitude — Zagtouli"
+                  className="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#dec6a7] focus:border-[#881313] bg-[#fffcf7] font-bold text-sm text-[#2b1810] outline-none"
+                  autoFocus
+                />
+              </div>
+
+              {/* Suggestions rapides en 1 clic */}
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold text-stone-500 block">
+                  Suggestions rapides en 1 clic :
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {SUGGESTIONS.map(sug => (
+                    <button
+                      key={sug}
+                      type="button"
+                      onClick={() => setEditTitle(sug)}
+                      className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-[#2b1810] font-bold text-[11px] border border-amber-200 transition"
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => setEditingImage(null)}
+                  className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUpdating}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs shadow flex items-center gap-1.5 transition"
+                >
+                  <CheckIcon className="w-4 h-4" />
+                  <span>{isUpdating ? 'Enregistrement...' : 'Enregistrer la description'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }
