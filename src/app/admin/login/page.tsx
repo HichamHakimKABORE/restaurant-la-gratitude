@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -107,13 +106,10 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <div className="flex items-center justify-between text-xs pt-2 border-t border-stone-200">
+        <div className="text-center text-xs pt-2 border-t border-stone-200">
           <span className="text-stone-500">
             Accès réservé à la direction du restaurant
           </span>
-          <Link href="/" className="font-bold text-[#881313] hover:underline">
-            ← Retour au site client
-          </Link>
         </div>
       </div>
     </div>

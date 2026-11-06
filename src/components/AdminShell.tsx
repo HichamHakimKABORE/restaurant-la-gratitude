@@ -128,15 +128,6 @@ export default function AdminShell({
               </p>
             </div>
           </div>
-
-          <div className="flex items-center gap-2.5">
-            <Link
-              href="/"
-              className="px-3.5 py-1.5 rounded-xl bg-[#eab308] hover:bg-[#facc15] text-[#2b1810] font-extrabold text-xs shadow"
-            >
-              Voir l’Espace Client →
-            </Link>
-          </div>
         </div>
       </header>
 
