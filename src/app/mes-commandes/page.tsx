@@ -12,6 +12,17 @@ import {
   MapPinIcon
 } from '@/components/Icons';
 import type { Order } from '@/lib/db';
+import {
+  RESTAURANT_NAME,
+  RESTAURANT_PHONE_DISPLAY,
+  RESTAURANT_WHATSAPP
+} from '@/lib/constants';
+
+interface MyOrderRef {
+  token: string;
+  code: string;
+  created_at?: string;
+}
 
 const STATUS_STEPS: Array<{
   key: Order['status'];
@@ -37,46 +48,71 @@ const STATUS_STEPS: Array<{
 
 export default function MesCommandesPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [myOrderCodes, setMyOrderCodes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [restaurant, setRestaurant] = useState({
+    name: RESTAURANT_NAME,
+    phone: RESTAURANT_PHONE_DISPLAY,
+    whatsapp: RESTAURANT_WHATSAPP
+  });
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (refs: MyOrderRef[]) => {
+    const tokens = refs.map(ref => ref.token).filter(Boolean);
+    if (tokens.length === 0) {
+      setOrders([]);
+      return;
+    }
     try {
-      const res = await fetch('/api/orders', { cache: 'no-store' });
+      const res = await fetch(
+        `/api/orders/track?tokens=${encodeURIComponent(tokens.join(','))}`,
+        { cache: 'no-store' }
+      );
+      if (!res.ok) return;
       const data = await res.json();
-      if (Array.isArray(data.orders)) {
-        setOrders(data.orders);
+      if (Array.isArray(data.orders)) setOrders(data.orders);
+      if (data.restaurant) {
+        setRestaurant({
+          name: String(data.restaurant.name || RESTAURANT_NAME),
+          phone: String(data.restaurant.phone || RESTAURANT_PHONE_DISPLAY),
+          whatsapp: String(data.restaurant.whatsapp || RESTAURANT_WHATSAPP)
+        });
       }
     } catch {}
   };
 
   useEffect(() => {
+    let refs: MyOrderRef[] = [];
     try {
-      const savedCodes = localStorage.getItem('gratitude_my_orders');
-      if (savedCodes) {
-        setMyOrderCodes(JSON.parse(savedCodes));
+      const raw = localStorage.getItem('gratitude_my_orders_v2');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          refs = parsed.filter(
+            (entry: unknown): entry is MyOrderRef =>
+              !!entry &&
+              typeof entry === 'object' &&
+              typeof (entry as MyOrderRef).token === 'string' &&
+              typeof (entry as MyOrderRef).code === 'string'
+          );
+        }
       }
     } catch {}
 
-    fetchOrders();
-    const timer = setInterval(fetchOrders, 5000);
+    fetchOrders(refs);
+    const timer = setInterval(() => fetchOrders(refs), 5000);
     return () => clearInterval(timer);
   }, []);
 
-  // Show orders placed on this device OR matching the user's phone/order_code search
+  // Uniquement les commandes dont CE navigateur possède le jeton secret.
+  // Plus aucune liste globale n'est téléchargée : impossible de lire les
+  // commandes des autres clients.
   const displayedOrders = orders.filter(o => {
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase().trim();
-      return (
-        o.order_code.toLowerCase().includes(q) ||
-        o.customer_phone.toLowerCase().includes(q) ||
-        o.customer_name.toLowerCase().includes(q)
-      );
-    }
-    if (myOrderCodes.length > 0) {
-      return myOrderCodes.includes(o.order_code);
-    }
-    return false;
+    if (searchQuery.trim() === '') return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      o.order_code.toLowerCase().includes(q) ||
+      o.customer_name.toLowerCase().includes(q) ||
+      o.customer_phone.toLowerCase().includes(q)
+    );
   });
 
   const buildDetailedWhatsAppUrl = (order: Order) => {
@@ -111,7 +147,8 @@ export default function MesCommandesPage() {
       `*Note cuisine :* ${order.notes && order.notes.trim() !== '' ? order.notes : 'Aucune note particulière'}`
     ].join('\n');
 
-    return `https://wa.me/22660186525?text=${encodeURIComponent(msg)}`;
+    const whatsappNumber = (restaurant.whatsapp || RESTAURANT_WHATSAPP).replace(/\D/g, '');
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
   };
 
   return (
@@ -132,13 +169,13 @@ export default function MesCommandesPage() {
 
           <div className="w-full sm:w-80">
             <label className="block text-xs font-bold text-stone-600 mb-1">
-              Rechercher par N° de commande ou Téléphone :
+              Rechercher dans mes commandes :
             </label>
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Ex: #CMD-2026 ou votre numéro..."
+              placeholder="Ex: #CMD-2611-00042"
               className="w-full px-3.5 py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs sm:text-sm font-semibold"
             />
           </div>
@@ -154,7 +191,7 @@ export default function MesCommandesPage() {
                 Aucune commande trouvée sur cet appareil
               </h3>
               <p className="text-xs text-stone-600">
-                Dès que vous validez une commande, elle s’affiche automatiquement ici avec son suivi en direct. Vous pouvez aussi saisir votre numéro de téléphone ci-dessus.
+                Dès que vous validez une commande sur cet appareil, elle s’affiche automatiquement ici avec son suivi en direct. Si vous avez changé de téléphone ou vidé vos données de navigation, contactez le restaurant au {restaurant.phone}.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-3 pt-2">
@@ -220,7 +257,7 @@ export default function MesCommandesPage() {
                     {/* Live Progress Bar */}
                     {order.status === 'Annulée' ? (
                       <div className="p-3 rounded-xl bg-rose-100 border border-rose-300 text-rose-900 text-xs font-extrabold text-center">
-                        Cette commande a été annulée. Contactez le +226 60 18 65 25 pour toute question.
+                        Cette commande a été annulée. Contactez le {restaurant.phone} pour toute question.
                       </div>
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -348,7 +385,7 @@ export default function MesCommandesPage() {
                             <span>Renvoyer sur WhatsApp</span>
                           </a>
                           <a
-                            href="tel:+22660186525"
+                            href={`tel:${restaurant.phone.replace(/[^\d+]/g, '')}`}
                             className="py-2 px-3 rounded-xl bg-[#881313] text-white font-extrabold text-xs inline-flex items-center justify-center gap-1.5 shadow"
                           >
                             <PhoneIcon className="w-3.5 h-3.5 shrink-0" />

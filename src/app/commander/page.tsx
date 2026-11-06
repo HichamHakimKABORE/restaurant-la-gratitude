@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { WhatsAppIcon, CheckIcon, ClockIcon } from '@/components/Icons';
+import { RESTAURANT_PHONE_DISPLAY } from '@/lib/constants';
 
 export default function CommanderPage() {
   const router = useRouter();
@@ -19,11 +20,15 @@ export default function CommanderPage() {
 
   // Mode de paiement : Espèces | Orange Money | Moov Money
   const [paymentMethod, setPaymentMethod] = useState<'Espèces' | 'Orange Money' | 'Moov Money'>('Espèces');
+  const [paymentRef, setPaymentRef] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const idempotencyKeyRef = useRef<string | null>(null);
 
   const handleConfirmOrder = async () => {
+    if (submitting) return;
+
     if (cart.length === 0) {
       setFormError('Votre panier est vide. Ajoutez d’abord des plats.');
       showToast('Votre panier est vide.');
@@ -55,105 +60,125 @@ export default function CommanderPage() {
       return;
     }
 
+    if (paymentMethod !== 'Espèces' && paymentRef.trim().length < 4) {
+      setFormError(
+        `Indiquez la référence de votre transfert ${paymentMethod} (reçue par SMS après le dépôt).`
+      );
+      showToast('Référence de transaction obligatoire.');
+      return;
+    }
+
     setFormError('');
     setSubmitting(true);
-    let createdOrderCode = `#CMD-2026-${Math.floor(100 + Math.random() * 900)}`;
-    const nowStr = new Date().toLocaleString('fr-FR');
+
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `order-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    }
+
+    // Ouvre l'onglet AVANT l'appel réseau : après un await, les navigateurs
+    // bloquent window.open et la commande n'arriverait jamais sur WhatsApp.
+    const popup = window.open('', '_blank');
+    try {
+      if (popup) popup.opener = null;
+    } catch {}
 
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_name: customerName || 'Client Site Web',
-          customer_phone: customerPhone || '+226',
+          idempotency_key: idempotencyKeyRef.current,
+          customer_name: customerName,
+          customer_phone: customerPhone,
           order_type: orderType,
           order_detail: orderDetail,
           payment_method: paymentMethod,
+          payment_ref: paymentRef.trim() || undefined,
           items: cart.map(c => ({
             id: c.id,
-            name: c.name,
             selectedOption: c.selectedOption,
-            price: c.price,
             qty: c.qty
           })),
           total_cfa: totalPrice,
           notes
         })
       });
-      const data = await res.json();
-      if (data.order_code) {
-        createdOrderCode = data.order_code;
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.order_code) {
+        try {
+          popup?.close();
+        } catch {}
+        const message =
+          typeof data?.error === 'string'
+            ? data.error
+            : 'La commande n’a pas pu être enregistrée. Réessayez.';
+        setFormError(message);
+        showToast('Commande non enregistrée.');
+        return;
       }
 
-      try {
-        const existing = JSON.parse(
-          localStorage.getItem('gratitude_my_orders') || '[]'
-        );
-        const updated = [
-          createdOrderCode,
-          ...existing.filter((c: string) => c !== createdOrderCode)
-        ];
-        localStorage.setItem('gratitude_my_orders', JSON.stringify(updated));
-      } catch {}
+      const code = String(data.order_code);
+      const token = typeof data.track_token === 'string' ? data.track_token : '';
+      const whatsappUrl =
+        typeof data.whatsapp_url === 'string' ? data.whatsapp_url : '';
 
-      showToast(
-        `Commande ${createdOrderCode} enregistrée en cuisine et ouverte sur WhatsApp !`
+      // Le serveur renvoie un jeton secret : on ne stocke plus le code court
+      // (devinable) pour le suivi.
+      if (token) {
+        try {
+          const raw = localStorage.getItem('gratitude_my_orders_v2');
+          const existing = raw ? JSON.parse(raw) : [];
+          const next = [
+            { token, code, created_at: new Date().toISOString() },
+            ...(Array.isArray(existing)
+              ? existing.filter((entry: { token?: string }) => entry?.token !== token)
+              : [])
+          ].slice(0, 20);
+          localStorage.setItem('gratitude_my_orders_v2', JSON.stringify(next));
+        } catch {}
+      }
+
+      clearCart();
+      idempotencyKeyRef.current = null;
+      setPaymentRef('');
+      showToast(`Commande ${code} enregistrée en cuisine !`);
+
+      if (whatsappUrl) {
+        try {
+          if (popup) {
+            popup.location.href = whatsappUrl;
+          } else {
+            window.location.href = whatsappUrl;
+            return;
+          }
+        } catch {
+          window.location.href = whatsappUrl;
+          return;
+        }
+      } else {
+        try {
+          popup?.close();
+        } catch {}
+      }
+
+      router.push('/mes-commandes');
+    } catch (error) {
+      console.error(error);
+      try {
+        popup?.close();
+      } catch {}
+      setFormError(
+        'Connexion impossible. Vérifiez votre réseau puis réessayez : votre panier est conservé.'
       );
-    } catch (e) {
-      console.error(e);
+      showToast('Commande non enregistrée.');
     } finally {
       setSubmitting(false);
     }
-
-    const detailedLines = cart
-      .map(
-        (c, index) =>
-          `${index + 1}. *${c.name}*${
-            c.selectedOption ? ` (Option : ${c.selectedOption})` : ''
-          }\n   Qté : ${c.qty} x ${formatCFA(c.price)} = *${formatCFA(
-            c.price * c.qty
-          )}*`
-      )
-      .join('\n');
-
-    const detailLabel =
-      orderType === 'Sur place'
-        ? 'Numéro de Table'
-        : orderType === 'À emporter'
-        ? 'Heure de retrait souhaitée'
-        : 'Quartier / Adresse de livraison';
-
-    const rawMessage = [
-      `*NOUVELLE COMMANDE — RESTAURANT LA GRATITUDE*`,
-      `----------------------------------------`,
-      `*N° Commande :* ${createdOrderCode}`,
-      `*Date & Heure :* ${nowStr}`,
-      `*Nom du Client :* ${customerName || 'Client Site Web'}`,
-      `*Téléphone Client :* ${customerPhone || 'Non renseigné'}`,
-      `----------------------------------------`,
-      `*MODE DE RÉCEPTION :* ${orderType}`,
-      `*${detailLabel} :* ${orderDetail || 'Non précisé'}`,
-      `*MODE DE PAIEMENT :* ${paymentMethod}`,
-      `----------------------------------------`,
-      `*DÉTAIL COMPLET DES PLATS :*`,
-      detailedLines,
-      `----------------------------------------`,
-      `*MONTANT TOTAL À PAYER : ${formatCFA(totalPrice)}*`,
-      `*Instructions / Note cuisine :* ${
-        notes.trim() !== '' ? notes : 'Aucune instruction particulière'
-      }`,
-      `----------------------------------------`,
-      `Merci de confirmer la réception de ma commande.`
-    ].join('\n');
-
-    window.open(
-      `https://wa.me/22602809906?text=${encodeURIComponent(rawMessage)}`,
-      '_blank'
-    );
-
-    clearCart();
-    router.push('/mes-commandes');
   };
 
   return (
@@ -287,6 +312,7 @@ export default function CommanderPage() {
               <input
                 type="text"
                 required
+                maxLength={160}
                 value={orderDetail}
                 onChange={e => {
                   setOrderDetail(e.target.value);
@@ -316,6 +342,7 @@ export default function CommanderPage() {
                 <input
                   type="text"
                   required
+                  maxLength={80}
                   value={customerName}
                   onChange={e => {
                     setCustomerName(e.target.value);
@@ -336,6 +363,7 @@ export default function CommanderPage() {
                 <input
                   type="tel"
                   required
+                  maxLength={20}
                   value={customerPhone}
                   onChange={e => {
                     setCustomerPhone(e.target.value);
@@ -374,17 +402,36 @@ export default function CommanderPage() {
               </div>
 
               {(paymentMethod === 'Orange Money' || paymentMethod === 'Moov Money') && (
-                <div className="mt-2 p-3 rounded-xl bg-amber-100/90 border border-amber-400 text-xs space-y-1">
+                <div className="mt-2 p-3 rounded-xl bg-amber-100/90 border border-amber-400 text-xs space-y-2">
                   <strong className="block text-[#881313]">
                     Paiement {paymentMethod} :
                   </strong>
                   <p className="text-[#2b1810]">
                     Numéro dépôt / transfert :{' '}
-                    <strong className="underline">+226 02 80 99 06</strong> (Restaurant La Gratitude).
+                    <strong className="underline">{RESTAURANT_PHONE_DISPLAY}</strong> (Restaurant La Gratitude).
                   </p>
                   <p className="text-stone-600">
-                    Montant : <strong>{formatCFA(totalPrice)}</strong>
+                    Montant : <strong>{formatCFA(totalPrice)}</strong>. Effectuez le transfert, puis saisissez la référence reçue par SMS.
                   </p>
+                  <div>
+                    <label className="font-bold block mb-1 text-[#2b1810]">
+                      Référence de la transaction <span className="text-rose-600">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentRef}
+                      onChange={e => {
+                        setPaymentRef(e.target.value);
+                        if (formError) setFormError('');
+                      }}
+                      maxLength={60}
+                      placeholder="Ex: MP250506.1234.A56789"
+                      className="w-full px-3 py-2 rounded-lg border border-amber-400 bg-white font-semibold"
+                    />
+                    <p className="text-[11px] text-stone-500 mt-1">
+                      Cette référence permet au restaurant de vérifier votre paiement et évite les litiges.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -393,6 +440,7 @@ export default function CommanderPage() {
               <label className="font-bold block mb-1">Note pour la cuisine (optionnel)</label>
               <input
                 type="text"
+                maxLength={300}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Ex: Piment à part, bien chaud..."

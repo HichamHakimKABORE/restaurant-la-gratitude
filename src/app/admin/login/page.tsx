@@ -23,7 +23,9 @@ export default function AdminLoginPage() {
       const data = await res.json();
       if (res.ok && data.ok) {
         localStorage.removeItem('admin_logged_out');
-        router.push('/admin');
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get('next');
+        router.push(next && next.startsWith('/admin') ? next : '/admin');
       } else {
         setError(data.error || 'Identifiant ou mot de passe incorrect.');
       }

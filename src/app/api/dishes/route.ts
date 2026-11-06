@@ -5,6 +5,7 @@ import {
   invalidateDishesCache,
   Dish
 } from '@/lib/db';
+import { isAdminRequest } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const sql = await ensureNeonSchema();
@@ -109,6 +113,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const {
@@ -188,6 +195,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));

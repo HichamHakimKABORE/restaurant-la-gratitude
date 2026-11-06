@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS dishes (
   price INTEGER NOT NULL,              -- Prix en FCFA (ex: 1000, 1500, 5000, 6000)
   availability_mode VARCHAR(30) NOT NULL DEFAULT 'daily', -- 'daily' (Menu du jour à cocher) | 'always' (Toujours disponible) | 'order' (Sur commande)
   is_available_today BOOLEAN NOT NULL DEFAULT true,
+  stock_status VARCHAR(30) NOT NULL DEFAULT 'available', -- 'available' | 'low' | 'soldout'
+  options_json JSONB NOT NULL DEFAULT '[]'::jsonb,       -- Ex: ["Flambé", "Rabilé", "Sauté"]
   image_url VARCHAR(255) NOT NULL,
   image_quadrant VARCHAR(20) NOT NULL DEFAULT 'quad-tl',  -- 'quad-tl' | 'quad-tr' | 'quad-bl' | 'quad-br' | 'full'
   description TEXT,
@@ -24,12 +26,44 @@ CREATE TABLE IF NOT EXISTS orders (
   order_code VARCHAR(40) UNIQUE NOT NULL,
   customer_name VARCHAR(120) NOT NULL,
   customer_phone VARCHAR(60) NOT NULL,
+  order_type VARCHAR(40) NOT NULL DEFAULT 'Sur place',      -- 'Sur place' | 'À emporter' | 'Livraison'
+  order_detail VARCHAR(160) NOT NULL DEFAULT '',            -- Table / heure de retrait / adresse
+  payment_method VARCHAR(40) NOT NULL DEFAULT 'Espèces',    -- 'Espèces' | 'Orange Money' | 'Moov Money'
+  payment_ref VARCHAR(60),                                  -- Référence de transaction Mobile Money
   items_json JSONB NOT NULL,
   total_cfa INTEGER NOT NULL,
-  status VARCHAR(30) NOT NULL DEFAULT 'En cours', -- 'En cours' | 'Préparée' | 'Livrée' | 'Annulée'
+  status VARCHAR(30) NOT NULL DEFAULT 'En cours',           -- 'En cours' | 'Préparée' | 'Livrée' | 'Annulée'
+  status_version INTEGER NOT NULL DEFAULT 1,                -- Verrou optimiste multi-postes
   notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  idempotency_key TEXT,                                     -- Anti double-clic / retry
+  track_token TEXT,                                         -- Jeton secret de suivi client
+  needs_review BOOLEAN NOT NULL DEFAULT FALSE,
+  paid_at TIMESTAMP WITH TIME ZONE,
+  paid_by VARCHAR(120),
+  cancel_reason TEXT,
+  prepared_at TIMESTAMP WITH TIME ZONE,
+  delivered_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS orders_idempotency_key_uniq ON orders(idempotency_key);
+CREATE UNIQUE INDEX IF NOT EXISTS orders_track_token_uniq ON orders(track_token);
+CREATE UNIQUE INDEX IF NOT EXISTS orders_payment_ref_uniq ON orders(payment_method, payment_ref);
+CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
+
+CREATE TABLE IF NOT EXISTS order_events (
+  id SERIAL PRIMARY KEY,
+  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  from_status VARCHAR(30),
+  to_status VARCHAR(30),
+  action VARCHAR(30) NOT NULL DEFAULT 'status_change',
+  actor VARCHAR(120) NOT NULL DEFAULT 'system',
+  ip VARCHAR(80),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS order_events_order_id_idx ON order_events(order_id);
 
 CREATE TABLE IF NOT EXISTS restaurant_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,

@@ -6,10 +6,26 @@ import { usePathname, useRouter } from 'next/navigation';
 import { BellIcon, CloseIcon } from './Icons';
 import { useCart } from './CartContext';
 
+let sharedAudioContext: AudioContext | null = null;
+
+function getAudioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  const AudioCtx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext: typeof AudioContext })
+      .webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!sharedAudioContext) sharedAudioContext = new AudioCtx();
+  return sharedAudioContext;
+}
+
 function playOrderChime() {
   try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const ctx = new AudioCtx();
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
     const notes = [587.33, 880, 1174.66]; // D5, A5, D6 bell chime
     notes.forEach((freq, idx) => {
       const osc = ctx.createOscillator();
@@ -38,34 +54,50 @@ export default function AdminShell({
   const pathname = usePathname();
   const router = useRouter();
   const { showToast } = useCart();
-  const lastOrderCountRef = useRef<number | null>(null);
+  const lastMaxIdRef = useRef<number | null>(null);
   const [liveAlert, setLiveAlert] = useState<string | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
 
-  // Check authentication and poll orders for live sound notifications
+  // Vérifie la session + surveille l'ID max (et non le nombre de commandes :
+  // un COUNT peut stagner si la liste est limitée → plus aucune alerte).
   useEffect(() => {
-    fetch('/api/auth')
-      .then(r => r.json())
+    fetch('/api/auth', { cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : { authenticated: false }))
       .then(d => {
-        if (d.authenticated === false) {
-          router.push('/admin/login');
-        }
-      });
+        if (d.authenticated === false) router.push('/admin/login');
+      })
+      .catch(() => {});
 
     const checkOrders = async () => {
       try {
         const res = await fetch('/api/orders', { cache: 'no-store' });
-        const data = await res.json();
-        if (Array.isArray(data.orders)) {
-          const count = data.orders.length;
-          if (lastOrderCountRef.current !== null && count > lastOrderCountRef.current) {
-            const newest = data.orders[0];
-            playOrderChime();
-            const msg = `Nouvelle commande ${newest?.order_code || ''} de ${newest?.customer_name || 'Client'} (${newest?.total_cfa || ''} F) !`;
-            setLiveAlert(msg);
-            showToast(msg);
-          }
-          lastOrderCountRef.current = count;
+        if (res.status === 401) {
+          router.push('/admin/login');
+          return;
         }
+        const data = await res.json();
+        if (!Array.isArray(data.orders)) return;
+
+        const maxId = data.orders.reduce(
+          (max: number, order: { id?: number | string }) =>
+            Math.max(max, Number(order.id) || 0),
+          0
+        );
+
+        if (lastMaxIdRef.current !== null && maxId > lastMaxIdRef.current) {
+          const newest =
+            data.orders.find(
+              (order: { id?: number | string }) => Number(order.id) === maxId
+            ) || data.orders[0];
+          playOrderChime();
+          const msg = `Nouvelle commande ${newest?.order_code || ''} de ${
+            newest?.customer_name || 'Client'
+          } (${newest?.total_cfa || ''} F) !`;
+          setLiveAlert(msg);
+          showToast(msg);
+        }
+
+        lastMaxIdRef.current = maxId;
       } catch {}
     };
 
@@ -130,6 +162,22 @@ export default function AdminShell({
               </p>
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              playOrderChime();
+              setSoundEnabled(true);
+            }}
+            className={`px-3.5 py-2 rounded-xl text-xs font-extrabold border-2 shadow transition ${
+              soundEnabled
+                ? 'bg-emerald-600 border-emerald-300 text-white'
+                : 'bg-[#eab308] border-amber-200 text-[#2b1810] hover:brightness-110'
+            }`}
+            title="À activer une fois par session : les navigateurs bloquent le son sans interaction."
+          >
+            {soundEnabled ? '🔔 Alerte sonore active' : '🔔 Activer l’alerte sonore'}
+          </button>
         </div>
       </header>
 

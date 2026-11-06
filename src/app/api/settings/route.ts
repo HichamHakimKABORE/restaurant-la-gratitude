@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ensureNeonSchema, getMemorySettings } from '@/lib/db';
+import { isAdminRequest } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const {

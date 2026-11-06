@@ -26,29 +26,62 @@ export default function AdminCommandesPage() {
   }, []);
 
   const handleUpdateOrderStatus = async (
-    id: number,
+    order: Order,
     status: Order['status']
   ) => {
     const res = await fetch('/api/orders', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, status })
+      body: JSON.stringify({
+        id: order.id,
+        status,
+        version: order.status_version
+      })
     });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(data.error || 'Mise à jour impossible.');
+      if (res.status === 409) loadOrders();
+      return;
+    }
     if (data.orders) setOrders(data.orders);
     showToast(`Statut mis à jour : ${status}`);
   };
 
+  const handleMarkPaid = async (order: Order) => {
+    const res = await fetch('/api/orders', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: order.id, action: 'mark_paid' })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(data.error || 'Impossible de marquer la commande comme payée.');
+      return;
+    }
+    if (data.orders) setOrders(data.orders);
+    showToast(`Commande ${order.order_code} marquée payée`);
+  };
+
   const handleDeleteOrder = async (id: number, code: string) => {
+    const confirmed = window.confirm(
+      `Supprimer définitivement la commande ${code} ? Cette action est irréversible.`
+    );
+    if (!confirmed) return;
+
     const res = await fetch(`/api/orders?id=${id}`, { method: 'DELETE' });
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(data.error || 'Suppression impossible.');
+      return;
+    }
     if (data.orders) setOrders(data.orders);
     showToast(`Commande ${code} supprimée`);
   };
 
   const getClientWhatsAppUrl = (order: Order) => {
     const cleanPhone = order.customer_phone.replace(/[^0-9]/g, '');
-    const targetPhone = cleanPhone.length >= 8 ? cleanPhone : '22660186525';
+    const targetPhone = cleanPhone.length >= 8 ? cleanPhone : '22602809906';
     const msg = `Bonjour ${order.customer_name}, ici le *Restaurant La Gratitude*.\nVotre commande *${order.order_code}* (${formatCFA(
       order.total_cfa
     )}) a actuellement le statut : *${order.status}*.`;
@@ -141,6 +174,30 @@ export default function AdminCommandesPage() {
                   <span className="text-xs text-stone-600 font-semibold">
                     {order.payment_method || 'Espèces'}
                   </span>
+                  {order.payment_ref && (
+                    <div className="text-[11px] text-stone-500 break-all">
+                      Réf. : {order.payment_ref}
+                    </div>
+                  )}
+                  {order.paid_at ? (
+                    <div className="text-[11px] text-emerald-700 font-extrabold mt-0.5">
+                      ✓ Payée
+                    </div>
+                  ) : (
+                    <div className="mt-0.5 space-y-0.5">
+                      <div className="text-[11px] text-amber-700 font-extrabold">
+                        {order.payment_method === 'Espèces'
+                          ? 'À encaisser'
+                          : 'Paiement à vérifier'}
+                      </div>
+                      <button
+                        onClick={() => handleMarkPaid(order)}
+                        className="text-[11px] font-bold text-emerald-700 underline"
+                      >
+                        Marquer payée
+                      </button>
+                    </div>
+                  )}
                 </td>
                 <td className="p-3">
                   <span
@@ -162,7 +219,7 @@ export default function AdminCommandesPage() {
                     value={order.status}
                     onChange={e =>
                       handleUpdateOrderStatus(
-                        order.id,
+                        order,
                         e.target.value as Order['status']
                       )
                     }

@@ -6,10 +6,14 @@ import {
   invalidateMenuHistoryCache,
   type DailyMenuRecord
 } from '@/lib/db';
+import { isAdminRequest } from '@/lib/session';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  }
   try {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
@@ -89,6 +93,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+  }
   try {
     const body = await request.json();
     const todayStr = new Date().toISOString().slice(0, 10);

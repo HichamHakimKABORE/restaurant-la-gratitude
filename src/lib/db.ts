@@ -143,11 +143,21 @@ export interface Order {
   order_type: 'Sur place' | 'À emporter' | 'Livraison';
   order_detail: string;      // N° de table, heure de retrait, ou quartier de livraison
   payment_method: 'Espèces' | 'Orange Money' | 'Moov Money';
+  payment_ref?: string | null;
   items_json: OrderItem[];
   total_cfa: number;
   status: 'En cours' | 'Préparée' | 'Livrée' | 'Annulée';
   notes?: string;
+  /** Verrou optimiste : empêche deux postes admin de s'écraser mutuellement. */
+  status_version?: number;
+  paid_at?: string | null;
+  paid_by?: string | null;
+  needs_review?: boolean;
+  /** Jeton secret de suivi client (jamais exposé dans les listes admin). */
+  track_token?: string;
+  idempotency_key?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export const INITIAL_DISHES: Dish[] = [
@@ -332,6 +342,52 @@ export async function ensureNeonSchema() {
         )
       `;
 
+      // ---------------------------------------------------------------------
+      // MIGRATIONS ANTI-FRAUDE (idempotentes) — ajoutées en P0
+      // ---------------------------------------------------------------------
+      await sql`ALTER TABLE dishes ADD COLUMN IF NOT EXISTS stock_status VARCHAR(30) NOT NULL DEFAULT 'available'`;
+      await sql`ALTER TABLE dishes ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '[]'::jsonb`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS track_token TEXT`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_ref TEXT`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS status_version INTEGER NOT NULL DEFAULT 1`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS prepared_at TIMESTAMP WITH TIME ZONE`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivered_at TIMESTAMP WITH TIME ZONE`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMP WITH TIME ZONE`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_by VARCHAR(120)`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_reason TEXT`;
+      await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS needs_review BOOLEAN NOT NULL DEFAULT FALSE`;
+
+      // Les anciennes commandes n'avaient pas de jeton de suivi : on en génère un.
+      await sql`
+        UPDATE orders
+        SET track_token = md5(id::text || created_at::text || random()::text)
+        WHERE track_token IS NULL
+      `;
+
+      // Unicité : idempotence, suivi client, preuve de paiement.
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS orders_idempotency_key_uniq ON orders(idempotency_key)`;
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS orders_track_token_uniq ON orders(track_token)`;
+      await sql`CREATE UNIQUE INDEX IF NOT EXISTS orders_payment_ref_uniq ON orders(payment_method, payment_ref)`;
+      await sql`CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders(created_at DESC)`;
+      await sql`CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status)`;
+
+      // Journal d'audit : qui a changé quel statut, quand, depuis quelle IP.
+      await sql`
+        CREATE TABLE IF NOT EXISTS order_events (
+          id SERIAL PRIMARY KEY,
+          order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+          from_status VARCHAR(30),
+          to_status VARCHAR(30),
+          action VARCHAR(30) NOT NULL DEFAULT 'status_change',
+          actor VARCHAR(120) NOT NULL DEFAULT 'system',
+          ip VARCHAR(80),
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS order_events_order_id_idx ON order_events(order_id)`;
+
       await sql`
         CREATE TABLE IF NOT EXISTS restaurant_settings (
           id INTEGER PRIMARY KEY DEFAULT 1,
@@ -396,12 +452,6 @@ export async function ensureNeonSchema() {
         }
       }
 
-      // Remove old demo orders if present
-      await sql`
-        DELETE FROM orders
-        WHERE order_code IN ('#CMD-2026-061', '#CMD-2026-060', '#CMD-2026-059')
-      `;
-
       if (count === 0) {
         for (const d of INITIAL_DISHES) {
           await sql`
@@ -426,10 +476,18 @@ export async function ensureNeonSchema() {
         `;
       }
 
+      // Correction unique de l'ancien numéro incohérent (60 18 65 25).
+      // Ne touche jamais à un numéro modifié volontairement depuis l'admin.
       await sql`
         UPDATE restaurant_settings
         SET phone = '+226 02 80 99 06', whatsapp = '22602809906'
         WHERE id = 1
+          AND (
+            phone IS NULL
+            OR phone LIKE '%60%18%'
+            OR whatsapp IS NULL
+            OR whatsapp LIKE '%6018%'
+          )
       `;
 
       global._gratitudeSchemaReady = true;
