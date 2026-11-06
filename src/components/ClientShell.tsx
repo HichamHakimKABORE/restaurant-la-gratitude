@@ -80,11 +80,11 @@ export default function ClientShell({ children }: { children: React.ReactNode })
                 </span>
               </div>
               <div className="flex items-center gap-1.5 font-extrabold text-[#2b1810]">
-                <a href="tel:+22660186525" className="hover:text-[#991b1b] text-[11px] sm:text-xs">
-                  +226 60 18 65 25
+                <a href="tel:+22602809906" className="hover:text-[#991b1b] text-[11px] sm:text-xs">
+                  +226 02 80 99 06
                 </a>
                 <a
-                  href="https://wa.me/22660186525"
+                  href="https://wa.me/22602809906"
                   target="_blank"
                   rel="noreferrer"
                   className="w-5 h-5 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition"
@@ -249,7 +249,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         </Link>
 
         <a
-          href="tel:+22660186525"
+          href="tel:+22602809906"
           className="flex flex-col items-center justify-center py-1 rounded-lg bg-[#16a34a] text-white text-[11px] font-extrabold"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">

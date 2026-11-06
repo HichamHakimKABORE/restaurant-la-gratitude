@@ -261,11 +261,11 @@ export default function ContactPage() {
                   <span>Téléphone &amp; WhatsApp :</span>
                 </strong>
                 <span className="font-extrabold text-base text-[#2b1810]">
-                  +226 60 18 65 25
+                  +226 02 80 99 06
                 </span>
               </div>
               <a
-                href="tel:+22660186525"
+                href="tel:+22602809906"
                 className="px-4 py-2 rounded-xl bg-[#881313] text-white font-bold text-xs shadow inline-flex items-center gap-1.5"
               >
                 <PhoneIcon className="w-3.5 h-3.5" />

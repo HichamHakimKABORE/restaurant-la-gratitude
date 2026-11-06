@@ -28,7 +28,7 @@ export default function AdminParametresPage() {
           setRestSlogan(
             data.settings.slogan || 'Une cuisine savoureuse, un service de qualité !'
           );
-          setRestPhone(data.settings.phone || '+226 60 18 65 25');
+          setRestPhone(data.settings.phone || '+226 02 80 99 06');
           setRestAddress(
             data.settings.address ||
               'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso'

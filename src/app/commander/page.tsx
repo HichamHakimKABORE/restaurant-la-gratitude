@@ -148,7 +148,7 @@ export default function CommanderPage() {
     ].join('\n');
 
     window.open(
-      `https://wa.me/22660186525?text=${encodeURIComponent(rawMessage)}`,
+      `https://wa.me/22602809906?text=${encodeURIComponent(rawMessage)}`,
       '_blank'
     );
 
@@ -380,7 +380,7 @@ export default function CommanderPage() {
                   </strong>
                   <p className="text-[#2b1810]">
                     Numéro dépôt / transfert :{' '}
-                    <strong className="underline">+226 60 18 65 25</strong> (Restaurant La Gratitude).
+                    <strong className="underline">+226 02 80 99 06</strong> (Restaurant La Gratitude).
                   </p>
                   <p className="text-stone-600">
                     Montant : <strong>{formatCFA(totalPrice)}</strong>

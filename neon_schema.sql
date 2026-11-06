@@ -36,8 +36,8 @@ CREATE TABLE IF NOT EXISTS restaurant_settings (
   restaurant_name VARCHAR(150) NOT NULL DEFAULT 'Restaurant La Gratitude',
   slogan VARCHAR(255) NOT NULL DEFAULT 'Une cuisine savoureuse, un service de qualité !',
   sub_slogan VARCHAR(255) NOT NULL DEFAULT 'Bon goût, bonne humeur !',
-  phone VARCHAR(60) NOT NULL DEFAULT '+226 60 18 65 25',
-  whatsapp VARCHAR(60) NOT NULL DEFAULT '22660186525',
+  phone VARCHAR(60) NOT NULL DEFAULT '+226 02 80 99 06',
+  whatsapp VARCHAR(60) NOT NULL DEFAULT '22602809906',
   address VARCHAR(255) NOT NULL DEFAULT 'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso',
   opening_hours VARCHAR(150) NOT NULL DEFAULT 'Lundi - Dimanche de 07h00 à 23h00',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -67,8 +67,8 @@ VALUES (
   'Restaurant La Gratitude',
   'Une cuisine savoureuse, un service de qualité !',
   'Bon goût, bonne humeur !',
-  '+226 60 18 65 25',
-  '22660186525',
+  '+226 02 80 99 06',
+  '22602809906',
   'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso',
   'Lundi - Dimanche de 07h00 à 23h00'
 )

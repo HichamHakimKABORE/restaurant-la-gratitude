@@ -35,11 +35,11 @@ export default function MenuDuJourPage() {
           </div>
 
           <a
-            href="tel:+22660186525"
+            href="tel:+22602809906"
             className="px-4 py-2.5 rounded-xl bg-[#eab308] text-[#2b1810] font-extrabold text-xs sm:text-sm shadow inline-flex items-center gap-2"
           >
             <PhoneIcon className="w-4 h-4 shrink-0" />
-            <span>Appeler pour vérifier (+226 60 18 65 25)</span>
+            <span>Appeler pour vérifier (+226 02 80 99 06)</span>
           </a>
         </div>
 

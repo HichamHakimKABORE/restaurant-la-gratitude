@@ -121,8 +121,8 @@ export const INITIAL_SETTINGS: RestaurantSettings = {
   restaurant_name: 'Restaurant La Gratitude',
   slogan: 'Une cuisine savoureuse, un service de qualité !',
   sub_slogan: 'Bon goût, bonne humeur !',
-  phone: '+226 60 18 65 25',
-  whatsapp: '22660186525',
+  phone: '+226 02 80 99 06',
+  whatsapp: '22602809906',
   address: 'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso',
   opening_hours: 'Lundi - Dimanche de 07h00 à 23h00'
 };
@@ -334,8 +334,8 @@ export async function ensureNeonSchema() {
           restaurant_name VARCHAR(150) NOT NULL DEFAULT 'Restaurant La Gratitude',
           slogan VARCHAR(255) NOT NULL DEFAULT 'Une cuisine savoureuse, un service de qualité !',
           sub_slogan VARCHAR(255) NOT NULL DEFAULT 'Bon goût, bonne humeur !',
-          phone VARCHAR(60) NOT NULL DEFAULT '+226 60 18 65 25',
-          whatsapp VARCHAR(60) NOT NULL DEFAULT '22660186525',
+          phone VARCHAR(60) NOT NULL DEFAULT '+226 02 80 99 06',
+          whatsapp VARCHAR(60) NOT NULL DEFAULT '22602809906',
           address VARCHAR(255) NOT NULL DEFAULT 'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso',
           opening_hours VARCHAR(150) NOT NULL DEFAULT 'Lundi - Dimanche de 07h00 à 23h00',
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -421,6 +421,12 @@ export async function ensureNeonSchema() {
           ON CONFLICT (id) DO NOTHING
         `;
       }
+
+      await sql`
+        UPDATE restaurant_settings
+        SET phone = '+226 02 80 99 06', whatsapp = '22602809906'
+        WHERE id = 1
+      `;
 
       global._gratitudeSchemaReady = true;
     } catch (err) {

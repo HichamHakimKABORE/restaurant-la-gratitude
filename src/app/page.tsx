@@ -409,7 +409,7 @@ export default function AccueilClientPage() {
               <p className="text-xs font-mono text-stone-500 pl-5">12°19&apos;57.62&quot;N 1°37&apos;52.36&quot;O</p>
               <p className="font-extrabold text-[#2b1810] flex items-center gap-1.5">
                 <PhoneIcon className="w-4 h-4 text-[#881313] shrink-0" />
-                <span>+226 60 18 65 25</span>
+                <span>+226 02 80 99 06</span>
               </p>
             </div>
             <Link
@@ -453,7 +453,7 @@ export default function AccueilClientPage() {
         </Link>
 
         <a
-          href="tel:+22660186525"
+          href="tel:+22602809906"
           className="bg-gradient-to-b from-[#8b261d] to-[#681811] hover:brightness-110 text-white rounded-2xl p-4 flex flex-col items-center text-center justify-center gap-2 shadow-md transition"
         >
           <span className="w-12 h-12 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center">

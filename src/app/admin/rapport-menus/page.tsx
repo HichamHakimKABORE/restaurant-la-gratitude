@@ -319,7 +319,7 @@ export default function AdminRapportMenusPage() {
                 Rapport Officiel des Menus du Jour
               </h2>
               <p className="text-xs text-stone-600">
-                Zagtouli, route de Bobo • Ouagadougou, Burkina Faso • Tél : +226 60 18 65 25
+                Zagtouli, route de Bobo • Ouagadougou, Burkina Faso • Tél : +226 02 80 99 06
               </p>
             </div>
           </div>
