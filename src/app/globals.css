@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Kaushan+Script&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: #f7efe4;
+  color: #2b1810;
+}
+
+.font-script {
+  font-family: 'Kaushan Script', Georgia, serif;
+}
+
+/* High-definition quadrant photo cropping system */
+.dish-photo {
+  background-size: 204% 204%;
+  background-repeat: no-repeat;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.group:hover .dish-photo {
+  transform: scale(1.07);
+}
+
+.quad-tl { background-position: 0% 0%; }
+.quad-tr { background-position: 100% 0%; }
+.quad-bl { background-position: 0% 100%; }
+.quad-br { background-position: 100% 100%; }
+.quad-full {
+  background-size: cover;
+  background-position: center;
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f5ebe0; }
+::-webkit-scrollbar-thumb { background: #881313; border-radius: 9999px; }
