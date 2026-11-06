@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { CheckIcon, CloseIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon } from '@/components/Icons';
+import { CheckIcon, CloseIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
 import type { Dish } from '@/lib/db';
 
 const CATEGORY_TABS = [
@@ -20,11 +20,38 @@ const CATEGORY_TABS = [
 
 export default function AccueilClientPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
+  const [currentSlideIdx, setCurrentSlideIdx] = useState<number>(0);
   const { dishes, cart, openDishSelector, totalItems, totalPrice } = useCart();
 
   const availableDailyDishes = dishes.filter(
     d => d.availability_mode === 'daily' && d.is_available_today
   );
+
+  const rotatingDishes = availableDailyDishes.length > 0
+    ? availableDailyDishes
+    : dishes.filter(d => d.is_available_today);
+
+  useEffect(() => {
+    if (rotatingDishes.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlideIdx(prev => (prev + 1) % rotatingDishes.length);
+    }, 3200);
+    return () => clearInterval(timer);
+  }, [rotatingDishes.length]);
+
+  const nextSlide = () => {
+    if (rotatingDishes.length > 0) {
+      setCurrentSlideIdx(prev => (prev + 1) % rotatingDishes.length);
+    }
+  };
+
+  const prevSlide = () => {
+    if (rotatingDishes.length > 0) {
+      setCurrentSlideIdx(prev => (prev - 1 + rotatingDishes.length) % rotatingDishes.length);
+    }
+  };
+
+  const currentDish = rotatingDishes.length > 0 ? rotatingDishes[currentSlideIdx % rotatingDishes.length] : null;
 
   const visibleGridDishes = dishes.filter(d => {
     if (!d.is_available_today) return false;
@@ -34,47 +61,142 @@ export default function AccueilClientPage() {
 
   return (
     <ClientShell>
-      {/* Hero Banner */}
-      <section className="rounded-2xl overflow-hidden border-2 border-[#801313] shadow-xl bg-gradient-to-r from-[#2a1208] via-[#43190b] to-[#2a1208] text-white p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-        <div className="md:col-span-7 space-y-3">
-          <span className="font-script text-2xl sm:text-3xl text-amber-200 block">
+      {/* Hero Banner (Taille réduite et défilement automatique des repas du Menu du Jour) */}
+      <section className="rounded-2xl overflow-hidden border-2 border-[#801313] shadow-lg bg-gradient-to-r from-[#2a1208] via-[#43190b] to-[#2a1208] text-white p-3.5 sm:p-5 md:p-6 grid grid-cols-1 md:grid-cols-12 gap-3.5 sm:gap-6 items-center">
+        <div className="md:col-span-7 space-y-1.5 sm:space-y-2.5">
+          <span className="font-script text-base sm:text-xl text-amber-200 block">
             Bienvenue au
           </span>
-          <h2 className="font-script text-4xl sm:text-5xl text-[#facc15] drop-shadow">
+          <h2 className="font-script text-2xl sm:text-3xl md:text-4xl text-[#facc15] drop-shadow leading-tight">
             Restaurant La Gratitude
           </h2>
-          <p className="font-script text-lg sm:text-2xl text-amber-50">
+          <p className="font-script text-xs sm:text-sm md:text-base text-amber-100">
             Une cuisine savoureuse, un service de qualité !
           </p>
-          <p className="text-xs sm:text-sm text-amber-100/85 max-w-xl leading-relaxed">
+          <p className="text-[11px] sm:text-xs text-amber-100/80 max-w-lg leading-relaxed line-clamp-2 sm:line-clamp-none">
             Découvrez en direct les plats préparés aujourd’hui par notre Chef à Zagtouli (route de Bobo), ainsi que nos spécialités permanentes.
           </p>
-          <div className="pt-2 flex flex-wrap gap-3">
+          <div className="pt-1 flex flex-wrap gap-2">
             <Link
               href="/menu"
-              className="px-5 py-2.5 rounded-full bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center gap-2"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-[11px] sm:text-xs shadow-md inline-flex items-center gap-1.5"
             >
               <span>Découvrir notre menu complet</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>
             <Link
               href="/menu-du-jour"
-              className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-xs sm:text-sm inline-flex items-center gap-2"
+              className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-[11px] sm:text-xs inline-flex items-center gap-1.5"
             >
               <span>Voir le Menu du Jour ({availableDailyDishes.length})</span>
             </Link>
           </div>
         </div>
 
-        <div className="md:col-span-5 flex justify-center">
-          <div className="w-64 h-48 sm:w-80 sm:h-56 rounded-2xl overflow-hidden border-4 border-[#eab308] shadow-2xl">
-            <div
-              className="w-full h-full dish-photo quad-tl"
-              style={{ backgroundImage: `url('/images/dishes_grid_1.jpg')` }}
-            />
-          </div>
+        {/* Cadre repas du Menu du Jour avec défilement automatique */}
+        <div className="md:col-span-5 flex flex-col items-center">
+          {currentDish ? (
+            <div className="w-full max-w-[290px] sm:max-w-[320px] flex flex-col items-center gap-1.5">
+              <div
+                onClick={() => openDishSelector(currentDish)}
+                className="w-full h-36 sm:h-44 md:h-48 rounded-xl overflow-hidden border-2 border-[#eab308] shadow-xl relative cursor-pointer group bg-black/40"
+                title="Cliquer pour voir et commander ce plat"
+              >
+                {/* Photo du plat actif */}
+                <div
+                  key={currentDish.id}
+                  className={`w-full h-full dish-photo transition-all duration-700 group-hover:scale-105 ${currentDish.image_quadrant}`}
+                  style={{ backgroundImage: `url('${currentDish.image_url}')` }}
+                />
+
+                {/* Badge Haut Gauche: Menu du Jour */}
+                <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] text-[10px] font-extrabold shadow">
+                  <ChefHatIcon className="w-3 h-3" />
+                  <span>Menu du Jour</span>
+                </div>
+
+                {/* Badge Haut Droit: Prix CFA (non-sécable) */}
+                <div className="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-[#801313]/95 text-white font-extrabold text-[11px] border border-amber-300 shadow whitespace-nowrap">
+                  {formatCFA(currentDish.price)}
+                </div>
+
+                {/* Overlay Bas: Nom du plat et bouton commander */}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-2 sm:p-2.5 flex items-end justify-between gap-1">
+                  <div className="min-w-0">
+                    <p className="text-white font-extrabold text-xs sm:text-sm truncate drop-shadow">
+                      {currentDish.name}
+                    </p>
+                    <p className="text-[#facc15] font-bold text-[10px] flex items-center gap-1">
+                      <span>Cliquer pour commander</span>
+                      <svg className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Flèches manuelles de défilement (gauche / droite) */}
+                {rotatingDishes.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Plat précédent"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        prevSlide();
+                      }}
+                      className="absolute left-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Plat suivant"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        nextSlide();
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center transition"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Indicateurs / Puces de pagination des plats */}
+              {rotatingDishes.length > 1 && (
+                <div className="flex items-center gap-1 pt-0.5">
+                  {rotatingDishes.slice(0, 8).map((d, idx) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      aria-label={`Aller au plat ${idx + 1}`}
+                      onClick={() => setCurrentSlideIdx(idx)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        (currentSlideIdx % rotatingDishes.length) === idx
+                          ? 'w-4 bg-[#facc15]'
+                          : 'w-1.5 bg-white/40 hover:bg-white/70'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="w-64 h-36 rounded-xl overflow-hidden border-2 border-[#eab308] shadow-lg">
+              <div
+                className="w-full h-full dish-photo quad-tl"
+                style={{ backgroundImage: `url('/images/dishes_grid_1.jpg')` }}
+              />
+            </div>
+          )}
         </div>
       </section>
 
