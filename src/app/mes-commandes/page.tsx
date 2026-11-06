@@ -288,7 +288,7 @@ export default function MesCommandesPage() {
                                     </span>
                                   )}
                                 </div>
-                                <span className="font-extrabold text-[#881313]">
+                                <span className="font-extrabold text-[#881313] whitespace-nowrap">
                                   {formatCFA(it.price * it.qty)}
                                 </span>
                               </div>
@@ -331,7 +331,7 @@ export default function MesCommandesPage() {
                             <span className="font-extrabold text-[#2b1810]">
                               Total :
                             </span>
-                            <strong className="font-extrabold text-base text-[#881313]">
+                            <strong className="font-extrabold text-base text-[#881313] whitespace-nowrap">
                               {formatCFA(order.total_cfa)}
                             </strong>
                           </div>

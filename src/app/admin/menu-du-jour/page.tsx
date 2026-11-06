@@ -86,7 +86,7 @@ export default function AdminMenuDuJourPage() {
                 </div>
                 <div className="min-w-0">
                   <span className="block text-sm truncate">{dish.name}</span>
-                  <span className="text-xs text-[#881313] font-extrabold">
+                  <span className="text-xs text-[#881313] font-extrabold whitespace-nowrap">
                     {formatCFA(dish.price)}
                   </span>
                 </div>

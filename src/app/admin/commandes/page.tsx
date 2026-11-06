@@ -135,7 +135,7 @@ export default function AdminCommandesPage() {
                   </div>
                 </td>
                 <td className="p-3">
-                  <div className="font-extrabold text-[#881313]">
+                  <div className="font-extrabold text-[#881313] whitespace-nowrap">
                     {formatCFA(order.total_cfa)}
                   </div>
                   <span className="text-xs text-stone-600 font-semibold">

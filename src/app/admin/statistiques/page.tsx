@@ -61,7 +61,7 @@ export default function AdminStatistiquesPage() {
               <span className="text-xs font-bold text-stone-500 block">
                 Chiffre d’affaires (Hors annulées)
               </span>
-              <strong className="text-2xl font-extrabold text-emerald-700">
+              <strong className="text-2xl font-extrabold text-emerald-700 whitespace-nowrap">
                 {formatCFA(totalRevenue)}
               </strong>
               <span className="block text-[11px] text-stone-500 mt-1">
@@ -85,10 +85,10 @@ export default function AdminStatistiquesPage() {
               <span className="text-xs font-bold text-stone-500 block">
                 Panier Moyen
               </span>
-              <strong className="text-2xl font-extrabold text-[#2b1810]">
+              <strong className="text-2xl font-extrabold text-[#2b1810] whitespace-nowrap">
                 {validOrders.length > 0
                   ? formatCFA(Math.round(totalRevenue / validOrders.length))
-                  : '0 F'}
+                  : '0\u00A0F'}
               </strong>
               <span className="block text-[11px] text-stone-500 mt-1">
                 Moyenne par commande

@@ -66,7 +66,7 @@ export default function AdminDashboardOverviewPage() {
             CFA
           </div>
           <div>
-            <span className="font-extrabold text-xl text-amber-800 block">
+            <span className="font-extrabold text-xl text-amber-800 block whitespace-nowrap">
               {formatCFA(validRevenue)}
             </span>
             <span className="text-xs font-semibold text-stone-600">

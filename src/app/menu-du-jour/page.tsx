@@ -76,7 +76,7 @@ export default function MenuDuJourPage() {
                       {dish.description}
                     </p>
                     <div className="flex items-center justify-between pt-1">
-                      <span className="px-2.5 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs">
+                      <span className="px-2.5 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs whitespace-nowrap">
                         {formatCFA(dish.price)}
                       </span>
                       <span className="text-xs font-extrabold text-[#881313] underline">

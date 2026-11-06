@@ -180,7 +180,7 @@ export default function CommanderPage() {
                           Option : {item.selectedOption}
                         </span>
                       )}
-                      <span className="block text-xs text-[#881313] font-bold mt-0.5">
+                      <span className="block text-xs text-[#881313] font-bold mt-0.5 whitespace-nowrap">
                         {formatCFA(item.price)} l’unité
                       </span>
                     </div>
@@ -202,7 +202,7 @@ export default function CommanderPage() {
                         +
                       </button>
                     </div>
-                    <span className="font-extrabold text-sm text-[#2b1810] w-20 text-right">
+                    <span className="font-extrabold text-sm text-[#2b1810] min-w-16 text-right whitespace-nowrap">
                       {formatCFA(item.price * item.qty)}
                     </span>
                   </div>
@@ -347,7 +347,7 @@ export default function CommanderPage() {
 
           <div className="flex justify-between items-center pt-3 border-t border-[#dec6a7] font-extrabold text-base">
             <span>Total à payer :</span>
-            <span className="text-xl text-[#881313]">{formatCFA(totalPrice)}</span>
+            <span className="text-xl text-[#881313] whitespace-nowrap">{formatCFA(totalPrice)}</span>
           </div>
 
           <div className="space-y-2.5 pt-1">

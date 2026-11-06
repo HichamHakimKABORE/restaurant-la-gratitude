@@ -41,7 +41,8 @@ const CartContext = createContext<CartContextType>({
 });
 
 export function formatCFA(price: number) {
-  return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' F';
+  if (price === undefined || price === null || isNaN(price)) return '0\u00A0F';
+  return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0') + '\u00A0F';
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {

@@ -278,7 +278,7 @@ export default function AdminPlatsPage() {
                   )}
                 </td>
                 <td className="p-3 text-stone-600">{dish.category}</td>
-                <td className="p-3 font-extrabold text-[#881313]">
+                <td className="p-3 font-extrabold text-[#881313] whitespace-nowrap">
                   {formatCFA(dish.price)}
                 </td>
                 <td className="p-3">

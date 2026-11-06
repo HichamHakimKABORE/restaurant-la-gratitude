@@ -131,7 +131,7 @@ export default function NotreMenuPage() {
                   </div>
 
                   <div className="p-3.5 pt-2 border-t border-stone-100 flex items-center justify-between">
-                    <span className="font-extrabold text-sm sm:text-base text-[#991b1b]">
+                    <span className="font-extrabold text-sm sm:text-base text-[#991b1b] whitespace-nowrap">
                       {formatCFA(dish.price)}
                     </span>
                     {isSoldout ? (

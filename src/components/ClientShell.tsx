@@ -156,7 +156,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
               {totalItems > 0 && (
                 <Link
                   href="/commander"
-                  className="px-3 py-1.5 rounded-lg bg-[#16a34a] text-white font-extrabold text-xs shadow"
+                  className="px-3 py-1.5 rounded-lg bg-[#16a34a] text-white font-extrabold text-xs shadow whitespace-nowrap shrink-0"
                 >
                   Panier : {formatCFA(totalPrice)}
                 </Link>

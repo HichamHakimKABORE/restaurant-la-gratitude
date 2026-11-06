@@ -115,7 +115,7 @@ export default function AccueilClientPage() {
                     )}
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs shrink-0">
+                <span className="px-2 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs shrink-0 whitespace-nowrap">
                   {formatCFA(dish.price)}
                 </span>
               </div>
@@ -196,7 +196,7 @@ export default function AccueilClientPage() {
                     <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
                       {dish.name}
                     </h4>
-                    <div className="font-extrabold text-xs sm:text-sm text-[#991b1b]">
+                    <div className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
                       {formatCFA(dish.price)}
                     </div>
                     <div className="pt-1 flex items-center justify-center">
@@ -239,7 +239,7 @@ export default function AccueilClientPage() {
             </div>
 
             {cart.length > 0 && (
-              <div className="text-xs text-amber-100 font-bold text-center">
+              <div className="text-xs text-amber-100 font-bold text-center whitespace-nowrap">
                 Total : {formatCFA(totalPrice)}
               </div>
             )}
