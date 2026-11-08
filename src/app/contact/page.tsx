@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import ClientShell from '@/components/ClientShell';
 import { useCart } from '@/components/CartContext';
-import { CarIcon, WalkIcon, MapPinIcon, CompassIcon, PhoneIcon, ClockIcon } from '@/components/Icons';
+import { CarIcon, WalkIcon, MapPinIcon, CompassIcon, PhoneIcon, ClockIcon, WhatsAppIcon } from '@/components/Icons';
 
 // Exact GPS Coordinates of Restaurant La Gratitude (12°19'57.62"N, 1°37'52.36"O)
 const RESTAURANT_LAT = 12.332672;
@@ -33,6 +33,7 @@ export default function ContactPage() {
   const { settings } = useCart();
   const phoneDisplay = settings.phone || '+226 02 80 99 06';
   const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
     null
@@ -252,14 +253,14 @@ export default function ContactPage() {
                 <span>Adresse &amp; Coordonnées GPS exactes :</span>
               </strong>
               <p className="font-bold text-[#2b1810]">
-                Zagtouli, Route de Bobo (RN1) — Ouagadougou, Burkina Faso
+                {settings.address || 'Zagtouli, Route de Bobo (RN1) — Ouagadougou, Burkina Faso'}
               </p>
               <p className="text-xs font-mono text-stone-600 mt-1">
                 GPS : {RESTAURANT_DMS} ({RESTAURANT_LAT}, {RESTAURANT_LNG})
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-[#fdf5e8] border border-[#dec6a7] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#fdf5e8] border border-[#dec6a7] flex flex-wrap items-center justify-between gap-2">
               <div>
                 <strong className="flex items-center gap-1.5 text-[#881313]">
                   <PhoneIcon className="w-4 h-4 shrink-0" />
@@ -269,13 +270,24 @@ export default function ContactPage() {
                   {phoneDisplay}
                 </span>
               </div>
-              <a
-                href={`tel:${phoneTel}`}
-                className="px-4 py-2 rounded-xl bg-[#881313] text-white font-bold text-xs shadow inline-flex items-center gap-1.5"
-              >
-                <PhoneIcon className="w-3.5 h-3.5" />
-                <span>Appeler</span>
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`tel:${phoneTel}`}
+                  className="px-3.5 py-2 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-bold text-xs shadow inline-flex items-center gap-1.5 transition"
+                >
+                  <PhoneIcon className="w-3.5 h-3.5" />
+                  <span>Appeler</span>
+                </a>
+                <a
+                  href={`https://wa.me/${whatsappNum}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs shadow inline-flex items-center gap-1.5 transition"
+                >
+                  <WhatsAppIcon className="w-3.5 h-3.5" />
+                  <span>WhatsApp</span>
+                </a>
+              </div>
             </div>
 
             <div className="p-3.5 rounded-xl bg-[#fdf5e8] border border-[#dec6a7]">

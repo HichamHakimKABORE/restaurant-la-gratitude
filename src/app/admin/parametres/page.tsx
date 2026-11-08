@@ -20,6 +20,7 @@ export default function AdminParametresPage() {
   );
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const { showToast, setSettings } = useCart();
 
@@ -44,9 +45,33 @@ export default function AdminParametresPage() {
       });
   }, []);
 
+  const normalizeBurkinaWhatsApp = (rawPhone: string) => {
+    let digits = rawPhone.replace(/[^0-9]/g, '');
+    if (digits.startsWith('00226')) {
+      digits = digits.slice(2);
+    } else if (digits.length === 8) {
+      digits = `226${digits}`;
+    }
+    return digits || '22602809906';
+  };
+
   const handleSaveSettings = async () => {
+    const hasEmail = newAdminEmail.trim().length > 0;
+    const hasPwd = newAdminPassword.trim().length > 0;
+    if ((hasEmail && !hasPwd) || (!hasEmail && hasPwd)) {
+      showToast(
+        'Pour modifier vos accès Admin, remplissez à la fois le nouvel identifiant et le nouveau mot de passe.'
+      );
+      return;
+    }
+    if (hasPwd && newAdminPassword.trim().length < 4) {
+      showToast('Le nouveau mot de passe doit contenir au moins 4 caractères.');
+      return;
+    }
+
     setSaving(true);
     try {
+      const normalizedWa = normalizeBurkinaWhatsApp(restPhone);
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -54,7 +79,7 @@ export default function AdminParametresPage() {
           restaurant_name: restName,
           slogan: restSlogan,
           phone: restPhone,
-          whatsapp: restPhone.replace(/[^0-9]/g, ''),
+          whatsapp: normalizedWa,
           address: restAddress,
           opening_hours: restHours,
           ...(newAdminEmail.trim() && newAdminPassword.trim()
@@ -181,13 +206,22 @@ export default function AdminParametresPage() {
                 <label className="font-bold text-stone-700 block mb-1 text-xs">
                   Nouveau mot de passe Admin
                 </label>
-                <input
-                  type="password"
-                  value={newAdminPassword}
-                  onChange={e => setNewAdminPassword(e.target.value)}
-                  placeholder="Nouveau mot de passe..."
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newAdminPassword}
+                    onChange={e => setNewAdminPassword(e.target.value)}
+                    placeholder="Nouveau mot de passe..."
+                    className="w-full px-3 py-2 pr-16 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-[10px] font-extrabold text-stone-700"
+                  >
+                    {showNewPassword ? 'Masquer' : 'Voir'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

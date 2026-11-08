@@ -8,7 +8,7 @@ import { sortDailyMenuDishes } from '@/lib/db';
 import { CheckIcon, PhoneIcon } from '@/components/Icons';
 
 export default function AdminDashboardOverviewPage() {
-  const { dishes } = useCart();
+  const { dishes, settings } = useCart();
 
   const dailyCatalogDishes = dishes.filter(d => d.availability_mode === 'daily');
   const activeDailyDishes = sortDailyMenuDishes(
@@ -57,7 +57,7 @@ export default function AdminDashboardOverviewPage() {
           </div>
           <div>
             <span className="font-extrabold text-base text-[#991b1b] block whitespace-nowrap">
-              +226 02 80 99 06
+              {settings.phone || '+226 02 80 99 06'}
             </span>
             <span className="text-xs font-semibold text-stone-600">
               Numéro de commande directe

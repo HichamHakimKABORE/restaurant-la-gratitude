@@ -7,6 +7,7 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -91,12 +92,19 @@ export default function AdminLoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="Mot de passe"
               className="bg-transparent w-full text-stone-800 focus:outline-none"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(v => !v)}
+              className="px-2 py-0.5 rounded bg-stone-200/80 hover:bg-stone-300 text-[11px] font-bold text-stone-700 shrink-0"
+            >
+              {showPassword ? 'Masquer' : 'Voir'}
+            </button>
           </div>
 
           <button

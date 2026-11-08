@@ -105,11 +105,13 @@ export default function AdminGaleriePage() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     try {
       showToast('Traitement de la photo...');
       const b64 = await compressImageToBase64(file);
       setPreviewData(b64);
+      showToast('Photo prête à être publiée !');
     } catch {
       showToast('Erreur lors du traitement de la photo');
     }

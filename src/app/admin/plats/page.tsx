@@ -272,6 +272,8 @@ export default function AdminPlatsPage() {
               <input
                 type="number"
                 required
+                min={100}
+                step={50}
                 value={newPrice}
                 onChange={e => setNewPrice(e.target.value)}
                 className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold"
@@ -331,9 +333,16 @@ export default function AdminPlatsPage() {
                 accept="image/*"
                 onChange={async e => {
                   const file = e.target.files?.[0];
+                  e.target.value = '';
                   if (file) {
-                    const b64 = await compressImageToBase64(file);
-                    setNewPhotoData(b64);
+                    try {
+                      showToast('Compression de la photo...');
+                      const b64 = await compressImageToBase64(file);
+                      setNewPhotoData(b64);
+                      showToast('Photo prête à être enregistrée !');
+                    } catch {
+                      showToast('Format de photo non supporté.');
+                    }
                   }
                 }}
                 className="w-full text-xs"
@@ -454,9 +463,11 @@ export default function AdminPlatsPage() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={e =>
-                      handlePhotoUploadForDish(dish, e.target.files?.[0])
-                    }
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      handlePhotoUploadForDish(dish, file);
+                    }}
                   />
                 </label>
 

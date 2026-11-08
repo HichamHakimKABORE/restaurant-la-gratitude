@@ -304,36 +304,54 @@ export default function AccueilClientPage() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3.5">
-              {visibleGridDishes.slice(0, 12).map(dish => (
-                <article
-                  key={dish.id}
-                  onClick={() => openDishSelector(dish)}
-                  className="group cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between text-center"
-                >
-                  <div className="h-28 sm:h-32 overflow-hidden relative bg-stone-100">
-                    <div
-                      className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                      style={{ backgroundImage: `url('${dish.image_url}')` }}
-                    />
-                  </div>
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3.5">
+                {(homeSearch.trim() !== '' || selectedCategory !== 'Tous'
+                  ? visibleGridDishes
+                  : visibleGridDishes.slice(0, 12)
+                ).map(dish => (
+                  <article
+                    key={dish.id}
+                    onClick={() => openDishSelector(dish)}
+                    className="group cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between text-center"
+                  >
+                    <div className="h-28 sm:h-32 overflow-hidden relative bg-stone-100">
+                      <div
+                        className={`w-full h-full dish-photo ${dish.image_quadrant}`}
+                        style={{ backgroundImage: `url('${dish.image_url}')` }}
+                      />
+                    </div>
 
-                  <div className="p-2.5 space-y-1">
-                    <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
-                      {dish.name}
-                    </h4>
-                    <div className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
-                      {formatCFA(dish.price)}
+                    <div className="p-2.5 space-y-1">
+                      <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
+                        {dish.name}
+                      </h4>
+                      <div className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
+                        {formatCFA(dish.price)}
+                      </div>
+                      <div className="pt-1 flex items-center justify-center">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
+                          <PhoneIcon className="w-3 h-3 shrink-0" />
+                          <span>+ Commander</span>
+                        </span>
+                      </div>
                     </div>
-                    <div className="pt-1 flex items-center justify-center">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
-                        <PhoneIcon className="w-3 h-3 shrink-0" />
-                        <span>+ Commander</span>
-                      </span>
-                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {selectedCategory === 'Tous' &&
+                homeSearch.trim() === '' &&
+                visibleGridDishes.length > 12 && (
+                  <div className="pt-1 text-center">
+                    <Link
+                      href="/menu"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-extrabold text-xs shadow transition"
+                    >
+                      <span>Voir toute la carte ({visibleGridDishes.length} plats) →</span>
+                    </Link>
                   </div>
-                </article>
-              ))}
+                )}
             </div>
           )}
         </div>

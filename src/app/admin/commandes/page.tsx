@@ -21,8 +21,6 @@ export default function AdminCommandesPage() {
 
   useEffect(() => {
     loadOrders();
-    const t = setInterval(loadOrders, 6000);
-    return () => clearInterval(t);
   }, []);
 
   const handleUpdateOrderStatus = async (
@@ -95,9 +93,12 @@ export default function AdminCommandesPage() {
 
   return (
     <AdminShell
-      title="Gestion des Commandes (En Direct)"
-      subtitle="Les nouvelles commandes déclenchent une alerte sonore et s’affichent automatiquement ici"
+      title="Historique des Commandes"
+      subtitle="Les nouvelles commandes se font actuellement par Appel Téléphonique et WhatsApp direct (+226 02 80 99 06)"
     >
+      <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-xs font-bold text-[#2b1810]">
+        Mode actif : Commandes directes par Appel Téléphonique et WhatsApp. Les commandes en ligne sur le site sont désactivées.
+      </div>
       <div className="flex flex-wrap gap-2 text-xs">
         {['Toutes', 'En cours', 'Préparée', 'Livrée', 'Annulée'].map(st => (
           <button

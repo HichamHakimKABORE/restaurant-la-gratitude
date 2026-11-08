@@ -203,7 +203,7 @@ export async function POST() {
   );
 }
 
-export async function _DISABLED_ONLINE_ORDER_POST(request: Request) {
+async function _DISABLED_ONLINE_ORDER_POST(request: Request) {
   try {
     const contentLength = Number(request.headers.get('content-length') || 0);
     if (contentLength > 32 * 1024) {

@@ -3,10 +3,15 @@
 import React from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
+import { useCart } from '@/components/CartContext';
 import { PhoneIcon, WhatsAppIcon, MapPinIcon, CompassIcon } from '@/components/Icons';
-import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_PHONE_TEL, RESTAURANT_WHATSAPP } from '@/lib/constants';
 
 export default function CommanderParTelephonePage() {
+  const { settings } = useCart();
+  const phoneDisplay = settings.phone || '+226 02 80 99 06';
+  const phoneTel = `tel:${phoneDisplay.replace(/\s+/g, '')}`;
+  const whatsappNum = settings.whatsapp || '22602809906';
+
   return (
     <ClientShell>
       <div className="bg-white/95 backdrop-blur-[2px] rounded-2xl border-2 border-[#881313] shadow-lg p-6 sm:p-8 max-w-2xl mx-auto text-center space-y-5">
@@ -19,7 +24,7 @@ export default function CommanderParTelephonePage() {
             Commande Directe par Téléphone
           </span>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#2b1810]">
-            Appelez le Restaurant La Gratitude
+            Appelez le {settings.restaurant_name || 'Restaurant La Gratitude'}
           </h2>
           <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto leading-relaxed">
             Pour commander un plat du Menu du Jour ou un Plat sur Commande (Pizzas, Poulets, Mouton au four, Salades...), contactez directement notre équipe :
@@ -31,28 +36,28 @@ export default function CommanderParTelephonePage() {
             Numéro officiel de commande
           </p>
           <a
-            href={`tel:${RESTAURANT_PHONE_TEL}`}
+            href={phoneTel}
             className="text-2xl sm:text-3xl font-extrabold text-[#881313] hover:underline block whitespace-nowrap"
           >
-            {RESTAURANT_PHONE_DISPLAY}
+            {phoneDisplay}
           </a>
           <p className="text-xs text-stone-600 flex items-center justify-center gap-1.5">
             <MapPinIcon className="w-4 h-4 text-[#881313] shrink-0" />
-            <span>Zagtouli, route de Bobo — Ouagadougou (07h00 à 23h00)</span>
+            <span>{settings.address || 'Zagtouli, route de Bobo — Ouagadougou'} ({settings.opening_hours || '07h00 à 23h00'})</span>
           </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
           <a
-            href={`tel:${RESTAURANT_PHONE_TEL}`}
+            href={phoneTel}
             className="py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
           >
             <PhoneIcon className="w-4 h-4 shrink-0" />
-            <span>Appeler le {RESTAURANT_PHONE_DISPLAY}</span>
+            <span>Appeler le {phoneDisplay}</span>
           </a>
 
           <a
-            href={`https://wa.me/${RESTAURANT_WHATSAPP}`}
+            href={`https://wa.me/${whatsappNum}`}
             target="_blank"
             rel="noreferrer"
             className="py-3.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"

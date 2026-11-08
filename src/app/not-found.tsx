@@ -3,9 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
+import { useCart } from '@/components/CartContext';
 import { PhoneIcon, CompassIcon } from '@/components/Icons';
 
 export default function NotFoundPage() {
+  const { settings } = useCart();
+  const phoneDisplay = settings.phone || '+226 02 80 99 06';
+  const phoneTel = `tel:${phoneDisplay.replace(/\s+/g, '')}`;
+
   return (
     <ClientShell>
       <div className="bg-white/95 rounded-2xl border-2 border-[#881313] shadow-lg p-6 sm:p-10 max-w-xl mx-auto text-center space-y-4 my-6">
@@ -49,11 +54,11 @@ export default function NotFoundPage() {
         </div>
         <div className="pt-3 border-t border-stone-200">
           <a
-            href="tel:+22602809906"
+            href={phoneTel}
             className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#881313] hover:underline"
           >
             <PhoneIcon className="w-3.5 h-3.5" />
-            <span>Appeler le +226 02 80 99 06</span>
+            <span>Appeler le {phoneDisplay}</span>
           </a>
         </div>
       </div>

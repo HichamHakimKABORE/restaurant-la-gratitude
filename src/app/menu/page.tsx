@@ -31,17 +31,18 @@ export default function NotreMenuPage() {
   const activeDailyDishes = sortDailyMenuDishes(
     dishes.filter(d => d.availability_mode === 'daily' && d.is_available_today)
   );
-  const allDailyCatalog = sortDailyMenuDishes(
-    dishes.filter(d => d.availability_mode === 'daily')
-  );
 
-  // Sur 'Toute la Carte' : on affiche les Plats sur Commande en premier, puis le reste de la carte.
-  // Sur 'MenuDuJour' : on affiche les plats du jour préparés aujourd'hui.
+  // Sur 'Toute la Carte' : on affiche les Plats sur Commande en premier, suivis des plats du Menu du Jour préparés aujourd'hui.
+  // Sur 'MenuDuJour' : on affiche uniquement les plats du jour préparés aujourd'hui.
   const baseList = (() => {
     if (selectedCategory === 'SurCommande') return onOrderDishes;
     if (selectedCategory === 'MenuDuJour') return activeDailyDishes;
-    if (selectedCategory === 'Tous') return [...onOrderDishes, ...allDailyCatalog];
-    return dishes.filter(d => d.category === selectedCategory);
+    if (selectedCategory === 'Tous') return [...onOrderDishes, ...activeDailyDishes];
+    return dishes.filter(
+      d =>
+        d.category === selectedCategory &&
+        (d.availability_mode !== 'daily' || d.is_available_today)
+    );
   })();
 
   const visibleDishes = baseList.filter(d => {

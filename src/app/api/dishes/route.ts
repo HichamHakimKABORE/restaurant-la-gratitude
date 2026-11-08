@@ -170,10 +170,7 @@ export async function PATCH(request: Request) {
       }
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
-
-      if (typeof is_available_today === 'boolean') {
-        await autoSyncTodayMenuReport(sql, rows, todayStr);
-      }
+      await autoSyncTodayMenuReport(sql, rows, todayStr);
 
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {
@@ -218,8 +215,8 @@ export async function POST(request: Request) {
       display_order
     } = body;
 
-    if (!name || !category || !price) {
-      return NextResponse.json({ error: 'Champs obligatoires manquants' }, { status: 400 });
+    if (!name || !category || price === undefined || Number(price) < 0 || Number.isNaN(Number(price))) {
+      return NextResponse.json({ error: 'Champs obligatoires manquants ou prix invalide' }, { status: 400 });
     }
 
     const slug =
@@ -302,10 +299,12 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
     const sql = await ensureNeonSchema();
+    const todayStr = getLogicalMenuDate();
     if (sql) {
       await sql`DELETE FROM dishes WHERE id = ${id}`;
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
+      await autoSyncTodayMenuReport(sql, rows, todayStr);
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {
       invalidateDishesCache();

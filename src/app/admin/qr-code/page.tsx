@@ -2,9 +2,23 @@
 
 import React, { useEffect, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
+import { useCart } from '@/components/CartContext';
 import { PrinterIcon, QrCodeIcon, MapPinIcon, PhoneIcon } from '@/components/Icons';
 
+const QUICK_TABLE_LABELS = [
+  'Menu Général',
+  'Table 1',
+  'Table 2',
+  'Table 3',
+  'Table 4',
+  'Terrasse Ombragée',
+  'Salle Climatisée',
+  'Espace VIP',
+  'Comptoir / Bar'
+];
+
 export default function AdminQrCodePage() {
+  const { settings } = useCart();
   const [siteUrl, setSiteUrl] = useState('https://restaurantlagratitude.com/menu-du-jour');
   const [tableNumber, setTableNumber] = useState('Table 1');
 
@@ -58,6 +72,22 @@ export default function AdminQrCodePage() {
               placeholder="Ex: Table 1, Terrasse, VIP..."
               className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold"
             />
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {QUICK_TABLE_LABELS.map(lbl => (
+                <button
+                  key={lbl}
+                  type="button"
+                  onClick={() => setTableNumber(lbl)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition ${
+                    tableNumber === lbl
+                      ? 'bg-[#881313] text-white border-[#881313]'
+                      : 'bg-white text-stone-700 border-stone-300 hover:bg-amber-50'
+                  }`}
+                >
+                  {lbl}
+                </button>
+              ))}
+            </div>
           </div>
 
           <button
@@ -70,7 +100,7 @@ export default function AdminQrCodePage() {
         </div>
 
         {/* Right Printable Card */}
-        <div className="lg:col-span-7 flex justify-center">
+        <div className="lg:col-span-7 print:col-span-12 flex justify-center">
           <div className="bg-gradient-to-b from-[#fffcf7] to-[#f9edd9] border-4 border-[#881313] rounded-3xl p-8 max-w-md w-full text-center shadow-2xl space-y-5">
             <div className="flex flex-col items-center space-y-2">
               <img
@@ -85,7 +115,7 @@ export default function AdminQrCodePage() {
                 La Gratitude
               </h2>
               <p className="font-script text-base text-[#3b1c0e]">
-                Une cuisine savoureuse, un service de qualité !
+                {settings.slogan || 'Une cuisine savoureuse, un service de qualité !'}
               </p>
             </div>
 
@@ -111,14 +141,14 @@ export default function AdminQrCodePage() {
               </p>
             </div>
 
-            <div className="pt-3 border-t border-[#dec6a7] text-xs font-bold text-[#2b1810] flex items-center justify-between">
-              <span className="inline-flex items-center gap-1">
+            <div className="pt-3 border-t border-[#dec6a7] text-xs font-bold text-[#2b1810] flex items-center justify-between gap-2">
+              <span className="inline-flex items-center gap-1 truncate">
                 <MapPinIcon className="w-3.5 h-3.5 text-[#881313] shrink-0" />
                 <span>Zagtouli, route de Bobo</span>
               </span>
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 shrink-0">
                 <PhoneIcon className="w-3.5 h-3.5 text-[#881313] shrink-0" />
-                <span>+226 02 80 99 06</span>
+                <span>{settings.phone || '+226 02 80 99 06'}</span>
               </span>
             </div>
           </div>
