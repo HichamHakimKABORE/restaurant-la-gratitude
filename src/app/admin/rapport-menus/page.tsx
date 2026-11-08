@@ -139,6 +139,38 @@ export default function AdminRapportMenusPage() {
     window.print();
   };
 
+  const handleExportCsv = () => {
+    if (displayedReports.length === 0) return;
+    const rows: string[] = [
+      'Date;Plat;Categorie;Prix FCFA;Statut'
+    ];
+    for (const rep of displayedReports) {
+      const sorted = sortDailyMenuDishes(rep.dishes_json || []);
+      for (const d of sorted) {
+        const st =
+          d.stock_status === 'low'
+            ? 'Presque fini'
+            : d.is_available_today
+            ? 'Disponible'
+            : 'Non disponible';
+        const safeName = (d.name || '').replace(/;/g, ',');
+        const safeCat = (d.category || '').replace(/;/g, ',');
+        rows.push(`${rep.menu_date};${safeName};${safeCat};${d.price};${st}`);
+      }
+    }
+    const csvContent = '\uFEFF' + rows.join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `rapport-menus-la-gratitude-${getLogicalMenuDate()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Fichier Excel (.csv) téléchargé !');
+  };
+
   const formatDateFr = (isoStr: string) => {
     try {
       const parts = isoStr.split('-');
@@ -194,6 +226,13 @@ export default function AdminRapportMenusPage() {
             >
               <CheckIcon className="w-3.5 h-3.5" />
               <span>{isArchivingNow ? 'Archivage...' : 'Archiver le menu actuel'}</span>
+            </button>
+            <button
+              onClick={handleExportCsv}
+              disabled={displayedReports.length === 0}
+              className="px-3.5 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#2b1810] border border-amber-400 font-extrabold text-xs shadow-sm flex items-center gap-1.5 transition disabled:opacity-50"
+            >
+              <span>Exporter Excel (.csv)</span>
             </button>
             <button
               onClick={handlePrint}

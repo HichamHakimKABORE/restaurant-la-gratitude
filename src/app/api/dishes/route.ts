@@ -102,11 +102,13 @@ export async function PATCH(request: Request) {
     const todayStr = getLogicalMenuDate();
 
     // Action spéciale : réinitialiser (tout décocher) ou tout cocher d'un seul coup
-    if (body.action === 'reset_daily') {
+    if (body.action === 'reset_daily' || body.action === 'check_all_daily') {
+      const targetAvail = body.action === 'check_all_daily';
+      const targetStatus = targetAvail ? 'available' : 'soldout';
       if (sql) {
         await sql`
           UPDATE dishes
-          SET is_available_today = false, stock_status = 'soldout'
+          SET is_available_today = ${targetAvail}, stock_status = ${targetStatus}
           WHERE availability_mode = 'daily'
         `;
         await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
@@ -119,8 +121,8 @@ export async function PATCH(request: Request) {
         const mem = getMemoryDishes();
         for (const d of mem) {
           if (d.availability_mode === 'daily') {
-            d.is_available_today = false;
-            d.stock_status = 'soldout';
+            d.is_available_today = targetAvail;
+            d.stock_status = targetStatus;
           }
         }
         return NextResponse.json({ ok: true, source: 'memory', dishes: mem });

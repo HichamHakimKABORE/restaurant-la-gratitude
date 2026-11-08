@@ -22,8 +22,13 @@ const CATEGORY_TABS = [
 
 export default function AccueilClientPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
+  const [homeSearch, setHomeSearch] = useState<string>('');
   const [currentSlideIdx, setCurrentSlideIdx] = useState<number>(0);
   const { dishes, loadingDishes, settings, openDishSelector } = useCart();
+
+  // Vérification de l'ouverture actuelle selon l'heure de Ouagadougou (UTC/GMT+0 : 07h00 à 23h00)
+  const currentUtcHour = new Date().getUTCHours();
+  const isOpenNow = currentUtcHour >= 7 && currentUtcHour < 23;
 
   const phoneDisplay = settings.phone || '+226 02 80 99 06';
   const phoneTel = phoneDisplay.replace(/\s+/g, '');
@@ -65,20 +70,25 @@ export default function AccueilClientPage() {
   //   suivis des plats du Menu du Jour actifs.
   // - Sur l'onglet 'MenuDuJour' : on n'affiche que les plats du jour préparés aujourd'hui (displayedDailyDishes).
   const visibleGridDishes = (() => {
+    let list = dishes;
     if (selectedCategory === 'SurCommande') {
-      return onOrderDishes;
+      list = onOrderDishes;
+    } else if (selectedCategory === 'MenuDuJour') {
+      list = displayedDailyDishes;
+    } else if (selectedCategory === 'Tous') {
+      list = [...onOrderDishes, ...displayedDailyDishes];
+    } else {
+      list = dishes.filter(
+        d =>
+          d.category === selectedCategory &&
+          (d.availability_mode !== 'daily' || d.is_available_today)
+      );
     }
-    if (selectedCategory === 'MenuDuJour') {
-      return displayedDailyDishes;
+    if (homeSearch.trim() !== '') {
+      const q = homeSearch.trim().toLowerCase();
+      return list.filter(d => d.name.toLowerCase().includes(q));
     }
-    if (selectedCategory === 'Tous') {
-      return [...onOrderDishes, ...displayedDailyDishes];
-    }
-    return dishes.filter(
-      d =>
-        d.category === selectedCategory &&
-        (d.availability_mode !== 'daily' || d.is_available_today)
-    );
+    return list;
   })();
 
   return (
@@ -225,15 +235,30 @@ export default function AccueilClientPage() {
         {/* 1. PREMIÈRE PARTIE (6 cols) : NOTRE CARTE & PLATS SUR COMMANDE */}
         <div className="lg:col-span-6 bg-white/95 rounded-2xl border-2 border-[#e6d5c3] shadow-md p-4 sm:p-5 space-y-4 relative overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
-            <h3 className="font-extrabold text-base sm:text-lg text-[#2b1810] flex items-center gap-2">
-              <svg className="w-5 h-5 text-[#881313]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span>Notre Carte &amp; Plats sur Commande</span>
-            </h3>
-            <Link href="/menu" className="text-xs font-extrabold text-[#881313] hover:underline whitespace-nowrap">
-              Ouvrir toute la carte →
-            </Link>
+            <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+              <h3 className="font-extrabold text-base sm:text-lg text-[#2b1810] flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#881313] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <span>Notre Carte &amp; Plats sur Commande</span>
+              </h3>
+              <Link href="/menu" className="sm:hidden text-xs font-extrabold text-[#881313] hover:underline whitespace-nowrap">
+                Toute la carte →
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <input
+                type="text"
+                value={homeSearch}
+                onChange={e => setHomeSearch(e.target.value)}
+                placeholder="Rechercher un plat, pizza..."
+                className="flex-1 sm:w-48 px-3 py-1.5 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium"
+              />
+              <Link href="/menu" className="hidden sm:inline text-xs font-extrabold text-[#881313] hover:underline whitespace-nowrap">
+                Ouvrir toute la carte →
+              </Link>
+            </div>
           </div>
 
           {/* Category Tabs */}
@@ -455,11 +480,22 @@ export default function AccueilClientPage() {
             </Link>
           </div>
 
-          <div className="bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] p-4 space-y-1.5 shadow-sm">
-            <h4 className="font-extrabold text-sm text-[#2b1810] border-b border-[#e6d5c3] pb-2">
-              Horaires
-            </h4>
-            <p className="text-xs sm:text-sm font-bold text-stone-800 pt-1">
+          <div className="bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] p-4 space-y-2 shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#e6d5c3] pb-2">
+              <h4 className="font-extrabold text-sm text-[#2b1810]">
+                Horaires
+              </h4>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold ${
+                  isOpenNow
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-amber-100 text-amber-900 border border-amber-300'
+                }`}
+              >
+                {isOpenNow ? 'Ouvert actuellement' : 'Ouvre à 07h00'}
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm font-bold text-stone-800 pt-0.5">
               {settings.opening_hours || 'Lundi - Dimanche de 07h00 à 23h00'}
             </p>
           </div>

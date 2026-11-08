@@ -93,6 +93,29 @@ export default function AdminMenuDuJourPage() {
     showToast('Menu du Jour réinitialisé (0 plat coché).');
   };
 
+  const handleCheckAllDailyMenu = async () => {
+    setDishes(prev =>
+      prev.map(d =>
+        d.availability_mode === 'daily'
+          ? { ...d, is_available_today: true, stock_status: 'available' }
+          : d
+      )
+    );
+    const res = await fetch('/api/dishes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'check_all_daily' })
+    });
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
+    const data = await res.json();
+    if (data.dishes) setDishes(data.dishes);
+    showToast('Tous les plats du Menu du Jour ont été cochés (Prêt) !');
+  };
+
   const buildWhatsAppDailyText = () => {
     const active = dailyDishes.filter(d => d.is_available_today);
     const dateFr = new Date().toLocaleDateString('fr-FR', {
@@ -301,13 +324,22 @@ export default function AdminMenuDuJourPage() {
             <span>Copier le Menu pour Statut WhatsApp</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleResetDailyMenu}
-            className="w-full py-2 px-3 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-bold text-xs transition"
-          >
-            Tout décocher (Réinitialiser le Menu du Jour)
-          </button>
+          <div className="grid grid-cols-2 gap-2 w-full">
+            <button
+              type="button"
+              onClick={handleCheckAllDailyMenu}
+              className="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs transition"
+            >
+              Tout cocher (Prêt)
+            </button>
+            <button
+              type="button"
+              onClick={handleResetDailyMenu}
+              className="py-2 px-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-bold text-xs transition"
+            >
+              Tout décocher
+            </button>
+          </div>
 
           <Link
             href="/admin/rapport-menus"
