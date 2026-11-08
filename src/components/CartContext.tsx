@@ -98,6 +98,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     refreshDishes();
 
+    // Rafraîchissement automatique silencieux quand le client revient sur l'onglet ou toutes les 30 secondes
+    const onVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        refreshDishes();
+      }
+    };
+    window.addEventListener('focus', onVisibilityOrFocus);
+    document.addEventListener('visibilitychange', onVisibilityOrFocus);
+    const pollTimer = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        refreshDishes();
+      }
+    }, 30000);
+
     // Chargement des paramètres dynamiques du restaurant (/api/settings)
     fetch('/api/settings', { cache: 'no-store' })
       .then(r => r.json())
@@ -107,6 +121,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         }
       })
       .catch(() => {});
+
+    return () => {
+      window.removeEventListener('focus', onVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', onVisibilityOrFocus);
+      clearInterval(pollTimer);
+    };
   }, []);
 
   const showToast = (msg: string) => {

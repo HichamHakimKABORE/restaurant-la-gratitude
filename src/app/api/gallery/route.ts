@@ -107,6 +107,13 @@ export async function PATCH(request: Request) {
     invalidateGalleryCache();
 
     if (sql) {
+      if (Number(display_order) === 1) {
+        await sql`
+          UPDATE restaurant_gallery
+          SET display_order = display_order + 1
+          WHERE id <> ${Number(id)}
+        `;
+      }
       await sql`
         UPDATE restaurant_gallery
         SET title = ${title || 'Photo Restaurant La Gratitude'},

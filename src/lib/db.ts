@@ -219,6 +219,8 @@ declare global {
   // eslint-disable-next-line no-var
   var _gratitudeDishes: Dish[] | undefined;
   // eslint-disable-next-line no-var
+  var _gratitudeMemoryMenuDate: string | undefined;
+  // eslint-disable-next-line no-var
   var _gratitudeOrders: Order[] | undefined;
   // eslint-disable-next-line no-var
   var _gratitudeSettings: RestaurantSettings | undefined;
@@ -243,8 +245,18 @@ declare global {
 }
 
 export function getMemoryDishes(): Dish[] {
+  const todayStr = getLogicalMenuDate();
   if (!global._gratitudeDishes) {
     global._gratitudeDishes = INITIAL_DISHES.map(d => ({ ...d }));
+    global._gratitudeMemoryMenuDate = todayStr;
+  } else if (global._gratitudeMemoryMenuDate !== todayStr) {
+    for (const d of global._gratitudeDishes) {
+      if (d.availability_mode === 'daily') {
+        d.is_available_today = false;
+        d.stock_status = 'soldout';
+      }
+    }
+    global._gratitudeMemoryMenuDate = todayStr;
   }
   return global._gratitudeDishes;
 }

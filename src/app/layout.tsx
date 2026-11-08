@@ -30,6 +30,11 @@ export const metadata: Metadata = {
   authors: [{ name: 'Restaurant La Gratitude' }],
   creator: 'Restaurant La Gratitude',
   publisher: 'Restaurant La Gratitude',
+  icons: {
+    icon: '/images/logo_gratitude.jpg',
+    shortcut: '/images/logo_gratitude.jpg',
+    apple: '/images/logo_gratitude.jpg'
+  },
   robots: {
     index: true,
     follow: true,

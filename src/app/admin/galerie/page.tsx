@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
-import { CameraIcon, CloseIcon, PencilIcon, CheckIcon } from '@/components/Icons';
+import { CameraIcon, CloseIcon, PencilIcon, CheckIcon, StarIcon } from '@/components/Icons';
 import { useCart } from '@/components/CartContext';
 import { type GalleryImage } from '@/lib/db';
 
@@ -190,6 +190,38 @@ export default function AdminGaleriePage() {
     setEditTitle(img.title || '');
   };
 
+  const handlePutFirst = async (img: GalleryImage) => {
+    const reordered = [
+      { ...img, display_order: 1 },
+      ...images.filter(i => i.id !== img.id).map((item, idx) => ({ ...item, display_order: idx + 2 }))
+    ];
+    syncGalleryCache(reordered);
+    showToast(`"${img.title || 'Photo'}" placée en 1re position !`);
+
+    try {
+      const res = await fetch('/api/gallery', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: img.id,
+          title: img.title,
+          display_order: 1
+        })
+      });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json();
+      if (Array.isArray(data.images)) {
+        syncGalleryCache(data.images);
+      }
+    } catch (err) {
+      console.error('Erreur ordre galerie:', err);
+    }
+  };
+
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingImage) return;
@@ -370,14 +402,25 @@ export default function AdminGaleriePage() {
                       {img.title || 'Photo du Restaurant'}
                     </p>
 
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(img)}
-                      className="w-full py-1.5 px-2 bg-gradient-to-r from-[#881313] to-[#6e0f0f] hover:brightness-110 text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition"
-                    >
-                      <PencilIcon className="w-3 h-3" />
-                      <span>Modifier</span>
-                    </button>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(img)}
+                        className="py-1.5 px-2 bg-gradient-to-r from-[#881313] to-[#6e0f0f] hover:brightness-110 text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-sm transition"
+                      >
+                        <PencilIcon className="w-3 h-3 shrink-0" />
+                        <span>Modifier</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handlePutFirst(img)}
+                        className="py-1.5 px-2 bg-amber-100 hover:bg-amber-200 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
+                        title="Placer cette photo en 1re position du carrousel"
+                      >
+                        <StarIcon className="w-3 h-3 text-[#881313] shrink-0" />
+                        <span>En 1er</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
