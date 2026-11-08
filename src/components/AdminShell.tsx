@@ -242,7 +242,7 @@ export default function AdminShell({
         {/* CONTENU DE LA PAGE ACTIVE (Décalé à droite sur ordinateur pour laisser la place à la sidebar fixe)
             NB : Aucun backdrop-blur ni transform ici afin que toutes les fenêtres modales (Ajouter/Modifier un plat)
             s'ouvrent toujours exactement au centre de l'écran ! */}
-        <section className="lg:ml-[290px] xl:ml-[305px] bg-white/95 rounded-2xl border-2 border-[#d6c3ae] shadow-xl p-3.5 sm:p-6 space-y-4 sm:space-y-5 relative">
+        <section className="lg:ml-[290px] xl:ml-[305px] bg-white/95 rounded-2xl border-2 border-[#d6c3ae] shadow-xl p-3.5 sm:p-6 space-y-4 sm:space-y-5 relative print:ml-0 print:border-none print:shadow-none print:bg-transparent print:p-0">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 flex items-center justify-center select-none z-0 overflow-hidden rounded-2xl print:hidden"

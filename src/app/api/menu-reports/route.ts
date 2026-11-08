@@ -2,10 +2,13 @@ import { NextResponse } from 'next/server';
 import {
   ensureNeonSchema,
   getMemoryMenuHistory,
+  getMemoryDishes,
   getMemoryOrders,
   invalidateMenuHistoryCache,
   getLogicalMenuDate,
-  type DailyMenuRecord
+  sortDailyMenuDishes,
+  type DailyMenuRecord,
+  type Dish
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/session';
 
@@ -23,8 +26,37 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate');
 
     const sql = await ensureNeonSchema();
+    const todayStr = getLogicalMenuDate();
 
     if (sql) {
+      // Si des plats du Menu du Jour sont cochés aujourd'hui mais pas encore archivés dans daily_menu_history,
+      // on synchronise automatiquement le rapport d'aujourd'hui pour qu'il apparaisse immédiatement.
+      const existingToday = await sql`
+        SELECT id FROM daily_menu_history WHERE menu_date = ${todayStr}::date LIMIT 1
+      `;
+      if (existingToday.length === 0) {
+        const activeRows = (await sql`
+          SELECT id, name, category, price, stock_status, is_available_today
+          FROM dishes
+          WHERE availability_mode = 'daily' AND is_available_today = true
+          ORDER BY display_order ASC, id ASC
+        `) as Dish[];
+        if (activeRows.length > 0) {
+          const sortedActive = sortDailyMenuDishes(activeRows);
+          await sql`
+            INSERT INTO daily_menu_history (menu_date, dishes_json, total_dishes, notes, updated_at)
+            VALUES (
+              ${todayStr},
+              ${JSON.stringify(sortedActive)}::jsonb,
+              ${sortedActive.length},
+              ${`Menu du Jour actif (${sortedActive.length} plats)`},
+              NOW()
+            )
+            ON CONFLICT (menu_date) DO NOTHING
+          `;
+        }
+      }
+
       let rows: any[] = [];
       if (startDate && endDate) {
         rows = await sql`

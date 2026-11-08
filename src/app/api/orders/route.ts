@@ -196,7 +196,14 @@ function createMemoryOrder(
   return NextResponse.json(response, { status: 201 });
 }
 
-export async function POST(request: Request) {
+export async function POST() {
+  return jsonError(
+    'Les commandes se font directement par appel téléphonique ou WhatsApp au +226 02 80 99 06.',
+    403
+  );
+}
+
+export async function _DISABLED_ONLINE_ORDER_POST(request: Request) {
   try {
     const contentLength = Number(request.headers.get('content-length') || 0);
     if (contentLength > 32 * 1024) {
