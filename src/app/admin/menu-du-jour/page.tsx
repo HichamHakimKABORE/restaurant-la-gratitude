@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
-import { CheckIcon, BoltIcon, CloseIcon } from '@/components/Icons';
+import { CheckIcon, BoltIcon, CloseIcon, WhatsAppIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, getLogicalMenuDate, type Dish, type StockStatus } from '@/lib/db';
 
 export default function AdminMenuDuJourPage() {
   const router = useRouter();
-  const { dishes, setDishes, showToast } = useCart();
+  const { dishes, setDishes, settings, showToast } = useCart();
   const [isSavingHistory, setIsSavingHistory] = useState(false);
 
   // Séparation stricte : SEULS les plats avec availability_mode === 'daily'
@@ -91,6 +91,42 @@ export default function AdminMenuDuJourPage() {
     const data = await res.json();
     if (data.dishes) setDishes(data.dishes);
     showToast('Menu du Jour réinitialisé (0 plat coché).');
+  };
+
+  const buildWhatsAppDailyText = () => {
+    const active = dailyDishes.filter(d => d.is_available_today);
+    const dateFr = new Date().toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long'
+    });
+    const lines = [
+      `*RESTAURANT LA GRATITUDE — ZAGTOULI*`,
+      `*MENU DU JOUR (${dateFr})* :`,
+      ``
+    ];
+    for (const d of active) {
+      lines.push(`- *${d.name}* : ${formatCFA(d.price)}`);
+    }
+    lines.push(``);
+    lines.push(`*Commandes & Réservations :* ${settings.phone || '+226 02 80 99 06'}`);
+    lines.push(`*Zagtouli, route de Bobo — Ouagadougou*`);
+    return lines.join('\n');
+  };
+
+  const handleCopyWhatsAppMenu = async () => {
+    const active = dailyDishes.filter(d => d.is_available_today);
+    if (active.length === 0) {
+      showToast('Cochez au moins un plat avant de partager le Menu du Jour.');
+      return;
+    }
+    const text = buildWhatsAppDailyText();
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Texte du Menu du Jour copié ! Prêt à coller sur WhatsApp.');
+    } catch {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
   };
 
   const setStatus = async (dish: Dish, status: StockStatus) => {
@@ -254,6 +290,15 @@ export default function AdminMenuDuJourPage() {
           >
             <CheckIcon className="w-4 h-4" />
             <span>{isSavingHistory ? 'Enregistrement...' : 'Enregistrer le menu & archiver'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleCopyWhatsAppMenu}
+            className="w-full py-2.5 px-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow flex items-center justify-center gap-2 transition"
+          >
+            <WhatsAppIcon className="w-4 h-4 shrink-0" />
+            <span>Copier le Menu pour Statut WhatsApp</span>
           </button>
 
           <button

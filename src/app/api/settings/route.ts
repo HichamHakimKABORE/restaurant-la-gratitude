@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { ensureNeonSchema, getMemorySettings } from '@/lib/db';
 import { isAdminRequest } from '@/lib/session';
+import { hashAdminPassword } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,7 +16,11 @@ export async function GET() {
         SET phone = '+226 02 80 99 06', whatsapp = '22602809906'
         WHERE id = 1 AND (phone LIKE '%60%18%' OR whatsapp LIKE '%6018%' OR phone IS NULL);
       `;
-      const rows = await sql`SELECT * FROM restaurant_settings WHERE id = 1`;
+      const rows = await sql`
+        SELECT id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours
+        FROM restaurant_settings
+        WHERE id = 1
+      `;
       if (rows.length > 0) {
         return NextResponse.json({ source: 'neon', settings: rows[0] });
       }
@@ -40,7 +45,9 @@ export async function PATCH(request: Request) {
       phone,
       whatsapp,
       address,
-      opening_hours
+      opening_hours,
+      new_admin_email,
+      new_admin_password
     } = body;
 
     const sql = await ensureNeonSchema();
@@ -58,7 +65,28 @@ export async function PATCH(request: Request) {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `;
-      const rows = await sql`SELECT * FROM restaurant_settings WHERE id = 1`;
+
+      if (
+        typeof new_admin_email === 'string' &&
+        new_admin_email.trim() !== '' &&
+        typeof new_admin_password === 'string' &&
+        new_admin_password.trim().length >= 4
+      ) {
+        const pwdHash = await hashAdminPassword(new_admin_password.trim());
+        await sql`
+          UPDATE restaurant_settings
+          SET
+            admin_custom_email = ${new_admin_email.trim().toLowerCase()},
+            admin_custom_password_hash = ${pwdHash}
+          WHERE id = 1
+        `;
+      }
+
+      const rows = await sql`
+        SELECT id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours
+        FROM restaurant_settings
+        WHERE id = 1
+      `;
       return NextResponse.json({ ok: true, source: 'neon', settings: rows[0] });
     } else {
       const mem = getMemorySettings();

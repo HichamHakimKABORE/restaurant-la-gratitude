@@ -56,6 +56,7 @@ export default function AdminPlatsPage() {
   const [newMode, setNewMode] = useState<Dish['availability_mode']>('daily');
   const [newOptions, setNewOptions] = useState('Simple, Avec piment');
   const [newDescription, setNewDescription] = useState('');
+  const [newDisplayOrder, setNewDisplayOrder] = useState('10');
   const [newPhotoData, setNewPhotoData] = useState<string>('');
   const [mounted, setMounted] = useState(false);
 
@@ -112,6 +113,7 @@ export default function AdminPlatsPage() {
     setNewMode('daily');
     setNewOptions('Simple, Avec piment');
     setNewDescription('');
+    setNewDisplayOrder('10');
     setNewPhotoData('');
     setAddModalOpen(true);
   };
@@ -126,6 +128,7 @@ export default function AdminPlatsPage() {
       Array.isArray(dish.options_json) ? dish.options_json.join(', ') : ''
     );
     setNewDescription(dish.description || '');
+    setNewDisplayOrder(String(dish.display_order ?? 10));
     setNewPhotoData('');
     setAddModalOpen(true);
   };
@@ -148,6 +151,7 @@ export default function AdminPlatsPage() {
           category: newCategory,
           price: Number(newPrice),
           availability_mode: newMode,
+          display_order: Number(newDisplayOrder || 10),
           options_json: optsArray,
           description: newDescription,
           ...(newPhotoData
@@ -176,6 +180,7 @@ export default function AdminPlatsPage() {
         category: newCategory,
         price: Number(newPrice),
         availability_mode: newMode,
+        display_order: Number(newDisplayOrder || 10),
         options_json: optsArray,
         description: newDescription,
         image_url: newPhotoData || '/images/dishes_grid_1.jpg',
@@ -336,19 +341,30 @@ export default function AdminPlatsPage() {
             </div>
           </div>
 
-          <div>
-            <label className="font-bold block mb-1">Type de liste (Menu du Jour ou Sur Commande)</label>
-            <select
-              value={newMode}
-              onChange={e =>
-                setNewMode(e.target.value as Dish['availability_mode'])
-              }
-              className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold bg-white"
-            >
-              <option value="daily">Liste du Menu du Jour (À cocher chaque matin)</option>
-              <option value="order">Uniquement sur commande (Hors Menu du Jour)</option>
-              <option value="always">Sur commande / Carte permanente (Hors Menu du Jour)</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+            <div className="sm:col-span-8">
+              <label className="font-bold block mb-1">Type de liste (Menu du Jour ou Sur Commande)</label>
+              <select
+                value={newMode}
+                onChange={e =>
+                  setNewMode(e.target.value as Dish['availability_mode'])
+                }
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold bg-white"
+              >
+                <option value="daily">Liste du Menu du Jour (À cocher chaque matin)</option>
+                <option value="order">Uniquement sur commande (Hors Menu du Jour)</option>
+                <option value="always">Sur commande / Carte permanente (Hors Menu du Jour)</option>
+              </select>
+            </div>
+            <div className="sm:col-span-4">
+              <label className="font-bold block mb-1">Ordre (1 = en haut)</label>
+              <input
+                type="number"
+                value={newDisplayOrder}
+                onChange={e => setNewDisplayOrder(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold"
+              />
+            </div>
           </div>
         </div>
 

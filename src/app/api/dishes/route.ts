@@ -138,7 +138,8 @@ export async function PATCH(request: Request) {
       image_url,
       image_quadrant,
       options_json,
-      description
+      description,
+      display_order
     } = body;
 
     if (!id) {
@@ -158,6 +159,7 @@ export async function PATCH(request: Request) {
           image_url = COALESCE(${image_url ?? null}, image_url),
           image_quadrant = COALESCE(${image_quadrant ?? null}, image_quadrant),
           description = COALESCE(${description ?? null}, description),
+          display_order = COALESCE(${display_order !== undefined ? Number(display_order) : null}, display_order),
           options_json = COALESCE(${options_json ? JSON.stringify(options_json) : null}::jsonb, options_json)
         WHERE id = ${Number(id)}
       `;
@@ -210,7 +212,8 @@ export async function POST(request: Request) {
       image_url,
       image_quadrant,
       description,
-      options_json
+      options_json,
+      display_order
     } = body;
 
     if (!name || !category || !price) {
@@ -230,6 +233,7 @@ export async function POST(request: Request) {
     const sql = await ensureNeonSchema();
     const opts = Array.isArray(options_json) ? options_json : [];
     const mode = availability_mode || 'daily';
+    const orderNum = display_order !== undefined ? Number(display_order) : 50;
     const todayStr = getLogicalMenuDate();
 
     if (sql) {
@@ -247,7 +251,7 @@ export async function POST(request: Request) {
           ${image_url || '/images/dishes_grid_1.jpg'},
           ${image_quadrant || 'quad-tl'},
           ${description || ''},
-          99
+          ${orderNum}
         )
       `;
       if (mode === 'daily') {

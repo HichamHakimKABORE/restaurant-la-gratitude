@@ -495,6 +495,8 @@ export async function ensureNeonSchema() {
       // Ajout de la colonne daily_menu_date pour suivre si l'admin a mis à jour le Menu du Jour aujourd'hui.
       // Tant que l'admin n'a pas actualisé le Menu du Jour pour la date logique du service, aucun plat du jour ne s'affiche.
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_date VARCHAR(20) DEFAULT ''`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS admin_custom_email VARCHAR(150) DEFAULT ''`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS admin_custom_password_hash VARCHAR(255) DEFAULT ''`;
 
       const todayStr = getLogicalMenuDate();
       const settingsDateRows = await sql`SELECT daily_menu_date FROM restaurant_settings WHERE id = 1`;

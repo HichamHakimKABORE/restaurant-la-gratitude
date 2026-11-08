@@ -18,6 +18,8 @@ export default function AdminParametresPage() {
   const [restHours, setRestHours] = useState(
     'Lundi - Dimanche de 07h00 à 23h00'
   );
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const { showToast, setSettings } = useCart();
 
@@ -54,7 +56,13 @@ export default function AdminParametresPage() {
           phone: restPhone,
           whatsapp: restPhone.replace(/[^0-9]/g, ''),
           address: restAddress,
-          opening_hours: restHours
+          opening_hours: restHours,
+          ...(newAdminEmail.trim() && newAdminPassword.trim()
+            ? {
+                new_admin_email: newAdminEmail.trim(),
+                new_admin_password: newAdminPassword.trim()
+              }
+            : {})
         })
       });
       if (res.status === 401) {
@@ -65,6 +73,7 @@ export default function AdminParametresPage() {
       const data = await res.json();
       if (data.ok) {
         if (data.settings) setSettings(data.settings);
+        setNewAdminPassword('');
         showToast(
           'Paramètres enregistrés et mis à jour sur tout le site !'
         );
@@ -81,68 +90,106 @@ export default function AdminParametresPage() {
   return (
     <AdminShell
       title="Paramètres du Restaurant"
-      subtitle="Informations générales, coordonnées et horaires d’ouverture sauvegardés dans Neon PostgreSQL"
+      subtitle="Informations générales, coordonnées, horaires et identifiants d’accès Administrateur"
     >
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-        <div className="md:col-span-8 space-y-4 text-xs sm:text-sm">
-          <div>
-            <label className="font-bold text-stone-700 block mb-1">
-              Nom du restaurant
-            </label>
-            <input
-              type="text"
-              value={restName}
-              onChange={e => setRestName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
-            />
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div className="md:col-span-8 space-y-5 text-xs sm:text-sm">
+          <div className="space-y-4">
+            <div>
+              <label className="font-bold text-stone-700 block mb-1">
+                Nom du restaurant
+              </label>
+              <input
+                type="text"
+                value={restName}
+                onChange={e => setRestName(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-stone-700 block mb-1">
+                Slogan principal
+              </label>
+              <input
+                type="text"
+                value={restSlogan}
+                onChange={e => setRestSlogan(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-stone-700 block mb-1">
+                Téléphone &amp; WhatsApp
+              </label>
+              <input
+                type="text"
+                value={restPhone}
+                onChange={e => setRestPhone(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-stone-700 block mb-1">
+                Adresse &amp; Coordonnées GPS
+              </label>
+              <input
+                type="text"
+                value={restAddress}
+                onChange={e => setRestAddress(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+              />
+            </div>
+
+            <div>
+              <label className="font-bold text-stone-700 block mb-1">
+                Horaires d’ouverture
+              </label>
+              <input
+                type="text"
+                value={restHours}
+                onChange={e => setRestHours(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="font-bold text-stone-700 block mb-1">
-              Slogan principal
-            </label>
-            <input
-              type="text"
-              value={restSlogan}
-              onChange={e => setRestSlogan(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="font-bold text-stone-700 block mb-1">
-              Téléphone &amp; WhatsApp
-            </label>
-            <input
-              type="text"
-              value={restPhone}
-              onChange={e => setRestPhone(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="font-bold text-stone-700 block mb-1">
-              Adresse &amp; Coordonnées GPS
-            </label>
-            <input
-              type="text"
-              value={restAddress}
-              onChange={e => setRestAddress(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
-            />
-          </div>
-
-          <div>
-            <label className="font-bold text-stone-700 block mb-1">
-              Horaires d’ouverture
-            </label>
-            <input
-              type="text"
-              value={restHours}
-              onChange={e => setRestHours(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
-            />
+          {/* Section modification des accès Administrateur */}
+          <div className="p-4 rounded-2xl bg-[#fdf5e8] border-2 border-[#dec6a7] space-y-3">
+            <h3 className="font-extrabold text-sm text-[#881313]">
+              Modifier l’identifiant et le mot de passe Administrateur (optionnel)
+            </h3>
+            <p className="text-xs text-stone-600">
+              Laissez ces champs vides si vous ne souhaitez pas changer votre mot de passe actuel.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="font-bold text-stone-700 block mb-1 text-xs">
+                  Nouvel identifiant Admin
+                </label>
+                <input
+                  type="text"
+                  value={newAdminEmail}
+                  onChange={e => setNewAdminEmail(e.target.value)}
+                  placeholder="Ex: admin@lagratitude.bf"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
+                />
+              </div>
+              <div>
+                <label className="font-bold text-stone-700 block mb-1 text-xs">
+                  Nouveau mot de passe Admin
+                </label>
+                <input
+                  type="password"
+                  value={newAdminPassword}
+                  onChange={e => setNewAdminPassword(e.target.value)}
+                  placeholder="Nouveau mot de passe..."
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

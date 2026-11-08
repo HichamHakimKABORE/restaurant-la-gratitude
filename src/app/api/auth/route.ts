@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!verifyAdminCredentials(body.email, body.password)) {
+    if (!(await verifyAdminCredentials(body.email, body.password))) {
       // Ralentit le bruteforce même quand le limiteur est contourné.
       await new Promise(resolve => setTimeout(resolve, 350));
       return NextResponse.json(

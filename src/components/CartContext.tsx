@@ -60,6 +60,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [modalDish, setModalDish] = useState<Dish | null>(null);
   const [selectedOpt, setSelectedOpt] = useState<string>('');
   const [modalQty, setModalQty] = useState<number>(1);
+  const [selectionList, setSelectionList] = useState<CartItem[]>([]);
 
   const refreshDishes = async () => {
     try {
@@ -131,18 +132,62 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const activePhoneTel = activePhoneDisplay.replace(/\s+/g, '');
   const activeWhatsApp = (settings.whatsapp || RESTAURANT_WHATSAPP).replace(/[^0-9]/g, '') || RESTAURANT_WHATSAPP;
 
+  const addCurrentDishToSelection = (dish: Dish, opt: string, qty: number) => {
+    const key = `${dish.id}::${opt || ''}`;
+    setSelectionList(prev => {
+      const existing = prev.find(item => item.cartKey === key);
+      if (existing) {
+        return prev.map(item =>
+          item.cartKey === key ? { ...item, qty: item.qty + qty } : item
+        );
+      }
+      return [...prev, { ...dish, cartKey: key, selectedOption: opt, qty }];
+    });
+    setModalDish(null);
+    showToast(`${qty}x ${dish.name} ajouté à votre sélection d’appel !`);
+  };
+
+  const removeSelectionItem = (cartKey: string) => {
+    setSelectionList(prev => prev.filter(item => item.cartKey !== cartKey));
+  };
+
+  const clearSelectionList = () => {
+    setSelectionList([]);
+  };
+
   const getWhatsAppDirectUrl = (dish: Dish, opt: string, qty: number) => {
     const modeLabel =
       dish.availability_mode === 'daily'
         ? 'Menu du Jour'
         : 'Plat sur Commande';
-    const text = [
+    const itemsToSend: Array<{ name: string; opt?: string; qty: number; price: number; mode: string }> = [
+      ...selectionList.map(it => ({
+        name: it.name,
+        opt: it.selectedOption,
+        qty: it.qty,
+        price: it.price,
+        mode: it.availability_mode === 'daily' ? 'Menu du Jour' : 'Plat sur Commande'
+      })),
+      {
+        name: dish.name,
+        opt,
+        qty,
+        price: dish.price,
+        mode: modeLabel
+      }
+    ];
+    const grandTotal = itemsToSend.reduce((acc, it) => acc + it.price * it.qty, 0);
+    const lines = [
       `Bonjour *${settings.restaurant_name || 'Restaurant La Gratitude'}*,`,
       `Je souhaite commander :`,
-      `- *${qty}x ${dish.name}*${opt ? ` (${opt})` : ''} — ${formatCFA(dish.price * qty)} [${modeLabel}]`,
+      ...itemsToSend.map(
+        it =>
+          `- *${it.qty}x ${it.name}*${it.opt ? ` (${it.opt})` : ''} — ${formatCFA(it.price * it.qty)} [${it.mode}]`
+      ),
+      `*Total estimé : ${formatCFA(grandTotal)}*`,
       `Merci de me confirmer la disponibilité.`
-    ].join('\n');
-    return `https://wa.me/${activeWhatsApp}?text=${encodeURIComponent(text)}`;
+    ];
+    return `https://wa.me/${activeWhatsApp}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
   return (
@@ -277,10 +322,52 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
+              {/* Liste des autres plats déjà retenus par le client (si multi-plats) */}
+              {selectionList.length > 0 && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-[#881313]">
+                      Déjà dans votre liste ({selectionList.length}) :
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearSelectionList}
+                      className="text-[10px] font-bold text-rose-700 underline"
+                    >
+                      Vider
+                    </button>
+                  </div>
+                  {selectionList.map(item => (
+                    <div key={item.cartKey} className="flex items-center justify-between text-[11px]">
+                      <span className="truncate font-semibold">
+                        {item.qty}x {item.name} {item.selectedOption ? `(${item.selectedOption})` : ''}
+                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-bold text-[#881313]">{formatCFA(item.price * item.qty)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeSelectionItem(item.cartKey)}
+                          className="text-rose-600 font-bold"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Appel Direct au Restaurant */}
               <div className="space-y-2 pt-1 border-t border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => addCurrentDishToSelection(modalDish, selectedOpt, modalQty)}
+                  className="w-full py-2 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#2b1810] border border-amber-400 font-extrabold text-xs transition"
+                >
+                  + Choisir un autre plat avant d’appeler / WhatsApp
+                </button>
                 <p className="text-[11px] text-center font-bold text-stone-600">
-                  Pour commander ce plat, appelez directement le restaurant :
+                  Pour commander, appelez directement le restaurant :
                 </p>
                 <a
                   href={`tel:${activePhoneTel}`}
