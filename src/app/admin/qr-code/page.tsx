@@ -5,7 +5,7 @@ import AdminShell from '@/components/AdminShell';
 import { PrinterIcon, QrCodeIcon, MapPinIcon, PhoneIcon } from '@/components/Icons';
 
 export default function AdminQrCodePage() {
-  const [siteUrl, setSiteUrl] = useState('https://restaurant-la-gratitude.vercel.app/menu-du-jour');
+  const [siteUrl, setSiteUrl] = useState('https://restaurantlagratitude.com/menu-du-jour');
   const [tableNumber, setTableNumber] = useState('Table 1');
 
   useEffect(() => {
