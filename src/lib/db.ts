@@ -165,11 +165,11 @@ export const INITIAL_DISHES: Dish[] = [
   { id: 1, slug: 'riz-gras', name: 'Riz gras', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Simple', 'Avec piment', 'Sans piment'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-tl', description: 'Riz gras traditionnel parfumé aux épices douces, légumes et viande.', display_order: 1 },
   { id: 2, slug: 'riz-sauce-arachide', name: 'Riz sauce d’arachide', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Bœuf', 'Poulet', 'Simple'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-bl', description: 'Riz blanc servi avec une sauce d’arachide onctueuse mijotée.', display_order: 2 },
   { id: 3, slug: 'riz-sauce-tomate', name: 'Riz sauce tomate', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Bœuf', 'Poisson', 'Simple'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-tl', description: 'Riz accompagné d’une sauce tomate maison bien relevée.', display_order: 3 },
-  { id: 4, slug: 'to-sauce-boulvanka', name: 'Tô sauce boulvanka', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Sauce Boulvanka', 'Avec viande', 'Avec poisson'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-tr', description: 'Tô traditionnel servi chaud avec sa sauce boulvanka authentique.', display_order: 4 },
-  { id: 5, slug: 'soupe-poulet', name: 'Soupe de poulet', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec pain', 'Sans piment', 'Bien pimenté'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-br', description: 'Bouillon chaud et parfumé de poulet local aux herbes fraîches.', display_order: 5 },
-  { id: 6, slug: 'soupe-poisson', name: 'Soupe de poisson', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec pain', 'Citron & piment', 'Sans piment'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-br', description: 'Soupe de poisson frais au citron vert et aromates.', display_order: 6 },
-  { id: 7, slug: 'soupe-jarret', name: 'Soupe de jarret', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec pain', 'Nature'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-br', description: 'Soupe traditionnelle au jarret tendre longuement mijotée.', display_order: 7 },
-  { id: 8, slug: 'soupe-boyaux', name: 'Soupe de boyaux', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec pain', 'Bien relevée'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-br', description: 'Soupe traditionnelle aux tripes bien assaisonnée.', display_order: 8 },
+  { id: 5, slug: 'soupe-poulet', name: 'Soupe de poulet', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec pain', 'Sans piment', 'Bien pimenté'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-br', description: 'Bouillon chaud et parfumé de poulet local aux herbes fraîches.', display_order: 4 },
+  { id: 6, slug: 'soupe-poisson', name: 'Soupe de poisson', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec pain', 'Citron & piment', 'Sans piment'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-br', description: 'Soupe de poisson frais au citron vert et aromates.', display_order: 5 },
+  { id: 7, slug: 'soupe-jarret', name: 'Soupe de jarret', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec pain', 'Nature'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-br', description: 'Soupe traditionnelle au jarret tendre longuement mijotée.', display_order: 6 },
+  { id: 8, slug: 'soupe-boyaux', name: 'Soupe de boyaux', category: 'Soupes', price: 1500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec pain', 'Bien relevée'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-br', description: 'Soupe traditionnelle aux tripes bien assaisonnée.', display_order: 7 },
+  { id: 4, slug: 'to-sauce-boulvanka', name: 'Tô sauce boulvanka', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Sauce Boulvanka', 'Avec viande', 'Avec poisson'], image_url: '/images/dishes_grid_1.jpg', image_quadrant: 'quad-tr', description: 'Tô traditionnel servi chaud avec sa sauce boulvanka authentique.', display_order: 8 },
   { id: 9, slug: 'brochettes-kaya', name: 'Brochettes Kaya (x5)', category: 'Grillades', price: 1000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec oignons & kankankan', 'Sans piment'], image_url: '/images/dishes_grid_2.jpg', image_quadrant: 'quad-tl', description: 'Portion de 5 brochettes Kaya grillées au feu de bois.', display_order: 9 },
   { id: 10, slug: 'brochette-filet', name: 'Brochette Filet (x1)', category: 'Grillades', price: 500, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Bien cuit', 'Saignant'], image_url: '/images/dishes_grid_2.jpg', image_quadrant: 'quad-tl', description: 'Brochette de filet de bœuf tendre marinée et grillée.', display_order: 10 },
   { id: 11, slug: 'brochettes-merguez', name: 'Brochettes Merguez (x4)', category: 'Grillades', price: 2000, availability_mode: 'daily', is_available_today: true, stock_status: 'available', options_json: ['Avec moutarde', 'Avec piment'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-bl', description: 'Portion de 4 merguez grillées bien dorées.', display_order: 11 },
@@ -205,6 +205,53 @@ export const INITIAL_DISHES: Dish[] = [
 ];
 
 export const INITIAL_ORDERS: Order[] = [];
+
+/**
+ * Retourne la famille de classement pour le Menu du Jour :
+ * 1. Plats de Riz
+ * 2. Soupes
+ * 3. Tô & Plats Traditionnels
+ * 4. Grillades & Accompagnements
+ * 5. Omelettes & Sandwichs
+ * 6. Boissons & Cafés
+ */
+export function getDailyMenuGroupLabel(dish: { name: string; category?: string }): string {
+  const n = (dish.name || '').toLowerCase();
+  const c = (dish.category || '').toLowerCase();
+  if (n.includes('riz')) return '1. Plats de Riz';
+  if (c === 'soupes' || n.includes('soupe')) return '2. Soupes';
+  if (n.includes('tô') || n.startsWith('to ') || n.includes('boulvanka')) return '3. Tô & Plats Traditionnels';
+  if (c === 'grillades' || n.includes('brochette') || n.includes('alloco') || n.includes('frite') || n.includes('pomme')) {
+    return '4. Grillades & Accompagnements';
+  }
+  if (c === 'boissons' || n.includes('café') || n.includes('cappuccino') || n.includes('thé') || n.includes('jus')) {
+    return '6. Boissons & Cafés';
+  }
+  return '5. Omelettes & Sandwichs';
+}
+
+export function getDailyMenuSortRank(dish: { name: string; category?: string; display_order?: number; id?: number }): number {
+  const n = (dish.name || '').toLowerCase();
+  const c = (dish.category || '').toLowerCase();
+  if (n.includes('riz')) return 10;
+  if (c === 'soupes' || n.includes('soupe')) return 20;
+  if (n.includes('tô') || n.startsWith('to ') || n.includes('boulvanka')) return 30;
+  if (c === 'grillades' || n.includes('brochette') || n.includes('alloco') || n.includes('frite') || n.includes('pomme')) return 40;
+  if (c === 'boissons' || n.includes('café') || n.includes('cappuccino') || n.includes('thé') || n.includes('jus')) return 60;
+  return 50;
+}
+
+export function sortDailyMenuDishes<T extends { name: string; category?: string; display_order?: number; id?: number }>(
+  list: T[]
+): T[] {
+  return [...list].sort((a, b) => {
+    const rankDiff = getDailyMenuSortRank(a) - getDailyMenuSortRank(b);
+    if (rankDiff !== 0) return rankDiff;
+    const orderDiff = (a.display_order ?? 999) - (b.display_order ?? 999);
+    if (orderDiff !== 0) return orderDiff;
+    return (a.id ?? 0) - (b.id ?? 0);
+  });
+}
 
 declare global {
   // eslint-disable-next-line no-var

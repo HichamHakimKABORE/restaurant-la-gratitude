@@ -111,7 +111,7 @@ export default function AdminQrCodePage() {
               </span>
               <span className="inline-flex items-center gap-1">
                 <PhoneIcon className="w-3.5 h-3.5 text-[#881313] shrink-0" />
-                <span>+226 60 18 65 25</span>
+                <span>+226 02 80 99 06</span>
               </span>
             </div>
           </div>

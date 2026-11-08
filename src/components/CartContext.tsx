@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { INITIAL_DISHES, type Dish } from '@/lib/db';
-import { CheckIcon, CloseIcon } from './Icons';
+import { CheckIcon, CloseIcon, PhoneIcon, WhatsAppIcon } from './Icons';
+import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_PHONE_TEL, RESTAURANT_WHATSAPP } from '@/lib/constants';
 
 export interface CartItem extends Dish {
   cartKey: string;
@@ -46,9 +47,7 @@ export function formatCFA(price: number) {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  // Instant zero-latency initial state with INITIAL_DISHES, then synced in background with Neon
   const [dishes, setDishes] = useState<Dish[]>(INITIAL_DISHES);
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [modalDish, setModalDish] = useState<Dish | null>(null);
   const [selectedOpt, setSelectedOpt] = useState<string>('');
@@ -68,89 +67,54 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Isolation stricte : nettoyage de toute donnée personnelle ou commande stockée localement
+    // pour garantir que chaque utilisateur dispose d'un espace 100% propre et isolé.
     try {
-      const savedCart = localStorage.getItem('gratitude_cart_v2');
-      if (savedCart) setCart(JSON.parse(savedCart));
+      localStorage.removeItem('gratitude_cart_v2');
+      localStorage.removeItem('gratitude_my_orders');
+      localStorage.removeItem('gratitude_my_orders_v2');
       const cachedDishes = sessionStorage.getItem('gratitude_dishes_cache');
       if (cachedDishes) setDishes(JSON.parse(cachedDishes));
     } catch {}
     refreshDishes();
   }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('gratitude_cart_v2', JSON.stringify(cart));
-    } catch {}
-  }, [cart]);
-
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2800);
   };
 
-  const addToCart = (dish: Dish, chosenOption?: string, qtyToAdd = 1) => {
-    if (!dish.is_available_today || dish.stock_status === 'soldout') {
-      showToast(`Désolé, ${dish.name} est en rupture aujourd'hui.`);
-      return;
-    }
-
-    const opt =
-      chosenOption ||
-      (Array.isArray(dish.options_json) && dish.options_json.length > 0
-        ? dish.options_json[0]
-        : undefined);
-    const cartKey = `${dish.id}__${opt || 'default'}`;
-
-    setCart(prev => {
-      const found = prev.find(i => i.cartKey === cartKey);
-      if (found) {
-        return prev.map(i =>
-          i.cartKey === cartKey ? { ...i, qty: i.qty + qtyToAdd } : i
-        );
-      }
-      return [
-        ...prev,
-        {
-          ...dish,
-          cartKey,
-          selectedOption: opt,
-          qty: qtyToAdd
-        }
-      ];
-    });
-
-    showToast(
-      `${dish.name}${opt ? ` (${opt})` : ''} ajouté au panier !`
-    );
-  };
-
   const openDishSelector = (dish: Dish) => {
     if (!dish.is_available_today || dish.stock_status === 'soldout') {
-      showToast(`Ce plat (${dish.name}) est épuisé pour le moment.`);
+      showToast(`Ce plat (${dish.name}) n'est pas disponible pour le moment.`);
       return;
     }
     const opts = Array.isArray(dish.options_json) ? dish.options_json : [];
-    if (opts.length > 0) {
-      setModalDish(dish);
-      setSelectedOpt(opts[0]);
-      setModalQty(1);
-    } else {
-      addToCart(dish);
-    }
+    setModalDish(dish);
+    setSelectedOpt(opts.length > 0 ? opts[0] : '');
+    setModalQty(1);
   };
 
-  const updateQty = (cartKey: string, delta: number) => {
-    setCart(prev =>
-      prev
-        .map(i => (i.cartKey === cartKey ? { ...i, qty: i.qty + delta } : i))
-        .filter(i => i.qty > 0)
-    );
+  const addToCart = (dish: Dish) => {
+    openDishSelector(dish);
   };
 
-  const clearCart = () => setCart([]);
+  const updateQty = () => {};
+  const clearCart = () => {};
 
-  const totalItems = cart.reduce((acc, i) => acc + i.qty, 0);
-  const totalPrice = cart.reduce((acc, i) => acc + i.price * i.qty, 0);
+  const getWhatsAppDirectUrl = (dish: Dish, opt: string, qty: number) => {
+    const modeLabel =
+      dish.availability_mode === 'daily'
+        ? 'Menu du Jour'
+        : 'Plat sur Commande';
+    const text = [
+      `Bonjour *Restaurant La Gratitude*,`,
+      `Je souhaite commander :`,
+      `- *${qty}x ${dish.name}*${opt ? ` (${opt})` : ''} — ${formatCFA(dish.price * qty)} [${modeLabel}]`,
+      `Merci de me confirmer la disponibilité.`
+    ].join('\n');
+    return `https://wa.me/${RESTAURANT_WHATSAPP}?text=${encodeURIComponent(text)}`;
+  };
 
   return (
     <CartContext.Provider
@@ -158,13 +122,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         dishes,
         setDishes,
         refreshDishes,
-        cart,
+        cart: [],
         addToCart,
         openDishSelector,
         updateQty,
         clearCart,
-        totalItems,
-        totalPrice,
+        totalItems: 0,
+        totalPrice: 0,
         toast,
         showToast
       }}
@@ -178,10 +142,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      {/* DISH OPTION SELECTOR MODAL (Ex: Poulet Flambé / Rabilé / Sauté, accompagnement...) */}
+      {/* FENÊTRE DE COMMANDE PAR TÉLÉPHONE DU PLAT CHOISI */}
       {modalDish && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-[#fffcf7] text-[#2b1810] border-2 border-[#881313] rounded-2xl max-w-md w-full overflow-hidden shadow-2xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          onClick={() => setModalDish(null)}
+        >
+          <div
+            className="bg-[#fffcf7] text-[#2b1810] border-2 border-[#881313] rounded-2xl max-w-md w-full overflow-hidden shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="relative h-44 bg-stone-900">
               <div
                 className={`w-full h-full dish-photo ${modalDish.image_quadrant}`}
@@ -193,7 +163,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               >
                 <CloseIcon className="w-4 h-4" />
               </button>
-              <div className="absolute bottom-3 left-3 px-3 py-1 rounded-xl bg-black/80 text-[#facc15] font-extrabold text-sm">
+              <div className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-xs shadow">
+                {modalDish.availability_mode === 'daily'
+                  ? 'Menu du Jour'
+                  : 'Sur Commande'}
+              </div>
+              <div className="absolute bottom-3 left-3 px-3 py-1 rounded-xl bg-black/80 text-[#facc15] font-extrabold text-sm whitespace-nowrap">
                 {formatCFA(modalDish.price)}
               </div>
             </div>
@@ -216,14 +191,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 modalDish.options_json.length > 0 && (
                   <div className="space-y-2">
                     <label className="block text-xs font-extrabold text-[#2b1810]">
-                      Choisissez votre préférence / préparation :
+                      Préférence / accompagnement disponible :
                     </label>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto">
                       {modalDish.options_json.map(opt => (
                         <label
                           key={opt}
                           onClick={() => setSelectedOpt(opt)}
-                          className={`flex items-center justify-between p-2.5 rounded-xl border-2 cursor-pointer text-xs font-bold transition ${
+                          className={`flex items-center justify-between p-2 rounded-xl border-2 cursor-pointer text-xs font-bold transition ${
                             selectedOpt === opt
                               ? 'bg-amber-50 border-[#881313] text-[#881313]'
                               : 'bg-white border-stone-200 text-stone-700'
@@ -245,13 +220,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                   </div>
                 )}
 
-              {/* Quantity & Add Button */}
-              <div className="flex items-center justify-between gap-3 pt-2 border-t border-stone-200">
-                <div className="flex items-center gap-3 bg-[#fdf5e8] px-3 py-2 rounded-xl border border-[#dec6a7]">
+              {/* Quantité indicative */}
+              <div className="flex items-center justify-between bg-[#fdf5e8] px-3.5 py-2 rounded-xl border border-[#dec6a7] text-xs">
+                <span className="font-bold text-stone-700">Quantité souhaitée :</span>
+                <div className="flex items-center gap-3">
                   <button
                     type="button"
                     onClick={() => setModalQty(q => Math.max(1, q - 1))}
-                    className="font-extrabold text-base px-1 text-stone-700"
+                    className="font-extrabold text-base px-1.5 text-stone-700"
                   >
                     −
                   </button>
@@ -259,22 +235,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                   <button
                     type="button"
                     onClick={() => setModalQty(q => q + 1)}
-                    className="font-extrabold text-base px-1 text-[#881313]"
+                    className="font-extrabold text-base px-1.5 text-[#881313]"
                   >
                     +
                   </button>
+                  <span className="font-extrabold text-[#881313] ml-1 whitespace-nowrap">
+                    ({formatCFA(modalDish.price * modalQty)})
+                  </span>
                 </div>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    addToCart(modalDish, selectedOpt, modalQty);
-                    setModalDish(null);
-                  }}
-                  className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs shadow-lg"
+              {/* Appel Direct au Restaurant */}
+              <div className="space-y-2 pt-1 border-t border-stone-200">
+                <p className="text-[11px] text-center font-bold text-stone-600">
+                  Pour commander ce plat, appelez directement le restaurant :
+                </p>
+                <a
+                  href={`tel:${RESTAURANT_PHONE_TEL}`}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 whitespace-nowrap transition"
                 >
-                  Ajouter au panier ({formatCFA(modalDish.price * modalQty)})
-                </button>
+                  <PhoneIcon className="w-4 h-4 shrink-0" />
+                  <span>Appeler le {RESTAURANT_PHONE_DISPLAY}</span>
+                </a>
+                <a
+                  href={getWhatsAppDirectUrl(modalDish, selectedOpt, modalQty)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-2.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
+                >
+                  <WhatsAppIcon className="w-4 h-4 shrink-0" />
+                  <span>Écrire au {RESTAURANT_PHONE_DISPLAY} (WhatsApp)</span>
+                </a>
               </div>
             </div>
           </div>

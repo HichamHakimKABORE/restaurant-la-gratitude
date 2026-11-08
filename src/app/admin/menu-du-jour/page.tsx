@@ -1,17 +1,33 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, CloseIcon } from '@/components/Icons';
-import type { Dish, StockStatus } from '@/lib/db';
+import { sortDailyMenuDishes, getDailyMenuGroupLabel, type Dish, type StockStatus } from '@/lib/db';
 
 export default function AdminMenuDuJourPage() {
   const { dishes, setDishes, showToast } = useCart();
   const [isSavingHistory, setIsSavingHistory] = useState(false);
 
-  const dailyDishes = dishes.filter(d => d.availability_mode === 'daily');
+  // Séparation stricte : SEULS les plats avec availability_mode === 'daily'
+  // figurent dans la liste du Menu du Jour, triés d'abord par Riz, ensuite Soupes, etc.
+  const dailyDishes = useMemo(
+    () => sortDailyMenuDishes(dishes.filter(d => d.availability_mode === 'daily')),
+    [dishes]
+  );
+
+  const groupedDailyDishes = useMemo(() => {
+    const map = new Map<string, Dish[]>();
+    for (const d of dailyDishes) {
+      const label = getDailyMenuGroupLabel(d);
+      const arr = map.get(label) || [];
+      arr.push(d);
+      map.set(label, arr);
+    }
+    return Array.from(map.entries());
+  }, [dailyDishes]);
 
   const saveMenuReport = async () => {
     setIsSavingHistory(true);
@@ -38,7 +54,7 @@ export default function AdminMenuDuJourPage() {
       });
 
       showToast(`Menu du Jour enregistré et archivé dans les rapports (${activeDailyDishes.length} plats) !`);
-    } catch (err) {
+    } catch {
       showToast('Menu synchronisé sur le site client !');
     } finally {
       setIsSavingHistory(false);
@@ -78,89 +94,103 @@ export default function AdminMenuDuJourPage() {
 
   return (
     <AdminShell
-      title="Menu du Jour"
-      subtitle="Cochez les plats préparés ce matin ou signalez quand un plat est presque fini"
+      title="Menu du Jour (Classement : Riz → Soupes → Plats)"
+      subtitle="Cochez les plats préparés ce matin. Les plats uniquement sur commande ne figurent pas dans cette liste."
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
-        <div className="md:col-span-8 space-y-2.5">
-          {dailyDishes.map(dish => (
-            <div
-              key={dish.id}
-              className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl border-2 transition ${
-                dish.is_available_today
-                  ? dish.stock_status === 'low'
-                    ? 'bg-amber-50 border-amber-400 font-bold text-[#2b1810]'
-                    : 'bg-emerald-50/80 border-emerald-400 font-bold text-[#2b1810]'
-                  : 'bg-stone-50 border-stone-200 text-stone-400'
-              }`}
-            >
-              <div
-                onClick={() =>
-                  setStatus(
-                    dish,
-                    dish.is_available_today ? 'soldout' : 'available'
-                  )
-                }
-                className="flex items-center gap-3 min-w-0 cursor-pointer flex-1"
-              >
-                <span
-                  className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-extrabold shrink-0 ${
-                    dish.is_available_today
-                      ? 'bg-emerald-600 text-white'
-                      : 'border border-stone-300 bg-white'
-                  }`}
-                >
-                  {dish.is_available_today ? <CheckIcon className="w-3.5 h-3.5" /> : null}
+        <div className="md:col-span-8 space-y-5">
+          {groupedDailyDishes.map(([groupTitle, groupItems]) => (
+            <div key={groupTitle} className="space-y-2.5">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-1">
+                <h3 className="font-extrabold text-sm text-[#881313] flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#881313]" />
+                  <span>{groupTitle}</span>
+                </h3>
+                <span className="text-xs font-bold text-stone-500">
+                  {groupItems.filter(d => d.is_available_today).length}/{groupItems.length} cochés
                 </span>
-                <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-amber-400">
-                  <div
-                    className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                    style={{ backgroundImage: `url('${dish.image_url}')` }}
-                  />
-                </div>
-                <div className="min-w-0">
-                  <span className="block text-sm truncate">{dish.name}</span>
-                  <span className="text-xs text-[#881313] font-extrabold whitespace-nowrap">
-                    {formatCFA(dish.price)}
-                  </span>
-                </div>
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  onClick={() => setStatus(dish, 'available')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${
-                    dish.is_available_today && dish.stock_status === 'available'
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-white border border-stone-300 text-stone-600'
+              {groupItems.map(dish => (
+                <div
+                  key={dish.id}
+                  className={`flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl border-2 transition ${
+                    dish.is_available_today
+                      ? dish.stock_status === 'low'
+                        ? 'bg-amber-50 border-amber-400 font-bold text-[#2b1810]'
+                        : 'bg-emerald-50/80 border-emerald-400 font-bold text-[#2b1810]'
+                      : 'bg-stone-50 border-stone-200 text-stone-400'
                   }`}
                 >
-                  <CheckIcon className="w-3 h-3" />
-                  <span>Prêt</span>
-                </button>
-                <button
-                  onClick={() => setStatus(dish, 'low')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${
-                    dish.is_available_today && dish.stock_status === 'low'
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-white border border-stone-300 text-stone-600'
-                  }`}
-                >
-                  <BoltIcon className="w-3 h-3" />
-                  <span>Presque fini</span>
-                </button>
-                <button
-                  onClick={() => setStatus(dish, 'soldout')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 ${
-                    !dish.is_available_today
-                      ? 'bg-rose-600 text-white'
-                      : 'bg-white border border-stone-300 text-stone-600'
-                  }`}
-                >
-                  <CloseIcon className="w-3 h-3" />
-                  <span>Non</span>
-                </button>
-              </div>
+                  <div
+                    onClick={() =>
+                      setStatus(
+                        dish,
+                        dish.is_available_today ? 'soldout' : 'available'
+                      )
+                    }
+                    className="flex items-center gap-3 min-w-0 cursor-pointer flex-1"
+                  >
+                    <span
+                      className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-extrabold shrink-0 ${
+                        dish.is_available_today
+                          ? 'bg-emerald-600 text-white'
+                          : 'border border-stone-300 bg-white'
+                      }`}
+                    >
+                      {dish.is_available_today ? <CheckIcon className="w-3.5 h-3.5" /> : null}
+                    </span>
+                    <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-amber-400">
+                      <div
+                        className={`w-full h-full dish-photo ${dish.image_quadrant}`}
+                        style={{ backgroundImage: `url('${dish.image_url}')` }}
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="block text-sm truncate">{dish.name}</span>
+                      <span className="text-xs text-[#881313] font-extrabold whitespace-nowrap">
+                        {formatCFA(dish.price)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      onClick={() => setStatus(dish, 'available')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 whitespace-nowrap ${
+                        dish.is_available_today && dish.stock_status === 'available'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-white border border-stone-300 text-stone-600'
+                      }`}
+                    >
+                      <CheckIcon className="w-3 h-3" />
+                      <span>Prêt</span>
+                    </button>
+                    <button
+                      onClick={() => setStatus(dish, 'low')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 whitespace-nowrap ${
+                        dish.is_available_today && dish.stock_status === 'low'
+                          ? 'bg-amber-500 text-slate-950'
+                          : 'bg-white border border-stone-300 text-stone-600'
+                      }`}
+                    >
+                      <BoltIcon className="w-3 h-3" />
+                      <span>Presque fini</span>
+                    </button>
+                    <button
+                      onClick={() => setStatus(dish, 'soldout')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1 whitespace-nowrap ${
+                        !dish.is_available_today
+                          ? 'bg-rose-600 text-white'
+                          : 'bg-white border border-stone-300 text-stone-600'
+                      }`}
+                    >
+                      <CloseIcon className="w-3 h-3" />
+                      <span>Non</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           ))}
         </div>
@@ -169,14 +199,14 @@ export default function AdminMenuDuJourPage() {
           <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-950 font-extrabold text-xs">
             Aujourd’hui : {dailyDishes.filter(d => d.is_available_today).length} plats prêts
           </span>
-          <div className="w-44 h-44 rounded-full overflow-hidden border-4 border-[#d99b26] shadow-xl">
+          <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-[#d99b26] shadow-xl">
             <div
               className="w-full h-full dish-photo quad-tl"
               style={{ backgroundImage: `url('/images/dishes_grid_1.jpg')` }}
             />
           </div>
           <p className="text-xs text-stone-600">
-            Astuce : Cliquez sur « Presque fini » lorsqu’il ne reste que quelques assiettes d’un plat.
+            L’ordre d’affichage respecte automatiquement : 1. Plats de Riz, 2. Soupes, 3. Tô, 4. Grillades, 5. Omelettes &amp; Sandwichs, 6. Boissons.
           </p>
           <button
             onClick={saveMenuReport}
@@ -191,7 +221,7 @@ export default function AdminMenuDuJourPage() {
             href="/admin/rapport-menus"
             className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#fef08a] to-[#facc15] hover:brightness-105 text-[#2b1810] font-extrabold text-xs border border-amber-400 shadow text-center block transition"
           >
-            Consulter les rapports & générer un PDF →
+            Consulter les rapports &amp; générer un PDF →
           </Link>
         </div>
       </div>

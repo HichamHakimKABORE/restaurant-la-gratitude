@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CameraIcon, CheckIcon, BoltIcon, CloseIcon } from '@/components/Icons';
@@ -198,21 +198,23 @@ export default function AdminPlatsPage() {
 
   const filtered = dishes.filter(d => {
     if (filter === 'Tous') return true;
+    if (filter === 'Menu du Jour') return d.availability_mode === 'daily';
+    if (filter === 'Sur Commande') return d.availability_mode !== 'daily';
     return d.category === filter;
   });
 
   return (
     <AdminShell
-      title="Gestion des Plats, Photos & Stocks"
-      subtitle="Changez les photos depuis votre téléphone et gérez l’état Disponible / Presque fini / Rupture"
+      title="Gestion des Plats : Menu du Jour & Plats sur Commande"
+      subtitle="Séparez les plats de la liste du Menu du Jour et les plats préparés uniquement sur commande"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-          {['Tous', 'Plats', 'Pizzas', 'Salades', 'Poulets', 'Soupes', 'Grillades', 'Boissons'].map(cat => (
+          {['Tous', 'Menu du Jour', 'Sur Commande', 'Plats', 'Soupes', 'Pizzas', 'Poulets', 'Grillades', 'Salades', 'Boissons'].map(cat => (
             <button
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition ${
+              className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
                 filter === cat
                   ? 'bg-[#881313] text-white shadow'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
@@ -225,7 +227,7 @@ export default function AdminPlatsPage() {
 
         <button
           onClick={openCreateModal}
-          className="px-4 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow"
+          className="px-4 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow whitespace-nowrap"
         >
           + Ajouter un plat (avec photo)
         </button>
@@ -236,8 +238,9 @@ export default function AdminPlatsPage() {
         <table className="w-full text-left border-collapse text-xs sm:text-sm">
           <thead>
             <tr className="bg-stone-100 border-b border-stone-200 text-stone-600">
-              <th className="p-3">Photo (Cliquer pour changer)</th>
+              <th className="p-3">Photo</th>
               <th className="p-3">Nom du plat</th>
+              <th className="p-3">Type de liste</th>
               <th className="p-3">Catégorie</th>
               <th className="p-3">Prix</th>
               <th className="p-3">État du Stock</th>
@@ -245,95 +248,109 @@ export default function AdminPlatsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {filtered.map(dish => (
-              <tr key={dish.id} className="hover:bg-stone-50">
-                <td className="p-3">
-                  <label className="cursor-pointer inline-flex items-center gap-2 group" title="Prendre ou choisir une photo">
-                    <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400 relative">
-                      <div
-                        className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                        style={{ backgroundImage: `url('${dish.image_url}')` }}
+            {filtered.map(dish => {
+              const isDaily = dish.availability_mode === 'daily';
+              return (
+                <tr key={dish.id} className="hover:bg-stone-50">
+                  <td className="p-3">
+                    <label className="cursor-pointer inline-flex items-center gap-2 group" title="Prendre ou choisir une photo">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400 relative">
+                        <div
+                          className={`w-full h-full dish-photo ${dish.image_quadrant}`}
+                          style={{ backgroundImage: `url('${dish.image_url}')` }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold text-[#881313] group-hover:underline inline-flex items-center gap-1">
+                        <CameraIcon className="w-3.5 h-3.5" />
+                        <span>Photo</span>
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e =>
+                          handlePhotoUploadForDish(dish, e.target.files?.[0])
+                        }
                       />
-                    </div>
-                    <span className="text-xs font-bold text-[#881313] group-hover:underline inline-flex items-center gap-1">
-                      <CameraIcon className="w-3.5 h-3.5" />
-                      <span>Photo</span>
+                    </label>
+                  </td>
+                  <td className="p-3">
+                    <div className="font-extrabold text-[#2b1810]">{dish.name}</div>
+                    {Array.isArray(dish.options_json) && dish.options_json.length > 0 && (
+                      <div className="text-xs text-stone-500">
+                        Options : {dish.options_json.join(', ')}
+                      </div>
+                    )}
+                  </td>
+                  <td className="p-3">
+                    <span
+                      className={`px-2.5 py-1 rounded-full font-extrabold text-xs whitespace-nowrap ${
+                        isDaily
+                          ? 'bg-amber-100 text-[#881313] border border-amber-300'
+                          : 'bg-stone-800 text-white'
+                      }`}
+                    >
+                      {isDaily ? 'Liste Menu du Jour' : 'Uniquement sur commande'}
                     </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e =>
-                        handlePhotoUploadForDish(dish, e.target.files?.[0])
-                      }
-                    />
-                  </label>
-                </td>
-                <td className="p-3">
-                  <div className="font-extrabold text-[#2b1810]">{dish.name}</div>
-                  {Array.isArray(dish.options_json) && dish.options_json.length > 0 && (
-                    <div className="text-xs text-stone-500">
-                      Options : {dish.options_json.join(', ')}
+                  </td>
+                  <td className="p-3 text-stone-600">{dish.category}</td>
+                  <td className="p-3 font-extrabold text-[#881313] whitespace-nowrap">
+                    {formatCFA(dish.price)}
+                  </td>
+                  <td className="p-3">
+                    <div className="inline-flex rounded-xl bg-stone-100 p-1 gap-1">
+                      <button
+                        onClick={() => updateStockStatus(dish, 'available')}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 whitespace-nowrap ${
+                          dish.stock_status === 'available' && dish.is_available_today
+                            ? 'bg-emerald-600 text-white shadow'
+                            : 'text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        <CheckIcon className="w-3 h-3" />
+                        <span>Dispo</span>
+                      </button>
+                      <button
+                        onClick={() => updateStockStatus(dish, 'low')}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 whitespace-nowrap ${
+                          dish.stock_status === 'low' && dish.is_available_today
+                            ? 'bg-amber-500 text-slate-950 shadow'
+                            : 'text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        <BoltIcon className="w-3 h-3" />
+                        <span>Presque fini</span>
+                      </button>
+                      <button
+                        onClick={() => updateStockStatus(dish, 'soldout')}
+                        className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 whitespace-nowrap ${
+                          !dish.is_available_today || dish.stock_status === 'soldout'
+                            ? 'bg-rose-600 text-white shadow'
+                            : 'text-stone-600 hover:bg-stone-200'
+                        }`}
+                      >
+                        <CloseIcon className="w-3 h-3" />
+                        <span>Rupture</span>
+                      </button>
                     </div>
-                  )}
-                </td>
-                <td className="p-3 text-stone-600">{dish.category}</td>
-                <td className="p-3 font-extrabold text-[#881313] whitespace-nowrap">
-                  {formatCFA(dish.price)}
-                </td>
-                <td className="p-3">
-                  <div className="inline-flex rounded-xl bg-stone-100 p-1 gap-1">
+                  </td>
+                  <td className="p-3 text-right space-x-2 whitespace-nowrap">
                     <button
-                      onClick={() => updateStockStatus(dish, 'available')}
-                      className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 ${
-                        dish.stock_status === 'available' && dish.is_available_today
-                          ? 'bg-emerald-600 text-white shadow'
-                          : 'text-stone-600 hover:bg-stone-200'
-                      }`}
+                      onClick={() => openEditModal(dish)}
+                      className="text-amber-700 hover:underline font-bold text-xs px-1.5"
                     >
-                      <CheckIcon className="w-3 h-3" />
-                      <span>Dispo</span>
+                      Modifier
                     </button>
                     <button
-                      onClick={() => updateStockStatus(dish, 'low')}
-                      className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 ${
-                        dish.stock_status === 'low' && dish.is_available_today
-                          ? 'bg-amber-500 text-slate-950 shadow'
-                          : 'text-stone-600 hover:bg-stone-200'
-                      }`}
+                      onClick={() => handleDelete(dish.id, dish.name)}
+                      className="text-rose-600 hover:underline font-bold text-xs px-1.5"
                     >
-                      <BoltIcon className="w-3 h-3" />
-                      <span>Presque fini</span>
+                      Suppr.
                     </button>
-                    <button
-                      onClick={() => updateStockStatus(dish, 'soldout')}
-                      className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 ${
-                        !dish.is_available_today || dish.stock_status === 'soldout'
-                          ? 'bg-rose-600 text-white shadow'
-                          : 'text-stone-600 hover:bg-stone-200'
-                      }`}
-                    >
-                      <CloseIcon className="w-3 h-3" />
-                      <span>Rupture</span>
-                    </button>
-                  </div>
-                </td>
-                <td className="p-3 text-right space-x-2 whitespace-nowrap">
-                  <button
-                    onClick={() => openEditModal(dish)}
-                    className="text-amber-700 hover:underline font-bold text-xs px-1.5"
-                  >
-                    Modifier
-                  </button>
-                  <button
-                    onClick={() => handleDelete(dish.id, dish.name)}
-                    className="text-rose-600 hover:underline font-bold text-xs px-1.5"
-                  >
-                    Suppr.
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -384,11 +401,11 @@ export default function AdminPlatsPage() {
                     className="w-full px-3 py-2 rounded-xl border border-stone-300"
                   >
                     <option value="Plats">Plats</option>
-                    <option value="Pizzas">Pizzas</option>
-                    <option value="Salades">Salades</option>
-                    <option value="Poulets">Poulets</option>
                     <option value="Soupes">Soupes</option>
+                    <option value="Pizzas">Pizzas</option>
+                    <option value="Poulets">Poulets</option>
                     <option value="Grillades">Grillades</option>
+                    <option value="Salades">Salades</option>
                     <option value="Boissons">Boissons</option>
                   </select>
                 </div>
@@ -457,17 +474,17 @@ export default function AdminPlatsPage() {
               </div>
 
               <div>
-                <label className="font-bold block mb-1">Type de disponibilité</label>
+                <label className="font-bold block mb-1">Type de liste (Menu du Jour ou Sur Commande)</label>
                 <select
                   value={newMode}
                   onChange={e =>
                     setNewMode(e.target.value as Dish['availability_mode'])
                   }
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
+                  className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold"
                 >
-                  <option value="daily">Menu du jour (À cocher chaque matin)</option>
-                  <option value="always">Toujours disponible</option>
-                  <option value="order">Sur commande</option>
+                  <option value="daily">Liste du Menu du Jour (À cocher chaque matin)</option>
+                  <option value="order">Uniquement sur commande (Hors Menu du Jour)</option>
+                  <option value="always">Sur commande / Carte permanente (Hors Menu du Jour)</option>
                 </select>
               </div>
             </div>
