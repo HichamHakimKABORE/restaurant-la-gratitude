@@ -15,6 +15,7 @@ const CACHE_TTL_MS = 10000; // 10 seconds server RAM cache (invalidated immediat
 
 export async function GET() {
   try {
+    const todayStr = new Date().toISOString().slice(0, 10);
     if (
       global._dishesCache &&
       Date.now() - global._dishesCache.ts < CACHE_TTL_MS
@@ -27,6 +28,15 @@ export async function GET() {
 
     const sql = await ensureNeonSchema();
     if (sql) {
+      const settingsDateRows = await sql`SELECT daily_menu_date FROM restaurant_settings WHERE id = 1`;
+      const currentMenuDate = settingsDateRows[0]?.daily_menu_date || '';
+      if (currentMenuDate !== todayStr) {
+        await sql`
+          UPDATE dishes
+          SET is_available_today = false, stock_status = 'soldout'
+          WHERE availability_mode = 'daily' AND is_available_today = true
+        `;
+      }
       const rows = (await sql`
         SELECT id, slug, name, category, price, availability_mode, is_available_today, stock_status, options_json, image_url, image_quadrant, description, display_order
         FROM dishes
@@ -87,6 +97,10 @@ export async function PATCH(request: Request) {
           options_json = COALESCE(${options_json ? JSON.stringify(options_json) : null}::jsonb, options_json)
         WHERE id = ${Number(id)}
       `;
+      if (typeof is_available_today === 'boolean') {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
+      }
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });

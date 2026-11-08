@@ -85,10 +85,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const openDishSelector = (dish: Dish) => {
-    if (!dish.is_available_today || dish.stock_status === 'soldout') {
-      showToast(`Ce plat (${dish.name}) n'est pas disponible pour le moment.`);
-      return;
-    }
     const opts = Array.isArray(dish.options_json) ? dish.options_json : [];
     setModalDish(dish);
     setSelectedOpt(opts.length > 0 ? opts[0] : '');

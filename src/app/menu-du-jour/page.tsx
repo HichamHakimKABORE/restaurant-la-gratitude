@@ -4,14 +4,14 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { PhoneIcon, BoltIcon, CheckIcon, ChefHatIcon } from '@/components/Icons';
+import { PhoneIcon, ChefHatIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, type Dish } from '@/lib/db';
 
 export default function MenuDuJourPage() {
   const { dishes, openDishSelector } = useCart();
 
-  // Séparation stricte : SEULS les plats avec availability_mode === 'daily' et cochés (is_available_today)
-  // apparaissent dans le Menu du Jour. Les plats uniquement sur commande n'y figurent jamais.
+  // Séparation stricte : SEULS les plats avec availability_mode === 'daily' et cochés par l'admin aujourd'hui
+  // apparaissent dans le Menu du Jour. Tant que l'admin n'a pas mis à jour le menu du jour, la liste est vide.
   const dailyPrepared = useMemo(
     () =>
       sortDailyMenuDishes(
@@ -62,12 +62,18 @@ export default function MenuDuJourPage() {
             <div className="p-6 rounded-2xl bg-amber-50 border-2 border-amber-300 text-[#2b1810] text-center space-y-3">
               <ChefHatIcon className="w-8 h-8 text-[#881313] mx-auto" />
               <h3 className="font-extrabold text-base sm:text-lg">
-                Le Menu du Jour est en cours de mise à jour par le Chef
+                Aucun plat n’est encore affiché pour le Menu du Jour
               </h3>
               <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto">
-                Appelez directement le restaurant pour connaître les plats prêts en cuisine ou découvrir nos plats sur commande.
+                Le Menu du Jour s’affiche ici dès que l’administrateur l’actualise pour la journée. En attendant, vous pouvez consulter nos Plats sur Commande ou appeler directement le restaurant.
               </p>
               <div className="flex flex-wrap justify-center gap-3 pt-1">
+                <Link
+                  href="/menu"
+                  className="px-4 py-2.5 rounded-xl bg-[#eab308] text-[#2b1810] font-extrabold text-xs shadow whitespace-nowrap"
+                >
+                  Voir la Carte &amp; Plats sur Commande →
+                </Link>
                 <a
                   href="tel:+22602809906"
                   className="px-4 py-2.5 rounded-xl bg-[#881313] text-white font-extrabold text-xs inline-flex items-center gap-2 shadow whitespace-nowrap"
@@ -75,12 +81,6 @@ export default function MenuDuJourPage() {
                   <PhoneIcon className="w-4 h-4 shrink-0" />
                   <span>Appeler le +226 02 80 99 06</span>
                 </a>
-                <Link
-                  href="/menu"
-                  className="px-4 py-2.5 rounded-xl bg-[#eab308] text-[#2b1810] font-extrabold text-xs shadow whitespace-nowrap"
-                >
-                  Voir les Plats sur Commande →
-                </Link>
               </div>
             </div>
           ) : (
@@ -92,7 +92,7 @@ export default function MenuDuJourPage() {
                     <span>{groupTitle}</span>
                   </h3>
                   <span className="text-xs font-bold text-stone-500 whitespace-nowrap">
-                    {groupDishes.length} {groupDishes.length > 1 ? 'plats disponibles' : 'plat disponible'}
+                    {groupDishes.length} {groupDishes.length > 1 ? 'plats' : 'plat'}
                   </span>
                 </div>
 
@@ -110,17 +110,6 @@ export default function MenuDuJourPage() {
                         />
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
-                        {dish.stock_status === 'low' ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-200 text-amber-950 font-extrabold text-xs whitespace-nowrap">
-                            <BoltIcon className="w-3 h-3" />
-                            <span>Presque fini !</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs whitespace-nowrap">
-                            <CheckIcon className="w-3 h-3" />
-                            <span>Prêt aujourd’hui</span>
-                          </span>
-                        )}
                         <h4 className="font-extrabold text-sm sm:text-base text-[#2b1810] truncate">
                           {dish.name}
                         </h4>

@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
-import { CameraIcon, CheckIcon, BoltIcon, CloseIcon } from '@/components/Icons';
-import type { Dish, StockStatus } from '@/lib/db';
+import { CameraIcon, CloseIcon, PencilIcon } from '@/components/Icons';
+import type { Dish } from '@/lib/db';
 
 function compressImageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -44,6 +44,7 @@ function compressImageToBase64(file: File): Promise<string> {
 export default function AdminPlatsPage() {
   const { dishes, setDishes, showToast } = useCart();
   const [filter, setFilter] = useState<string>('Tous');
+  const [search, setSearch] = useState<string>('');
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [newName, setNewName] = useState('');
@@ -53,37 +54,6 @@ export default function AdminPlatsPage() {
   const [newOptions, setNewOptions] = useState('Simple, Avec piment');
   const [newDescription, setNewDescription] = useState('');
   const [newPhotoData, setNewPhotoData] = useState<string>('');
-
-  const updateStockStatus = async (dish: Dish, nextStatus: StockStatus) => {
-    const isAvail = nextStatus !== 'soldout';
-    setDishes(prev =>
-      prev.map(d =>
-        d.id === dish.id
-          ? { ...d, stock_status: nextStatus, is_available_today: isAvail }
-          : d
-      )
-    );
-    const res = await fetch('/api/dishes', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: dish.id,
-        stock_status: nextStatus,
-        is_available_today: isAvail
-      })
-    });
-    const data = await res.json();
-    if (data.dishes) setDishes(data.dishes);
-    showToast(
-      `${dish.name} : ${
-        nextStatus === 'available'
-          ? 'Disponible'
-          : nextStatus === 'low'
-          ? 'Presque fini'
-          : 'En rupture'
-      }`
-    );
-  };
 
   const handlePhotoUploadForDish = async (dish: Dish, file?: File) => {
     if (!file) return;
@@ -109,6 +79,7 @@ export default function AdminPlatsPage() {
   };
 
   const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Supprimer le plat "${name}" ?`)) return;
     const res = await fetch(`/api/dishes?id=${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.dishes) setDishes(data.dishes);
@@ -193,10 +164,11 @@ export default function AdminPlatsPage() {
     setNewName('');
     setNewPhotoData('');
     setAddModalOpen(false);
-    showToast('Nouveau plat ajouté dans Neon PostgreSQL !');
+    showToast('Nouveau plat ajouté !');
   };
 
   const filtered = dishes.filter(d => {
+    if (search.trim() && !d.name.toLowerCase().includes(search.toLowerCase())) return false;
     if (filter === 'Tous') return true;
     if (filter === 'Menu du Jour') return d.availability_mode === 'daily';
     if (filter === 'Sur Commande') return d.availability_mode !== 'daily';
@@ -205,18 +177,36 @@ export default function AdminPlatsPage() {
 
   return (
     <AdminShell
-      title="Gestion des Plats : Menu du Jour & Plats sur Commande"
-      subtitle="Séparez les plats de la liste du Menu du Jour et les plats préparés uniquement sur commande"
+      title="Plats & Plats sur Commande"
+      subtitle="Affichage compact sans défilement gauche/droite : tout est lisible d’un seul coup d’œil"
     >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+      {/* Barre de filtres et bouton d'ajout compacts */}
+      <div className="space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Rechercher un plat..."
+            className="w-full sm:w-64 px-3 py-1.5 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium"
+          />
+
+          <button
+            onClick={openCreateModal}
+            className="px-3.5 py-1.5 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow whitespace-nowrap"
+          >
+            + Ajouter un plat
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
           {['Tous', 'Menu du Jour', 'Sur Commande', 'Plats', 'Soupes', 'Pizzas', 'Poulets', 'Grillades', 'Salades', 'Boissons'].map(cat => (
             <button
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`px-3 py-1.5 rounded-xl font-bold transition whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition whitespace-nowrap ${
                 filter === cat
-                  ? 'bg-[#881313] text-white shadow'
+                  ? 'bg-[#881313] text-white shadow-sm'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
               }`}
             >
@@ -224,135 +214,96 @@ export default function AdminPlatsPage() {
             </button>
           ))}
         </div>
-
-        <button
-          onClick={openCreateModal}
-          className="px-4 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow whitespace-nowrap"
-        >
-          + Ajouter un plat (avec photo)
-        </button>
       </div>
 
-      {/* Table of Dishes */}
-      <div className="overflow-x-auto border border-stone-200 rounded-2xl">
-        <table className="w-full text-left border-collapse text-xs sm:text-sm">
-          <thead>
-            <tr className="bg-stone-100 border-b border-stone-200 text-stone-600">
-              <th className="p-3">Photo</th>
-              <th className="p-3">Nom du plat</th>
-              <th className="p-3">Type de liste</th>
-              <th className="p-3">Catégorie</th>
-              <th className="p-3">Prix</th>
-              <th className="p-3">État du Stock</th>
-              <th className="p-3 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-stone-100">
-            {filtered.map(dish => {
-              const isDaily = dish.availability_mode === 'daily';
-              return (
-                <tr key={dish.id} className="hover:bg-stone-50">
-                  <td className="p-3">
-                    <label className="cursor-pointer inline-flex items-center gap-2 group" title="Prendre ou choisir une photo">
-                      <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-amber-400 relative">
-                        <div
-                          className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                          style={{ backgroundImage: `url('${dish.image_url}')` }}
-                        />
-                      </div>
-                      <span className="text-xs font-bold text-[#881313] group-hover:underline inline-flex items-center gap-1">
-                        <CameraIcon className="w-3.5 h-3.5" />
-                        <span>Photo</span>
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e =>
-                          handlePhotoUploadForDish(dish, e.target.files?.[0])
-                        }
-                      />
-                    </label>
-                  </td>
-                  <td className="p-3">
-                    <div className="font-extrabold text-[#2b1810]">{dish.name}</div>
-                    {Array.isArray(dish.options_json) && dish.options_json.length > 0 && (
-                      <div className="text-xs text-stone-500">
-                        Options : {dish.options_json.join(', ')}
-                      </div>
-                    )}
-                  </td>
-                  <td className="p-3">
+      {/* Grille compacte (2 colonnes sur écran moyen/large, 1 colonne ultra-compacte sur téléphone)
+          Zéro scroll horizontal, espacement vertical réduit pour ne pas allonger la page */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {filtered.map(dish => {
+          const isDaily = dish.availability_mode === 'daily';
+          return (
+            <div
+              key={dish.id}
+              className="flex items-center justify-between gap-2 p-2 rounded-xl bg-[#fffcf7] border border-stone-200 hover:border-[#881313] shadow-sm transition"
+            >
+              {/* Gauche : Miniature Photo cliquable + Infos Plat */}
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <label
+                  className="cursor-pointer relative w-11 h-11 rounded-lg overflow-hidden border border-amber-400 shrink-0 group"
+                  title="Cliquer pour changer la photo"
+                >
+                  <div
+                    className={`w-full h-full dish-photo ${dish.image_quadrant}`}
+                    style={{ backgroundImage: `url('${dish.image_url}')` }}
+                  />
+                  <span className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition">
+                    <CameraIcon className="w-3.5 h-3.5" />
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e =>
+                      handlePhotoUploadForDish(dish, e.target.files?.[0])
+                    }
+                  />
+                </label>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-extrabold text-xs sm:text-sm text-[#2b1810] truncate">
+                      {dish.name}
+                    </span>
+                    <span className="font-extrabold text-xs text-[#881313] whitespace-nowrap">
+                      {formatCFA(dish.price)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
                     <span
-                      className={`px-2.5 py-1 rounded-full font-extrabold text-xs whitespace-nowrap ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold whitespace-nowrap ${
                         isDaily
-                          ? 'bg-amber-100 text-[#881313] border border-amber-300'
+                          ? 'bg-amber-100 text-[#881313]'
                           : 'bg-stone-800 text-white'
                       }`}
                     >
-                      {isDaily ? 'Liste Menu du Jour' : 'Uniquement sur commande'}
+                      {isDaily ? 'Menu du Jour' : 'Sur commande'}
                     </span>
-                  </td>
-                  <td className="p-3 text-stone-600">{dish.category}</td>
-                  <td className="p-3 font-extrabold text-[#881313] whitespace-nowrap">
-                    {formatCFA(dish.price)}
-                  </td>
-                  <td className="p-3">
-                    <div className="inline-flex rounded-xl bg-stone-100 p-1 gap-1">
-                      <button
-                        onClick={() => updateStockStatus(dish, 'available')}
-                        className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 whitespace-nowrap ${
-                          dish.stock_status === 'available' && dish.is_available_today
-                            ? 'bg-emerald-600 text-white shadow'
-                            : 'text-stone-600 hover:bg-stone-200'
-                        }`}
-                      >
-                        <CheckIcon className="w-3 h-3" />
-                        <span>Dispo</span>
-                      </button>
-                      <button
-                        onClick={() => updateStockStatus(dish, 'low')}
-                        className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 whitespace-nowrap ${
-                          dish.stock_status === 'low' && dish.is_available_today
-                            ? 'bg-amber-500 text-slate-950 shadow'
-                            : 'text-stone-600 hover:bg-stone-200'
-                        }`}
-                      >
-                        <BoltIcon className="w-3 h-3" />
-                        <span>Presque fini</span>
-                      </button>
-                      <button
-                        onClick={() => updateStockStatus(dish, 'soldout')}
-                        className={`px-2 py-1 rounded-lg text-xs font-bold transition inline-flex items-center gap-1 whitespace-nowrap ${
-                          !dish.is_available_today || dish.stock_status === 'soldout'
-                            ? 'bg-rose-600 text-white shadow'
-                            : 'text-stone-600 hover:bg-stone-200'
-                        }`}
-                      >
-                        <CloseIcon className="w-3 h-3" />
-                        <span>Rupture</span>
-                      </button>
-                    </div>
-                  </td>
-                  <td className="p-3 text-right space-x-2 whitespace-nowrap">
-                    <button
-                      onClick={() => openEditModal(dish)}
-                      className="text-amber-700 hover:underline font-bold text-xs px-1.5"
-                    >
-                      Modifier
-                    </button>
-                    <button
-                      onClick={() => handleDelete(dish.id, dish.name)}
-                      className="text-rose-600 hover:underline font-bold text-xs px-1.5"
-                    >
-                      Suppr.
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    <span className="text-[11px] text-stone-500 font-semibold">
+                      • {dish.category}
+                    </span>
+                    {Array.isArray(dish.options_json) && dish.options_json.length > 0 && (
+                      <span className="text-[10px] text-stone-400 truncate max-w-[160px]">
+                        ({dish.options_json.join(', ')})
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Droite : Actions directes sans aller au fond à droite */}
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => openEditModal(dish)}
+                  className="px-2.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-[#2b1810] font-extrabold text-[11px] inline-flex items-center gap-1 transition"
+                  title="Modifier ce plat"
+                >
+                  <PencilIcon className="w-3 h-3 text-[#881313]" />
+                  <span>Modifier</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(dish.id, dish.name)}
+                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition"
+                  title="Supprimer ce plat"
+                >
+                  <CloseIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Add / Edit Dish Modal */}

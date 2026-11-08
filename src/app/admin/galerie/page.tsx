@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { CameraIcon, CloseIcon, PencilIcon, CheckIcon } from '@/components/Icons';
 import { useCart } from '@/components/CartContext';
-import { INITIAL_GALLERY_IMAGES, type GalleryImage } from '@/lib/db';
+import { type GalleryImage } from '@/lib/db';
 
 const SUGGESTIONS = [
   'Restaurant La Gratitude — Zagtouli',
@@ -53,26 +53,47 @@ function compressImageToBase64(file: File): Promise<string> {
 }
 
 export default function AdminGaleriePage() {
-  const [images, setImages] = useState<GalleryImage[]>(INITIAL_GALLERY_IMAGES);
+  // Initialisé à vide [] pour ne JAMAIS afficher les anciennes photos supprimées avant le chargement de la base
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [previewData, setPreviewData] = useState<string>('');
-  
-  // State for editing image description
+
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   const { showToast } = useCart();
 
+  const syncGalleryCache = (list: GalleryImage[]) => {
+    setImages(list);
+    try {
+      sessionStorage.setItem('gratitude_gallery_cache_v2', JSON.stringify(list));
+    } catch {}
+  };
+
   const loadGallery = async () => {
+    try {
+      const cached = sessionStorage.getItem('gratitude_gallery_cache_v2');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setImages(parsed);
+          setLoadingGallery(false);
+        }
+      }
+    } catch {}
+
     try {
       const res = await fetch('/api/gallery', { cache: 'no-store' });
       const data = await res.json();
-      if (Array.isArray(data.images) && data.images.length > 0) {
-        setImages(data.images);
+      if (Array.isArray(data.images)) {
+        syncGalleryCache(data.images);
       }
-    } catch {}
+    } catch {} finally {
+      setLoadingGallery(false);
+    }
   };
 
   useEffect(() => {
@@ -111,15 +132,19 @@ export default function AdminGaleriePage() {
         })
       });
       const data = await res.json();
-      if (data.images) {
-        setImages(data.images);
+      if (Array.isArray(data.images)) {
+        syncGalleryCache(data.images);
       } else {
-        setImages(prev => [{
-          id: Date.now(),
-          title: titleToSave,
-          image_url: previewData,
-          display_order: 10
-        }, ...prev]);
+        const next = [
+          {
+            id: Date.now(),
+            title: titleToSave,
+            image_url: previewData,
+            display_order: 10
+          },
+          ...images
+        ];
+        syncGalleryCache(next);
       }
       setPreviewData('');
       setNewTitle('');
@@ -132,27 +157,26 @@ export default function AdminGaleriePage() {
   };
 
   const handleDelete = async (id: number, title: string) => {
-    if (!confirm(`Supprimer cette photo ("${title}") du carrousel ?`)) return;
-    setImages(prev => prev.filter(img => img.id !== id));
+    if (!confirm(`Supprimer définitivement cette photo ("${title}") ?`)) return;
+    const optimistic = images.filter(img => img.id !== id);
+    syncGalleryCache(optimistic);
     try {
       const res = await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
-      if (data.images) {
-        setImages(data.images);
+      if (Array.isArray(data.images)) {
+        syncGalleryCache(data.images);
       }
-      showToast('Photo retirée du carrousel');
+      showToast('Photo retirée définitivement de la galerie');
     } catch {
       showToast('Erreur lors de la suppression');
     }
   };
 
-  // Open modal to change description
   const openEditModal = (img: GalleryImage) => {
     setEditingImage(img);
     setEditTitle(img.title || '');
   };
 
-  // Save updated description
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingImage) return;
@@ -160,10 +184,10 @@ export default function AdminGaleriePage() {
     const updatedTitle = editTitle.trim() || 'Restaurant La Gratitude — Zagtouli';
     const targetId = editingImage.id;
 
-    // Mise à jour immédiate locale de l'état (réactivité instantanée sur smartphone)
-    setImages(prev =>
-      prev.map(item => (item.id === targetId ? { ...item, title: updatedTitle } : item))
+    const optimistic = images.map(item =>
+      item.id === targetId ? { ...item, title: updatedTitle } : item
     );
+    syncGalleryCache(optimistic);
     setEditingImage(null);
     showToast(`Description enregistrée : "${updatedTitle}" !`);
 
@@ -178,8 +202,8 @@ export default function AdminGaleriePage() {
         })
       });
       const data = await res.json();
-      if (data.images) {
-        setImages(data.images);
+      if (Array.isArray(data.images)) {
+        syncGalleryCache(data.images);
       }
     } catch (err) {
       console.error('Erreur PATCH gallery:', err);
@@ -191,10 +215,10 @@ export default function AdminGaleriePage() {
   return (
     <AdminShell
       title="Galerie Photos du Restaurant"
-      subtitle="Ajoutez des photos et modifiez facilement la description de chaque photo en un clic"
+      subtitle="Ajoutez vos photos et modifiez facilement leur description en un clic"
     >
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Formulaire d'ajout rapide (depuis téléphone ou PC) */}
+        {/* Formulaire d'ajout rapide */}
         <div className="lg:col-span-5 bg-[#fdfaf5] p-5 rounded-2xl border-2 border-[#eab308] shadow-md space-y-4">
           <h3 className="font-extrabold text-base text-[#2b1810] flex items-center gap-2">
             <CameraIcon className="w-5 h-5 text-[#881313]" />
@@ -262,7 +286,7 @@ export default function AdminGaleriePage() {
                   : 'bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white'
               }`}
             >
-              {uploading ? 'Enregistrement en cours...' : '+ Publier dans le carrousel défilant'}
+              {uploading ? 'Enregistrement en cours...' : '+ Publier dans la galerie'}
             </button>
           </form>
         </div>
@@ -272,18 +296,19 @@ export default function AdminGaleriePage() {
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <h3 className="font-extrabold text-base text-[#2b1810]">
-                Photos du défilement ({images.length})
+                Photos publiées ({images.length})
               </h3>
               <p className="text-xs text-[#881313] font-bold">
-                Cliquez sur le bouton « Modifier » sous chaque photo pour changer son texte
+                Cliquez sur « Modifier » sous une photo pour changer sa légende
               </p>
             </div>
-            <span className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-[#2b1810] font-extrabold border border-amber-300">
-              Défilement actif
-            </span>
           </div>
 
-          {images.length === 0 ? (
+          {loadingGallery ? (
+            <div className="p-8 text-center text-xs text-stone-500 bg-stone-50 rounded-2xl border border-stone-200">
+              Chargement de vos photos...
+            </div>
+          ) : images.length === 0 ? (
             <div className="p-8 text-center text-xs text-stone-500 bg-stone-50 rounded-2xl border border-stone-200">
               Aucune photo dans la galerie. Ajoutez votre première photo à gauche !
             </div>
@@ -294,7 +319,6 @@ export default function AdminGaleriePage() {
                   key={img.id}
                   className="bg-white rounded-2xl overflow-hidden border-2 border-stone-200 hover:border-[#881313] shadow-sm hover:shadow-md transition flex flex-col justify-between"
                 >
-                  {/* Image cliquable */}
                   <div
                     onClick={() => openEditModal(img)}
                     className="h-32 sm:h-36 w-full overflow-hidden bg-stone-100 relative cursor-pointer group"
@@ -306,7 +330,6 @@ export default function AdminGaleriePage() {
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
 
-                    {/* Bouton supprimer */}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -320,7 +343,6 @@ export default function AdminGaleriePage() {
                     </button>
                   </div>
 
-                  {/* Section texte + Bouton de modification TRÈS VISIBLE */}
                   <div className="p-2.5 bg-gradient-to-b from-white to-[#fffcf7] space-y-2 border-t border-stone-100">
                     <p
                       onClick={() => openEditModal(img)}
@@ -330,7 +352,6 @@ export default function AdminGaleriePage() {
                       {img.title || 'Photo du Restaurant'}
                     </p>
 
-                    {/* Bouton explicite pour changer la description */}
                     <button
                       type="button"
                       onClick={() => openEditModal(img)}
@@ -347,9 +368,7 @@ export default function AdminGaleriePage() {
         </div>
       </div>
 
-      {/* ========================================================================= */}
-      {/* MODAL POUR MODIFIER LA DESCRIPTION D'UNE PHOTO (AU CLIC OU BOUTON) */}
-      {/* ========================================================================= */}
+      {/* MODAL POUR MODIFIER LA DESCRIPTION D'UNE PHOTO */}
       {editingImage && (
         <div
           className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in"
@@ -359,7 +378,6 @@ export default function AdminGaleriePage() {
             className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border-4 border-[#eab308] space-y-4 p-5 sm:p-6"
             onClick={e => e.stopPropagation()}
           >
-            {/* Entête Modal */}
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h3 className="font-extrabold text-base text-[#2b1810] flex items-center gap-2">
                 <PencilIcon className="w-5 h-5 text-[#881313]" />
@@ -374,7 +392,6 @@ export default function AdminGaleriePage() {
               </button>
             </div>
 
-            {/* Aperçu de la photo */}
             <div className="h-40 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-[#d99b26] shadow-inner bg-stone-100">
               <img
                 src={editingImage.image_url}
@@ -383,7 +400,6 @@ export default function AdminGaleriePage() {
               />
             </div>
 
-            {/* Formulaire de modification */}
             <form onSubmit={handleUpdateTitle} className="space-y-4">
               <div>
                 <label className="font-extrabold text-xs text-stone-700 block mb-1.5">
@@ -399,7 +415,6 @@ export default function AdminGaleriePage() {
                 />
               </div>
 
-              {/* Suggestions rapides en 1 clic */}
               <div className="space-y-1.5">
                 <span className="text-[11px] font-bold text-stone-500 block">
                   Suggestions prêtes à l’emploi (cliquez pour choisir) :
@@ -418,7 +433,6 @@ export default function AdminGaleriePage() {
                 </div>
               </div>
 
-              {/* Boutons d'action */}
               <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-200">
                 <button
                   type="button"

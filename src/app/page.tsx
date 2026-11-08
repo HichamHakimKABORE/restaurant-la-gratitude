@@ -4,19 +4,19 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { CheckIcon, CloseIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
+import { CheckIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
 import { sortDailyMenuDishes } from '@/lib/db';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_1.jpg', quad: 'quad-tl' },
   { key: 'SurCommande', label: 'Sur Commande', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
   { key: 'MenuDuJour', label: 'Menu du Jour', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
-  { key: 'Plats', label: 'Plats', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
-  { key: 'Soupes', label: 'Soupes', img: '/images/dishes_grid_1.jpg', quad: 'quad-br' },
   { key: 'Pizzas', label: 'Pizzas', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
   { key: 'Poulets', label: 'Poulets', img: '/images/dishes_grid_2.jpg', quad: 'quad-br' },
   { key: 'Grillades', label: 'Grillades', img: '/images/dishes_grid_2.jpg', quad: 'quad-tl' },
   { key: 'Salades', label: 'Salades', img: '/images/dishes_grid_3.jpg', quad: 'quad-tr' },
+  { key: 'Plats', label: 'Plats', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
+  { key: 'Soupes', label: 'Soupes', img: '/images/dishes_grid_1.jpg', quad: 'quad-br' },
   { key: 'Boissons', label: 'Boissons', img: '/images/dishes_grid_4.jpg', quad: 'quad-tr' }
 ];
 
@@ -25,14 +25,15 @@ export default function AccueilClientPage() {
   const [currentSlideIdx, setCurrentSlideIdx] = useState<number>(0);
   const { dishes, openDishSelector } = useCart();
 
-  // Séparation stricte : SEULS les plats de la liste du Menu du Jour (availability_mode === 'daily')
-  // cochés aujourd'hui figurent dans le Menu du Jour. Les plats sur commande n'y figurent jamais.
-  // Classement : 1. Riz -> 2. Soupes -> 3. Tô -> 4. Grillades -> 5. Omelettes/Sandwichs -> 6. Boissons
+  // Menu du Jour : uniquement les plats du jour cochés par l'admin aujourd'hui.
+  // Si l'admin n'a pas encore mis à jour le Menu du Jour, cette liste est vide (aucun plat).
   const displayedDailyDishes = sortDailyMenuDishes(
     dishes.filter(d => d.availability_mode === 'daily' && d.is_available_today)
   );
 
-  const rotatingDishes = displayedDailyDishes;
+  // Plats pour l'encart visuel de la bannière (Carte sur commande ou Menu du jour actif)
+  const onOrderDishes = dishes.filter(d => d.availability_mode !== 'daily');
+  const rotatingDishes = displayedDailyDishes.length > 0 ? displayedDailyDishes : onOrderDishes;
 
   useEffect(() => {
     if (rotatingDishes.length <= 1) return;
@@ -56,8 +57,8 @@ export default function AccueilClientPage() {
 
   const currentDish = rotatingDishes.length > 0 ? rotatingDishes[currentSlideIdx % rotatingDishes.length] : null;
 
+  // Plats affichés dans la section "Notre Carte & Plats sur Commande"
   const visibleGridDishes = dishes.filter(d => {
-    if (!d.is_available_today) return false;
     if (selectedCategory === 'SurCommande') return d.availability_mode !== 'daily';
     if (selectedCategory === 'MenuDuJour') return d.availability_mode === 'daily';
     if (selectedCategory !== 'Tous' && d.category !== selectedCategory) return false;
@@ -73,7 +74,7 @@ export default function AccueilClientPage() {
           <img src="/images/logo_gratitude.jpg" alt="" className="w-full h-full object-cover" />
         </div>
 
-        {/* Partie Gauche: Textes & Boutons */}
+        {/* Partie Gauche: Textes & Boutons (Notre Carte en premier, puis Menu du Jour) */}
         <div className="col-span-7 space-y-1 z-10">
           <div className="leading-tight">
             <span className="font-script text-[11px] sm:text-sm text-amber-200 block">
@@ -87,20 +88,20 @@ export default function AccueilClientPage() {
             Une cuisine savoureuse, un service de qualité !
           </p>
           <p className="hidden md:block text-[11px] text-amber-100/80 max-w-lg leading-relaxed">
-            Découvrez en direct notre Menu du Jour (Riz, Soupes, Grillades...) et nos spécialités sur commande à Zagtouli (route de Bobo).
+            Découvrez notre Carte &amp; Plats sur Commande ainsi que notre Menu du Jour à Zagtouli (route de Bobo).
           </p>
           <div className="pt-0.5 flex flex-wrap gap-1.5">
             <Link
-              href="/menu-du-jour"
+              href="/menu"
               className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-[9px] sm:text-xs shadow inline-flex items-center gap-1 whitespace-nowrap"
             >
-              <span>Menu du Jour ({displayedDailyDishes.length})</span>
+              <span>Notre Carte &amp; Sur Commande</span>
             </Link>
             <Link
-              href="/menu"
+              href="/menu-du-jour"
               className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-[9px] sm:text-xs inline-flex items-center gap-1 whitespace-nowrap"
             >
-              <span>Carte &amp; Sur Commande</span>
+              <span>Menu du Jour ({displayedDailyDishes.length})</span>
             </Link>
             <a
               href="tel:+22602809906"
@@ -112,7 +113,7 @@ export default function AccueilClientPage() {
           </div>
         </div>
 
-        {/* Partie Droite: Cadre repas du Menu du Jour */}
+        {/* Partie Droite: Cadre repas */}
         <div className="col-span-5 flex flex-col items-center justify-center z-10">
           {currentDish ? (
             <div className="w-full max-w-[210px] sm:max-w-[260px] flex flex-col items-center gap-1">
@@ -126,11 +127,6 @@ export default function AccueilClientPage() {
                   className={`w-full h-full dish-photo transition-all duration-700 group-hover:scale-105 ${currentDish.image_quadrant}`}
                   style={{ backgroundImage: `url('${currentDish.image_url}')` }}
                 />
-
-                <div className="absolute top-1 left-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] text-[8px] sm:text-[9px] font-extrabold shadow">
-                  <ChefHatIcon className="w-2.5 h-2.5" />
-                  <span className="hidden xs:inline">Jour</span>
-                </div>
 
                 <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-[#801313]/95 text-white font-extrabold text-[9px] sm:text-[10px] border border-amber-300 shadow whitespace-nowrap">
                   {formatCFA(currentDish.price)}
@@ -208,80 +204,9 @@ export default function AccueilClientPage() {
         </div>
       </section>
 
-      {/* 3-COLUMN BODY */}
+      {/* CORPS DE PAGE : 1. NOTRE CARTE & PLATS SUR COMMANDE EN PREMIER, 2. MENU DU JOUR ENSUITE, 3. COORDONNÉES */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* LEFT COLUMN (3 cols): MENU DU JOUR AUJOURD'HUI (Classé : Riz -> Soupes -> Tô -> Grillades...) */}
-        <aside className="lg:col-span-3 bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] shadow-md overflow-hidden">
-          <div className="bg-gradient-to-r from-[#7c1d12] to-[#9a2c1d] text-white px-4 py-3 flex items-center justify-between border-b border-[#eab308]">
-            <span className="font-extrabold text-sm">Menu du Jour</span>
-            <span className="px-2.5 py-0.5 rounded bg-[#eab308] text-[#2b1810] font-extrabold text-xs whitespace-nowrap">
-              Riz • Soupes • Plats
-            </span>
-          </div>
-
-          <div className="p-3 space-y-2 max-h-[520px] overflow-y-auto">
-            {displayedDailyDishes.length === 0 ? (
-              <div className="p-3 rounded-xl bg-amber-100/90 border border-amber-300 text-[#2b1810] text-xs space-y-2 text-center">
-                <p className="font-extrabold flex items-center justify-center gap-1 text-[#801313]">
-                  <ChefHatIcon className="w-4 h-4 shrink-0" />
-                  <span>Menu du jour en préparation</span>
-                </p>
-                <p className="text-stone-700 leading-snug">
-                  Appelez directement le restaurant pour connaître les plats prêts en cuisine :
-                </p>
-                <a
-                  href="tel:+22602809906"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs whitespace-nowrap shadow"
-                >
-                  <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
-                  <span>+226 02 80 99 06</span>
-                </a>
-              </div>
-            ) : (
-              displayedDailyDishes.slice(0, 10).map(dish => (
-                <div
-                  key={dish.id}
-                  onClick={() => openDishSelector(dish)}
-                  className="cursor-pointer flex items-center justify-between gap-2 py-2 px-2.5 rounded-xl bg-white hover:bg-amber-50 border border-[#ead8be] shadow-sm transition"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className={`w-5 h-5 rounded-full text-white flex items-center justify-center text-xs font-bold shrink-0 ${
-                        dish.stock_status === 'low' ? 'bg-amber-500' : 'bg-[#16a34a]'
-                      }`}
-                    >
-                      <CheckIcon className="w-3 h-3" />
-                    </span>
-                    <div className="min-w-0">
-                      <span className="text-xs sm:text-sm font-bold text-[#2b1810] truncate block">
-                        {dish.name}
-                      </span>
-                      {dish.stock_status === 'low' && (
-                        <span className="text-xs text-amber-700 font-bold">
-                          Presque fini !
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs shrink-0 whitespace-nowrap">
-                    {formatCFA(dish.price)}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="p-3 border-t border-[#ead8be] text-center">
-            <Link
-              href="/menu-du-jour"
-              className="block w-full py-2 rounded-xl bg-[#7c2d12] hover:bg-[#9a3412] text-white font-bold text-xs shadow transition whitespace-nowrap"
-            >
-              Voir tout le Menu du Jour →
-            </Link>
-          </div>
-        </aside>
-
-        {/* CENTER COLUMN (6 cols): NOTRE CARTE (MENU DU JOUR & SUR COMMANDE) */}
+        {/* 1. PREMIÈRE PARTIE (6 cols) : NOTRE CARTE & PLATS SUR COMMANDE */}
         <div className="lg:col-span-6 bg-white/90 backdrop-blur-[2px] rounded-2xl border-2 border-[#e6d5c3] shadow-md p-4 sm:p-5 space-y-4 relative overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
             <h3 className="font-extrabold text-base sm:text-lg text-[#2b1810] flex items-center gap-2">
@@ -321,8 +246,8 @@ export default function AccueilClientPage() {
             })}
           </div>
 
-          {/* Dishes Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+          {/* Grille 2 plats par ligne, sans aucun badge Disponible / Non disponible */}
+          <div className="grid grid-cols-2 gap-3.5">
             {visibleGridDishes.slice(0, 12).map(dish => (
               <article
                 key={dish.id}
@@ -334,20 +259,6 @@ export default function AccueilClientPage() {
                     className={`w-full h-full dish-photo ${dish.image_quadrant}`}
                     style={{ backgroundImage: `url('${dish.image_url}')` }}
                   />
-                  <span
-                    className={`absolute top-1.5 left-1.5 px-2 py-0.5 rounded-full font-extrabold text-[10px] shadow whitespace-nowrap ${
-                      dish.availability_mode === 'daily'
-                        ? 'bg-[#eab308] text-[#2b1810]'
-                        : 'bg-[#881313] text-white'
-                    }`}
-                  >
-                    {dish.availability_mode === 'daily' ? 'Menu du Jour' : 'Sur commande'}
-                  </span>
-                  {dish.stock_status === 'low' && (
-                    <span className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold text-[10px] shadow whitespace-nowrap">
-                      Presque fini
-                    </span>
-                  )}
                 </div>
 
                 <div className="p-2.5 space-y-1">
@@ -358,17 +269,10 @@ export default function AccueilClientPage() {
                     {formatCFA(dish.price)}
                   </div>
                   <div className="pt-1 flex items-center justify-center">
-                    {dish.stock_status === 'soldout' ? (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold text-xs whitespace-nowrap">
-                        <CloseIcon className="w-3 h-3" />
-                        <span>Rupture</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
-                        <PhoneIcon className="w-3 h-3" />
-                        <span>+ Commander</span>
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
+                      <PhoneIcon className="w-3 h-3 shrink-0" />
+                      <span>+ Commander</span>
+                    </span>
                   </div>
                 </div>
               </article>
@@ -376,7 +280,69 @@ export default function AccueilClientPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN (3 cols): COMMANDER PAR TÉLÉPHONE + COORDONNÉES + HORAIRES */}
+        {/* 2. DEUXIÈME PARTIE (3 cols) : MENU DU JOUR AUJOURD'HUI */}
+        <aside className="lg:col-span-3 bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] shadow-md overflow-hidden">
+          <div className="bg-gradient-to-r from-[#7c1d12] to-[#9a2c1d] text-white px-4 py-3 flex items-center justify-between border-b border-[#eab308]">
+            <span className="font-extrabold text-sm">Menu du Jour</span>
+            <span className="px-2.5 py-0.5 rounded bg-[#eab308] text-[#2b1810] font-extrabold text-xs whitespace-nowrap">
+              Riz • Soupes • Plats
+            </span>
+          </div>
+
+          <div className="p-3 space-y-2 max-h-[520px] overflow-y-auto">
+            {displayedDailyDishes.length === 0 ? (
+              <div className="p-3.5 rounded-xl bg-amber-100/90 border border-amber-300 text-[#2b1810] text-xs space-y-2 text-center">
+                <p className="font-extrabold flex items-center justify-center gap-1 text-[#801313]">
+                  <ChefHatIcon className="w-4 h-4 shrink-0" />
+                  <span>Menu du jour non encore publié</span>
+                </p>
+                <p className="text-stone-700 leading-snug">
+                  Aucun plat n’est affiché tant que l’administrateur n’a pas mis à jour le Menu du Jour d’aujourd’hui.
+                </p>
+                <a
+                  href="tel:+22602809906"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs whitespace-nowrap shadow"
+                >
+                  <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span>+226 02 80 99 06</span>
+                </a>
+              </div>
+            ) : (
+              displayedDailyDishes.slice(0, 10).map(dish => (
+                <div
+                  key={dish.id}
+                  onClick={() => openDishSelector(dish)}
+                  className="cursor-pointer flex items-center justify-between gap-2 py-2 px-2.5 rounded-xl bg-white hover:bg-amber-50 border border-[#ead8be] shadow-sm transition"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-[#16a34a] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      <CheckIcon className="w-3 h-3" />
+                    </span>
+                    <div className="min-w-0">
+                      <span className="text-xs sm:text-sm font-bold text-[#2b1810] truncate block">
+                        {dish.name}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs shrink-0 whitespace-nowrap">
+                    {formatCFA(dish.price)}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="p-3 border-t border-[#ead8be] text-center">
+            <Link
+              href="/menu-du-jour"
+              className="block w-full py-2 rounded-xl bg-[#7c2d12] hover:bg-[#9a3412] text-white font-bold text-xs shadow transition whitespace-nowrap"
+            >
+              Voir tout le Menu du Jour →
+            </Link>
+          </div>
+        </aside>
+
+        {/* 3. TROISIÈME PARTIE (3 cols) : COMMANDER PAR TÉLÉPHONE + COORDONNÉES + HORAIRES */}
         <aside className="lg:col-span-3 space-y-4">
           <div className="bg-gradient-to-b from-[#881313] to-[#680e0e] text-white rounded-2xl p-4 shadow-lg space-y-3 border-2 border-[#eab308]/50">
             <div className="flex items-center justify-between border-b border-white/15 pb-2.5">
@@ -390,7 +356,7 @@ export default function AccueilClientPage() {
             </div>
 
             <p className="text-xs text-amber-100 leading-relaxed">
-              Pour passer commande (Menu du Jour ou Plats sur Commande), appelez directement le restaurant :
+              Pour passer commande (Plats sur Commande ou Menu du Jour), appelez directement le restaurant :
             </p>
 
             <a
