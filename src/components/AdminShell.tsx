@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useCart } from './CartContext';
 import { PhoneIcon } from './Icons';
 
 export default function AdminShell({
@@ -16,6 +17,7 @@ export default function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { settings } = useCart();
 
   // Isolation stricte de l'espace Admin : vérification de la session authentifiée
   useEffect(() => {
@@ -120,7 +122,7 @@ export default function AdminShell({
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <span className="hidden md:inline-flex px-3 py-1.5 rounded-xl bg-white/15 border border-white/25 text-amber-100 text-xs font-bold items-center gap-1.5 whitespace-nowrap">
               <PhoneIcon className="w-3.5 h-3.5 text-[#facc15]" />
-              <span>+226 02 80 99 06</span>
+              <span>{settings.phone || '+226 02 80 99 06'}</span>
             </span>
             <Link
               href="/"

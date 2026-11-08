@@ -129,6 +129,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!modalDish) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setModalDish(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [modalDish]);
+
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2800);
@@ -210,6 +219,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return `https://wa.me/${activeWhatsApp}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
+  const getSelectionOnlyWhatsAppUrl = () => {
+    const grandTotal = selectionList.reduce((acc, it) => acc + it.price * it.qty, 0);
+    const lines = [
+      `Bonjour *${settings.restaurant_name || 'Restaurant La Gratitude'}*,`,
+      `Je souhaite commander :`,
+      ...selectionList.map(
+        it =>
+          `- *${it.qty}x ${it.name}*${it.selectedOption ? ` (${it.selectedOption})` : ''} — ${formatCFA(it.price * it.qty)} [${
+            it.availability_mode === 'daily' ? 'Menu du Jour' : 'Plat sur Commande'
+          }]`
+      ),
+      `*Total estimé : ${formatCFA(grandTotal)}*`,
+      `Merci de me confirmer la disponibilité.`
+    ];
+    return `https://wa.me/${activeWhatsApp}?text=${encodeURIComponent(lines.join('\n'))}`;
+  };
+
+  const selectionTotalItems = selectionList.reduce((acc, it) => acc + it.qty, 0);
+  const selectionTotalPrice = selectionList.reduce((acc, it) => acc + it.price * it.qty, 0);
+
   return (
     <CartContext.Provider
       value={{
@@ -236,6 +265,51 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {toast && (
         <div className="fixed bottom-20 sm:bottom-6 right-4 z-[100000] bg-[#16a34a] text-white px-4 py-2.5 rounded-xl shadow-2xl font-bold text-xs border border-white/20">
           {toast}
+        </div>
+      )}
+
+      {/* BARRE FLOTTANTE DE SÉLECTION MULTI-PLATS (Visible quand le client a retenu des plats et fermé la fenêtre) */}
+      {!modalDish && selectionList.length > 0 && (
+        <div className="fixed bottom-[58px] sm:bottom-[64px] left-2 right-2 z-[90] max-w-xl mx-auto bg-gradient-to-r from-[#2b1810] via-[#431407] to-[#2b1810] text-white border-2 border-[#eab308] rounded-2xl p-2.5 sm:p-3 shadow-2xl flex flex-wrap items-center justify-between gap-2 print:hidden">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-[11px] whitespace-nowrap">
+                {selectionTotalItems} {selectionTotalItems > 1 ? 'plats choisis' : 'plat choisi'}
+              </span>
+              <span className="font-extrabold text-xs sm:text-sm text-[#facc15] whitespace-nowrap">
+                {formatCFA(selectionTotalPrice)}
+              </span>
+              <button
+                type="button"
+                onClick={clearSelectionList}
+                className="text-[10px] text-rose-300 hover:text-rose-200 underline ml-1"
+              >
+                Vider
+              </button>
+            </div>
+            <p className="text-[11px] text-amber-100 truncate mt-0.5">
+              {selectionList.map(it => `${it.qty}x ${it.name}`).join(' + ')}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            <a
+              href={getSelectionOnlyWhatsAppUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="px-3 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>WhatsApp</span>
+            </a>
+            <a
+              href={`tel:${activePhoneTel}`}
+              className="px-3 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
+            >
+              <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>Appeler</span>
+            </a>
+          </div>
         </div>
       )}
 

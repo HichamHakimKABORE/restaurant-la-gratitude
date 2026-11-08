@@ -36,10 +36,24 @@ export default function RestaurantGallerySlider() {
       .finally(() => setLoaded(true));
   }, []);
 
+  useEffect(() => {
+    if (!selectedImage) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedImage(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedImage]);
+
   if (!loaded || images.length === 0) return null;
 
-  // Duplicate items for continuous seamless marquee loop
-  const displayList = [...images, ...images, ...images];
+  // On construit une piste de base d'au moins 6 éléments puis on la duplique exactement en 2 moitiés identiques
+  // pour que la translation CSS de -50% boucle au pixel près sans aucun saut visuel.
+  const baseTrack: GalleryImage[] = [];
+  while (baseTrack.length < Math.max(6, images.length)) {
+    baseTrack.push(...images);
+  }
+  const displayList = [...baseTrack, ...baseTrack];
 
   return (
     <section className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 my-6 space-y-3">
