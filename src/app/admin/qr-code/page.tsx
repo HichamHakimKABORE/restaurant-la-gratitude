@@ -14,9 +14,15 @@ export default function AdminQrCodePage() {
     }
   }, []);
 
-  const qrImageSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(
+  const [qrFallback, setQrFallback] = useState(false);
+
+  const primaryQrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(
     siteUrl
   )}`;
+  const backupQrSrc = `https://quickchart.io/qr?size=280&text=${encodeURIComponent(
+    siteUrl
+  )}`;
+  const qrImageSrc = qrFallback ? backupQrSrc : primaryQrSrc;
 
   return (
     <AdminShell
@@ -86,6 +92,7 @@ export default function AdminQrCodePage() {
             <div className="bg-white p-5 rounded-2xl border-2 border-[#eab308] shadow-inner inline-block">
               <img
                 src={qrImageSrc}
+                onError={() => setQrFallback(true)}
                 alt="QR Code Menu du Jour"
                 className="w-52 h-52 mx-auto"
               />

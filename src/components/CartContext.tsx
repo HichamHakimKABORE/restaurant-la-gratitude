@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { INITIAL_DISHES, type Dish } from '@/lib/db';
+import { INITIAL_DISHES, INITIAL_SETTINGS, type Dish, type RestaurantSettings } from '@/lib/db';
 import { CheckIcon, CloseIcon, PhoneIcon, WhatsAppIcon } from './Icons';
 import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_PHONE_TEL, RESTAURANT_WHATSAPP } from '@/lib/constants';
 
@@ -14,7 +14,10 @@ export interface CartItem extends Dish {
 interface CartContextType {
   dishes: Dish[];
   setDishes: React.Dispatch<React.SetStateAction<Dish[]>>;
+  loadingDishes: boolean;
   refreshDishes: () => Promise<void>;
+  settings: RestaurantSettings;
+  setSettings: React.Dispatch<React.SetStateAction<RestaurantSettings>>;
   cart: CartItem[];
   addToCart: (dish: Dish, chosenOption?: string) => void;
   openDishSelector: (dish: Dish) => void;
@@ -29,7 +32,10 @@ interface CartContextType {
 const CartContext = createContext<CartContextType>({
   dishes: INITIAL_DISHES,
   setDishes: () => {},
+  loadingDishes: true,
   refreshDishes: async () => {},
+  settings: INITIAL_SETTINGS,
+  setSettings: () => {},
   cart: [],
   addToCart: () => {},
   openDishSelector: () => {},
@@ -48,6 +54,8 @@ export function formatCFA(price: number) {
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [dishes, setDishes] = useState<Dish[]>(INITIAL_DISHES);
+  const [loadingDishes, setLoadingDishes] = useState<boolean>(true);
+  const [settings, setSettings] = useState<RestaurantSettings>(INITIAL_SETTINGS);
   const [toast, setToast] = useState<string | null>(null);
   const [modalDish, setModalDish] = useState<Dish | null>(null);
   const [selectedOpt, setSelectedOpt] = useState<string>('');
@@ -59,25 +67,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const data = await res.json();
       if (Array.isArray(data.dishes) && data.dishes.length > 0) {
         setDishes(data.dishes);
+        // Stockage léger dans sessionStorage (on ne duplique pas les grosses images base64 pour éviter QuotaExceededError)
         try {
-          sessionStorage.setItem('gratitude_dishes_cache_v3', JSON.stringify(data.dishes));
+          const lightCache = data.dishes.map((d: Dish) => ({
+            ...d,
+            image_url: d.image_url?.startsWith('data:') ? d.image_url : d.image_url
+          }));
+          sessionStorage.setItem('gratitude_dishes_cache_v3', JSON.stringify(lightCache));
         } catch {}
       }
-    } catch {}
+    } catch {} finally {
+      setLoadingDishes(false);
+    }
   };
 
   useEffect(() => {
     // Isolation stricte : nettoyage de toute donnée personnelle ou ancien cache stocké localement
-    // pour garantir que chaque utilisateur dispose d'un espace 100% propre et isolé.
     try {
       localStorage.removeItem('gratitude_cart_v2');
       localStorage.removeItem('gratitude_my_orders');
       localStorage.removeItem('gratitude_my_orders_v2');
       sessionStorage.removeItem('gratitude_dishes_cache');
       const cachedDishes = sessionStorage.getItem('gratitude_dishes_cache_v3');
-      if (cachedDishes) setDishes(JSON.parse(cachedDishes));
+      if (cachedDishes) {
+        setDishes(JSON.parse(cachedDishes));
+        setLoadingDishes(false);
+      }
     } catch {}
+
     refreshDishes();
+
+    // Chargement des paramètres dynamiques du restaurant (/api/settings)
+    fetch('/api/settings', { cache: 'no-store' })
+      .then(r => r.json())
+      .then(d => {
+        if (d?.settings) {
+          setSettings(d.settings);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const showToast = (msg: string) => {
@@ -99,18 +127,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQty = () => {};
   const clearCart = () => {};
 
+  const activePhoneDisplay = settings.phone || RESTAURANT_PHONE_DISPLAY;
+  const activePhoneTel = activePhoneDisplay.replace(/\s+/g, '');
+  const activeWhatsApp = (settings.whatsapp || RESTAURANT_WHATSAPP).replace(/[^0-9]/g, '') || RESTAURANT_WHATSAPP;
+
   const getWhatsAppDirectUrl = (dish: Dish, opt: string, qty: number) => {
     const modeLabel =
       dish.availability_mode === 'daily'
         ? 'Menu du Jour'
         : 'Plat sur Commande';
     const text = [
-      `Bonjour *Restaurant La Gratitude*,`,
+      `Bonjour *${settings.restaurant_name || 'Restaurant La Gratitude'}*,`,
       `Je souhaite commander :`,
       `- *${qty}x ${dish.name}*${opt ? ` (${opt})` : ''} — ${formatCFA(dish.price * qty)} [${modeLabel}]`,
       `Merci de me confirmer la disponibilité.`
     ].join('\n');
-    return `https://wa.me/${RESTAURANT_WHATSAPP}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${activeWhatsApp}?text=${encodeURIComponent(text)}`;
   };
 
   return (
@@ -118,7 +150,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       value={{
         dishes,
         setDishes,
+        loadingDishes,
         refreshDishes,
+        settings,
+        setSettings,
         cart: [],
         addToCart,
         openDishSelector,
@@ -134,7 +169,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       {/* TOAST NOTIFICATION */}
       {toast && (
-        <div className="fixed bottom-20 sm:bottom-6 right-4 z-50 bg-[#16a34a] text-white px-4 py-2.5 rounded-xl shadow-2xl font-bold text-xs border border-white/20">
+        <div className="fixed bottom-20 sm:bottom-6 right-4 z-[100000] bg-[#16a34a] text-white px-4 py-2.5 rounded-xl shadow-2xl font-bold text-xs border border-white/20">
           {toast}
         </div>
       )}
@@ -142,11 +177,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {/* FENÊTRE DE COMMANDE PAR TÉLÉPHONE DU PLAT CHOISI */}
       {modalDish && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
           onClick={() => setModalDish(null)}
         >
           <div
-            className="bg-[#fffcf7] text-[#2b1810] border-2 border-[#881313] rounded-2xl max-w-md w-full overflow-hidden shadow-2xl"
+            className="bg-[#fffcf7] text-[#2b1810] border-2 border-[#881313] rounded-2xl max-w-md w-full overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}
           >
             <div className="relative h-44 bg-stone-900">
@@ -248,11 +283,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                   Pour commander ce plat, appelez directement le restaurant :
                 </p>
                 <a
-                  href={`tel:${RESTAURANT_PHONE_TEL}`}
+                  href={`tel:${activePhoneTel}`}
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 whitespace-nowrap transition"
                 >
                   <PhoneIcon className="w-4 h-4 shrink-0" />
-                  <span>Appeler le {RESTAURANT_PHONE_DISPLAY}</span>
+                  <span>Appeler le {activePhoneDisplay}</span>
                 </a>
                 <a
                   href={getWhatsAppDirectUrl(modalDish, selectedOpt, modalQty)}
@@ -261,7 +296,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                   className="w-full py-2.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
                 >
                   <WhatsAppIcon className="w-4 h-4 shrink-0" />
-                  <span>Écrire au {RESTAURANT_PHONE_DISPLAY} (WhatsApp)</span>
+                  <span>Écrire au {activePhoneDisplay} (WhatsApp)</span>
                 </a>
               </div>
             </div>

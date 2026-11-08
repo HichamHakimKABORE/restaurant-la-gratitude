@@ -4,6 +4,7 @@ import {
   getMemoryMenuHistory,
   getMemoryOrders,
   invalidateMenuHistoryCache,
+  getLogicalMenuDate,
   type DailyMenuRecord
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/session';
@@ -40,7 +41,6 @@ export async function GET(request: Request) {
         `;
       }
 
-      // Fetch order stats per date
       const orderStats = await sql`
         SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS order_date, COUNT(*)::int AS count, COALESCE(SUM(total_cfa), 0)::int AS revenue
         FROM orders
@@ -96,11 +96,11 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
   try {
     const body = await request.json();
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLogicalMenuDate();
     const menuDate = body.menu_date || todayStr;
     const dishesList = Array.isArray(body.dishes) ? body.dishes : [];
     const notes = body.notes || 'Enregistré depuis l’espace Admin';
@@ -148,5 +148,34 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('API menu-reports POST error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await isAdminRequest(request))) {
+    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
+  }
+  try {
+    const { searchParams } = new URL(request.url);
+    const menuDate = searchParams.get('date');
+    if (!menuDate) {
+      return NextResponse.json({ error: 'Date requise' }, { status: 400 });
+    }
+
+    const sql = await ensureNeonSchema();
+    invalidateMenuHistoryCache();
+
+    if (sql) {
+      await sql`DELETE FROM daily_menu_history WHERE menu_date = ${menuDate}::date`;
+      return NextResponse.json({ ok: true });
+    } else {
+      const history = getMemoryMenuHistory();
+      const idx = history.findIndex(h => h.menu_date === menuDate);
+      if (idx !== -1) history.splice(idx, 1);
+      return NextResponse.json({ ok: true });
+    }
+  } catch (error: any) {
+    console.error('API menu-reports DELETE error:', error);
+    return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 });
   }
 }

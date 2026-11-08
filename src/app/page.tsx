@@ -4,11 +4,11 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { CheckIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
+import { CheckIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
 import { sortDailyMenuDishes } from '@/lib/db';
 
 const CATEGORY_TABS = [
-  { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_1.jpg', quad: 'quad-tl' },
+  { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
   { key: 'SurCommande', label: 'Sur Commande', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
   { key: 'MenuDuJour', label: 'Menu du Jour', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
   { key: 'Pizzas', label: 'Pizzas', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -23,15 +23,18 @@ const CATEGORY_TABS = [
 export default function AccueilClientPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
   const [currentSlideIdx, setCurrentSlideIdx] = useState<number>(0);
-  const { dishes, openDishSelector } = useCart();
+  const { dishes, loadingDishes, settings, openDishSelector } = useCart();
 
-  // Menu du Jour : uniquement les plats du jour cochés par l'admin aujourd'hui.
-  // Si l'admin n'a pas encore mis à jour le Menu du Jour, cette liste est vide (aucun plat).
+  const phoneDisplay = settings.phone || '+226 02 80 99 06';
+  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
+
+  // Menu du Jour : uniquement les plats du jour cochés aujourd'hui.
   const displayedDailyDishes = sortDailyMenuDishes(
     dishes.filter(d => d.availability_mode === 'daily' && d.is_available_today)
   );
 
-  // Plats pour l'encart visuel de la bannière (Carte sur commande ou Menu du jour actif)
+  // Plats sur commande (Pizzas, Poulets, Grillades, Salades, etc.)
   const onOrderDishes = dishes.filter(d => d.availability_mode !== 'daily');
   const rotatingDishes = displayedDailyDishes.length > 0 ? displayedDailyDishes : onOrderDishes;
 
@@ -58,12 +61,25 @@ export default function AccueilClientPage() {
   const currentDish = rotatingDishes.length > 0 ? rotatingDishes[currentSlideIdx % rotatingDishes.length] : null;
 
   // Plats affichés dans la section "Notre Carte & Plats sur Commande"
-  const visibleGridDishes = dishes.filter(d => {
-    if (selectedCategory === 'SurCommande') return d.availability_mode !== 'daily';
-    if (selectedCategory === 'MenuDuJour') return d.availability_mode === 'daily';
-    if (selectedCategory !== 'Tous' && d.category !== selectedCategory) return false;
-    return true;
-  });
+  // - Par défaut ('Tous') : on place les Plats sur Commande (Pizzas, Poulets, Grillades...) en premier,
+  //   suivis des plats du Menu du Jour actifs.
+  // - Sur l'onglet 'MenuDuJour' : on n'affiche que les plats du jour préparés aujourd'hui (displayedDailyDishes).
+  const visibleGridDishes = (() => {
+    if (selectedCategory === 'SurCommande') {
+      return onOrderDishes;
+    }
+    if (selectedCategory === 'MenuDuJour') {
+      return displayedDailyDishes;
+    }
+    if (selectedCategory === 'Tous') {
+      return [...onOrderDishes, ...displayedDailyDishes];
+    }
+    return dishes.filter(
+      d =>
+        d.category === selectedCategory &&
+        (d.availability_mode !== 'daily' || d.is_available_today)
+    );
+  })();
 
   return (
     <ClientShell>
@@ -81,11 +97,11 @@ export default function AccueilClientPage() {
               Bienvenue au
             </span>
             <h2 className="font-script text-base sm:text-2xl md:text-3xl text-[#facc15] drop-shadow leading-tight">
-              Restaurant La Gratitude
+              {settings.restaurant_name || 'Restaurant La Gratitude'}
             </h2>
           </div>
           <p className="font-script text-[10px] sm:text-xs text-amber-100 leading-tight">
-            Une cuisine savoureuse, un service de qualité !
+            {settings.slogan || 'Une cuisine savoureuse, un service de qualité !'}
           </p>
           <p className="hidden md:block text-[11px] text-amber-100/80 max-w-lg leading-relaxed">
             Découvrez notre Carte &amp; Plats sur Commande ainsi que notre Menu du Jour à Zagtouli (route de Bobo).
@@ -104,11 +120,11 @@ export default function AccueilClientPage() {
               <span>Menu du Jour ({displayedDailyDishes.length})</span>
             </Link>
             <a
-              href="tel:+22602809906"
+              href={`tel:${phoneTel}`}
               className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[9px] sm:text-xs shadow inline-flex items-center gap-1 whitespace-nowrap"
             >
               <PhoneIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-              <span>Appeler : 02 80 99 06</span>
+              <span>Appeler : {phoneDisplay.replace('+226 ', '')}</span>
             </a>
           </div>
         </div>
@@ -207,7 +223,7 @@ export default function AccueilClientPage() {
       {/* CORPS DE PAGE : 1. NOTRE CARTE & PLATS SUR COMMANDE EN PREMIER, 2. MENU DU JOUR ENSUITE, 3. COORDONNÉES */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
         {/* 1. PREMIÈRE PARTIE (6 cols) : NOTRE CARTE & PLATS SUR COMMANDE */}
-        <div className="lg:col-span-6 bg-white/90 backdrop-blur-[2px] rounded-2xl border-2 border-[#e6d5c3] shadow-md p-4 sm:p-5 space-y-4 relative overflow-hidden">
+        <div className="lg:col-span-6 bg-white/95 rounded-2xl border-2 border-[#e6d5c3] shadow-md p-4 sm:p-5 space-y-4 relative overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
             <h3 className="font-extrabold text-base sm:text-lg text-[#2b1810] flex items-center gap-2">
               <svg className="w-5 h-5 text-[#881313]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -247,37 +263,54 @@ export default function AccueilClientPage() {
           </div>
 
           {/* Grille 2 plats par ligne, sans aucun badge Disponible / Non disponible */}
-          <div className="grid grid-cols-2 gap-3.5">
-            {visibleGridDishes.slice(0, 12).map(dish => (
-              <article
-                key={dish.id}
-                onClick={() => openDishSelector(dish)}
-                className="group cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between text-center"
+          {visibleGridDishes.length === 0 ? (
+            <div className="p-6 rounded-xl bg-amber-50 border border-amber-200 text-center text-xs text-stone-700 space-y-2">
+              <p className="font-extrabold text-[#881313]">
+                {selectedCategory === 'MenuDuJour'
+                  ? 'Le Menu du Jour est actuellement en préparation en cuisine.'
+                  : 'Aucun plat dans cette catégorie pour le moment.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedCategory('SurCommande')}
+                className="px-3.5 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs shadow"
               >
-                <div className="h-28 sm:h-32 overflow-hidden relative bg-stone-100">
-                  <div
-                    className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                    style={{ backgroundImage: `url('${dish.image_url}')` }}
-                  />
-                </div>
+                Voir nos Plats sur Commande
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3.5">
+              {visibleGridDishes.slice(0, 12).map(dish => (
+                <article
+                  key={dish.id}
+                  onClick={() => openDishSelector(dish)}
+                  className="group cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between text-center"
+                >
+                  <div className="h-28 sm:h-32 overflow-hidden relative bg-stone-100">
+                    <div
+                      className={`w-full h-full dish-photo ${dish.image_quadrant}`}
+                      style={{ backgroundImage: `url('${dish.image_url}')` }}
+                    />
+                  </div>
 
-                <div className="p-2.5 space-y-1">
-                  <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
-                    {dish.name}
-                  </h4>
-                  <div className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
-                    {formatCFA(dish.price)}
+                  <div className="p-2.5 space-y-1">
+                    <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
+                      {dish.name}
+                    </h4>
+                    <div className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
+                      {formatCFA(dish.price)}
+                    </div>
+                    <div className="pt-1 flex items-center justify-center">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
+                        <PhoneIcon className="w-3 h-3 shrink-0" />
+                        <span>+ Commander</span>
+                      </span>
+                    </div>
                   </div>
-                  <div className="pt-1 flex items-center justify-center">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
-                      <PhoneIcon className="w-3 h-3 shrink-0" />
-                      <span>+ Commander</span>
-                    </span>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 2. DEUXIÈME PARTIE (3 cols) : MENU DU JOUR AUJOURD'HUI */}
@@ -290,7 +323,11 @@ export default function AccueilClientPage() {
           </div>
 
           <div className="p-3 space-y-2 max-h-[520px] overflow-y-auto">
-            {displayedDailyDishes.length === 0 ? (
+            {loadingDishes ? (
+              <div className="p-4 text-center text-xs text-stone-500">
+                Chargement du Menu du Jour...
+              </div>
+            ) : displayedDailyDishes.length === 0 ? (
               <div className="p-3.5 rounded-xl bg-amber-100/90 border border-amber-300 text-[#2b1810] text-xs space-y-2 text-center">
                 <p className="font-extrabold flex items-center justify-center gap-1 text-[#801313]">
                   <ChefHatIcon className="w-4 h-4 shrink-0" />
@@ -300,28 +337,42 @@ export default function AccueilClientPage() {
                   Les plats du jour s’afficheront ici dès qu’ils seront prêts. Vous pouvez appeler le restaurant ou choisir parmi nos Plats sur Commande :
                 </p>
                 <a
-                  href="tel:+22602809906"
+                  href={`tel:${phoneTel}`}
                   className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs whitespace-nowrap shadow"
                 >
                   <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
-                  <span>+226 02 80 99 06</span>
+                  <span>{phoneDisplay}</span>
                 </a>
               </div>
             ) : (
-              displayedDailyDishes.slice(0, 10).map(dish => (
+              displayedDailyDishes.slice(0, 12).map(dish => (
                 <div
                   key={dish.id}
                   onClick={() => openDishSelector(dish)}
                   className="cursor-pointer flex items-center justify-between gap-2 py-2 px-2.5 rounded-xl bg-white hover:bg-amber-50 border border-[#ead8be] shadow-sm transition"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="w-5 h-5 rounded-full bg-[#16a34a] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                      <CheckIcon className="w-3 h-3" />
-                    </span>
+                    {dish.stock_status === 'low' ? (
+                      <span
+                        className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-bold shrink-0"
+                        title="Presque fini"
+                      >
+                        <BoltIcon className="w-3 h-3" />
+                      </span>
+                    ) : (
+                      <span className="w-5 h-5 rounded-full bg-[#16a34a] text-white flex items-center justify-center text-xs font-bold shrink-0">
+                        <CheckIcon className="w-3 h-3" />
+                      </span>
+                    )}
                     <div className="min-w-0">
                       <span className="text-xs sm:text-sm font-bold text-[#2b1810] truncate block">
                         {dish.name}
                       </span>
+                      {dish.stock_status === 'low' && (
+                        <span className="text-[10px] font-extrabold text-amber-700 block">
+                          Presque fini
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-[#991b1b] text-white font-extrabold text-xs shrink-0 whitespace-nowrap">
@@ -360,15 +411,15 @@ export default function AccueilClientPage() {
             </p>
 
             <a
-              href="tel:+22602809906"
+              href={`tel:${phoneTel}`}
               className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm text-center shadow-md flex items-center justify-center gap-2 whitespace-nowrap transition"
             >
               <PhoneIcon className="w-4 h-4 shrink-0" />
-              <span>+226 02 80 99 06</span>
+              <span>{phoneDisplay}</span>
             </a>
 
             <a
-              href="https://wa.me/22602809906"
+              href={`https://wa.me/${whatsappNum}`}
               target="_blank"
               rel="noreferrer"
               className="w-full py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
@@ -385,13 +436,13 @@ export default function AccueilClientPage() {
             <div className="text-xs sm:text-sm space-y-1.5 text-stone-700">
               <p className="font-semibold flex items-center gap-1.5">
                 <MapPinIcon className="w-4 h-4 text-[#881313] shrink-0" />
-                <span>Zagtouli, route de Bobo</span>
+                <span>{settings.address || 'Zagtouli, route de Bobo'}</span>
               </p>
               <p className="text-xs font-mono text-stone-500 pl-5">12°19&apos;57.62&quot;N 1°37&apos;52.36&quot;O</p>
               <p className="font-extrabold text-[#2b1810] flex items-center gap-1.5">
                 <PhoneIcon className="w-4 h-4 text-[#881313] shrink-0" />
-                <a href="tel:+22602809906" className="hover:text-[#881313] whitespace-nowrap">
-                  +226 02 80 99 06
+                <a href={`tel:${phoneTel}`} className="hover:text-[#881313] whitespace-nowrap">
+                  {phoneDisplay}
                 </a>
               </p>
             </div>
@@ -408,8 +459,9 @@ export default function AccueilClientPage() {
             <h4 className="font-extrabold text-sm text-[#2b1810] border-b border-[#e6d5c3] pb-2">
               Horaires
             </h4>
-            <p className="text-xs sm:text-sm font-bold text-stone-800 pt-1">Lundi - Dimanche</p>
-            <p className="text-xs sm:text-sm text-stone-600">de 07h00 à 23h00</p>
+            <p className="text-xs sm:text-sm font-bold text-stone-800 pt-1">
+              {settings.opening_hours || 'Lundi - Dimanche de 07h00 à 23h00'}
+            </p>
           </div>
         </aside>
       </section>
@@ -417,7 +469,7 @@ export default function AccueilClientPage() {
       {/* BOTTOM CTA ROW */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
         <a
-          href="https://wa.me/22602809906"
+          href={`https://wa.me/${whatsappNum}`}
           target="_blank"
           rel="noreferrer"
           className="bg-[#f3e5d0] hover:bg-[#ebd5b3] border-2 border-[#d6be9c] rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-sm transition"
@@ -431,13 +483,13 @@ export default function AccueilClientPage() {
         </a>
 
         <a
-          href="tel:+22602809906"
+          href={`tel:${phoneTel}`}
           className="bg-gradient-to-b from-[#8b261d] to-[#681811] hover:brightness-110 text-white rounded-2xl p-4 flex flex-col items-center text-center justify-center gap-2 shadow-md transition"
         >
           <span className="w-12 h-12 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center">
             <PhoneIcon className="w-6 h-6" />
           </span>
-          <span className="font-extrabold text-sm">Appeler le +226 02 80 99 06</span>
+          <span className="font-extrabold text-sm">Appeler le {phoneDisplay}</span>
         </a>
 
         <Link

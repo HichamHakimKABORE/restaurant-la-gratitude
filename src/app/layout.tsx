@@ -84,8 +84,8 @@ const restaurantJsonLd = {
   },
   geo: {
     '@type': 'GeoCoordinates',
-    latitude: 12.3289,
-    longitude: -1.6289
+    latitude: 12.332672,
+    longitude: -1.631211
   },
   openingHoursSpecification: [
     {

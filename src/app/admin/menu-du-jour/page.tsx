@@ -2,12 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, CloseIcon } from '@/components/Icons';
-import { sortDailyMenuDishes, getDailyMenuGroupLabel, type Dish, type StockStatus } from '@/lib/db';
+import { sortDailyMenuDishes, getDailyMenuGroupLabel, getLogicalMenuDate, type Dish, type StockStatus } from '@/lib/db';
 
 export default function AdminMenuDuJourPage() {
+  const router = useRouter();
   const { dishes, setDishes, showToast } = useCart();
   const [isSavingHistory, setIsSavingHistory] = useState(false);
 
@@ -43,15 +45,21 @@ export default function AdminMenuDuJourPage() {
           is_available_today: d.is_available_today
         }));
 
-      await fetch('/api/menu-reports', {
+      const res = await fetch('/api/menu-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          menu_date: new Date().toISOString().slice(0, 10),
+          menu_date: getLogicalMenuDate(),
           dishes: activeDailyDishes,
           notes: `Menu enregistré depuis l'espace Admin (${activeDailyDishes.length} plats prêts)`
         })
       });
+
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
 
       showToast(`Menu du Jour enregistré et archivé dans les rapports (${activeDailyDishes.length} plats) !`);
     } catch {
@@ -61,8 +69,33 @@ export default function AdminMenuDuJourPage() {
     }
   };
 
+  const handleResetDailyMenu = async () => {
+    if (!confirm('Voulez-vous décocher tous les plats du Menu du Jour ?')) return;
+    setDishes(prev =>
+      prev.map(d =>
+        d.availability_mode === 'daily'
+          ? { ...d, is_available_today: false, stock_status: 'soldout' }
+          : d
+      )
+    );
+    const res = await fetch('/api/dishes', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset_daily' })
+    });
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
+    const data = await res.json();
+    if (data.dishes) setDishes(data.dishes);
+    showToast('Menu du Jour réinitialisé (0 plat coché).');
+  };
+
   const setStatus = async (dish: Dish, status: StockStatus) => {
     const isAvail = status !== 'soldout';
+    const prevDishes = dishes;
     setDishes(prev =>
       prev.map(d =>
         d.id === dish.id
@@ -79,6 +112,12 @@ export default function AdminMenuDuJourPage() {
         is_available_today: isAvail
       })
     });
+    if (res.status === 401) {
+      setDishes(prevDishes);
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
     const data = await res.json();
     if (data.dishes) setDishes(data.dishes);
     showToast(
@@ -95,7 +134,7 @@ export default function AdminMenuDuJourPage() {
   return (
     <AdminShell
       title="Menu du Jour (Classement : Riz → Soupes → Plats)"
-      subtitle="Cochez les plats préparés ce matin. Les plats uniquement sur commande ne figurent pas dans cette liste."
+      subtitle="Cochez les plats préparés ce matin. Chaque modification met automatiquement à jour le site client et le rapport du jour."
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         <div className="md:col-span-8 space-y-5">
@@ -199,7 +238,7 @@ export default function AdminMenuDuJourPage() {
           <span className="px-3 py-1 rounded-full bg-amber-200 text-amber-950 font-extrabold text-xs">
             Aujourd’hui : {dailyDishes.filter(d => d.is_available_today).length} plats prêts
           </span>
-          <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-[#d99b26] shadow-xl">
+          <div className="w-36 h-36 rounded-full overflow-hidden border-4 border-[#d99b26] shadow-xl">
             <div
               className="w-full h-full dish-photo quad-tl"
               style={{ backgroundImage: `url('/images/dishes_grid_1.jpg')` }}
@@ -215,6 +254,14 @@ export default function AdminMenuDuJourPage() {
           >
             <CheckIcon className="w-4 h-4" />
             <span>{isSavingHistory ? 'Enregistrement...' : 'Enregistrer le menu & archiver'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleResetDailyMenu}
+            className="w-full py-2 px-3 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-bold text-xs transition"
+          >
+            Tout décocher (Réinitialiser le Menu du Jour)
           </button>
 
           <Link

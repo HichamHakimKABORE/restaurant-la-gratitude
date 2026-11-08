@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CameraIcon, CloseIcon, PencilIcon } from '@/components/Icons';
@@ -14,7 +15,7 @@ function compressImageToBase64(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const maxDim = 640;
+        const maxDim = 560;
         let w = img.width;
         let h = img.height;
         if (w > h && w > maxDim) {
@@ -29,7 +30,7 @@ function compressImageToBase64(file: File): Promise<string> {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
+          resolve(canvas.toDataURL('image/jpeg', 0.78));
         } else {
           reject(new Error('Canvas context error'));
         }
@@ -43,6 +44,7 @@ function compressImageToBase64(file: File): Promise<string> {
 }
 
 export default function AdminPlatsPage() {
+  const router = useRouter();
   const { dishes, setDishes, showToast } = useCart();
   const [filter, setFilter] = useState<string>('Tous');
   const [search, setSearch] = useState<string>('');
@@ -75,6 +77,11 @@ export default function AdminPlatsPage() {
           image_quadrant: 'quad-full'
         })
       });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (data.dishes) setDishes(data.dishes);
       showToast(`Photo de "${dish.name}" mise à jour !`);
@@ -87,6 +94,11 @@ export default function AdminPlatsPage() {
   const handleDelete = async (id: number, name: string) => {
     if (!confirm(`Supprimer le plat "${name}" ?`)) return;
     const res = await fetch(`/api/dishes?id=${id}`, { method: 'DELETE' });
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
     const data = await res.json();
     if (data.dishes) setDishes(data.dishes);
     showToast(`${name} supprimé`);
@@ -143,6 +155,11 @@ export default function AdminPlatsPage() {
             : {})
         })
       });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (data.dishes) setDishes(data.dishes);
       setAddModalOpen(false);
@@ -165,6 +182,11 @@ export default function AdminPlatsPage() {
         image_quadrant: newPhotoData ? 'quad-full' : 'quad-tl'
       })
     });
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
     const data = await res.json();
     if (data.dishes) setDishes(data.dishes);
     setNewName('');
@@ -282,25 +304,36 @@ export default function AdminPlatsPage() {
             <label className="font-bold block mb-1">
               Photo du plat (depuis téléphone ou ordinateur)
             </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async e => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const b64 = await compressImageToBase64(file);
-                  setNewPhotoData(b64);
-                }
-              }}
-              className="w-full text-xs"
-            />
-            {newPhotoData && (
-              <img
-                src={newPhotoData}
-                alt="Aperçu"
-                className="mt-2 w-20 h-20 rounded-xl object-cover border border-amber-400"
+            <div className="flex items-center gap-3">
+              {/* Aperçu de la nouvelle photo ou de la photo actuelle du plat */}
+              {newPhotoData ? (
+                <img
+                  src={newPhotoData}
+                  alt="Nouvel aperçu"
+                  className="w-16 h-16 rounded-xl object-cover border-2 border-[#16a34a] shrink-0"
+                />
+              ) : editingDish ? (
+                <div className="w-16 h-16 rounded-xl overflow-hidden border border-amber-400 shrink-0">
+                  <div
+                    className={`w-full h-full dish-photo ${editingDish.image_quadrant}`}
+                    style={{ backgroundImage: `url('${editingDish.image_url}')` }}
+                  />
+                </div>
+              ) : null}
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async e => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const b64 = await compressImageToBase64(file);
+                    setNewPhotoData(b64);
+                  }
+                }}
+                className="w-full text-xs"
               />
-            )}
+            </div>
           </div>
 
           <div>

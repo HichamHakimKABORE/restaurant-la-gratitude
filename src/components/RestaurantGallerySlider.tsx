@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { type GalleryImage } from '@/lib/db';
-import { CameraIcon } from './Icons';
+import { CameraIcon, CloseIcon } from './Icons';
 
 export default function RestaurantGallerySlider() {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
   useEffect(() => {
     try {
@@ -63,12 +65,13 @@ export default function RestaurantGallerySlider() {
           {displayList.map((img, idx) => (
             <div
               key={`${img.id}-${idx}`}
-              className="w-48 sm:w-60 h-32 sm:h-40 rounded-xl overflow-hidden shrink-0 border-2 border-[#eab308]/60 shadow-sm relative group/card bg-stone-100 transition-all duration-300"
+              onClick={() => setSelectedImage(img)}
+              className="cursor-pointer w-48 sm:w-60 h-32 sm:h-40 rounded-xl overflow-hidden shrink-0 border-2 border-[#eab308]/60 hover:border-[#881313] shadow-sm relative group/card bg-stone-100 transition-all duration-300"
             >
               <img
                 src={img.image_url}
                 alt={img.title || 'Restaurant La Gratitude'}
-                className="w-full h-full object-cover group-hover/card:scale-105 transition duration-300 pointer-events-none"
+                className="w-full h-full object-cover group-hover/card:scale-105 transition duration-300"
                 loading="lazy"
               />
 
@@ -83,6 +86,42 @@ export default function RestaurantGallerySlider() {
           ))}
         </div>
       </div>
+
+      {/* Visionneuse plein écran propre (sans aucun texte "Photo figée") */}
+      {selectedImage &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[99999] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            <div
+              className="relative max-w-2xl w-full bg-[#fffcf7] rounded-2xl overflow-hidden border-2 border-[#eab308] shadow-2xl"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-black/75 hover:bg-black text-white flex items-center justify-center shadow"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+              <img
+                src={selectedImage.image_url}
+                alt={selectedImage.title || 'Restaurant La Gratitude'}
+                className="w-full max-h-[75vh] object-contain bg-black"
+              />
+              {selectedImage.title && (
+                <div className="p-3.5 text-center bg-[#fffcf7] border-t border-[#dec6a7]">
+                  <p className="font-extrabold text-sm text-[#2b1810]">
+                    {selectedImage.title}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </section>
   );
 }

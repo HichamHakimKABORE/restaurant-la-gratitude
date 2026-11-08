@@ -135,13 +135,13 @@ export default function AdminStatistiquesPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-stone-200">
-                  <span>Orange Money (+226 60 18 65 25)</span>
+                  <span>Orange Money (+226 02 80 99 06)</span>
                   <span className="px-2.5 py-1 rounded-lg bg-orange-500 text-white">
                     {countOM} commande(s)
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3 rounded-xl bg-white border border-stone-200">
-                  <span>Moov Money (+226 60 18 65 25)</span>
+                  <span>Moov Money (+226 02 80 99 06)</span>
                   <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white">
                     {countMoov} commande(s)
                   </span>

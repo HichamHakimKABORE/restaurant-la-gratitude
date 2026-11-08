@@ -5,9 +5,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon, CompassIcon } from './Icons';
 import RestaurantGallerySlider from './RestaurantGallerySlider';
+import { useCart } from './CartContext';
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { settings } = useCart();
+  const phoneDisplay = settings.phone || '+226 02 80 99 06';
+  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f7efe4] text-[#2b1810] relative overflow-x-hidden pb-16">
@@ -53,7 +58,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
           {/* Centre : Slogan */}
           <div className="hidden lg:flex flex-col items-center text-center">
             <p className="font-script text-base text-[#3b1c0e] leading-snug">
-              Une cuisine savoureuse, un service de qualité !
+              {settings.slogan || 'Une cuisine savoureuse, un service de qualité !'}
             </p>
           </div>
 
@@ -69,11 +74,11 @@ export default function ClientShell({ children }: { children: React.ReactNode })
                 </span>
               </div>
               <div className="flex items-center gap-1.5 font-extrabold text-[#2b1810]">
-                <a href="tel:+22602809906" className="hover:text-[#991b1b] text-[11px] sm:text-xs whitespace-nowrap">
-                  +226 02 80 99 06
+                <a href={`tel:${phoneTel}`} className="hover:text-[#991b1b] text-[11px] sm:text-xs whitespace-nowrap">
+                  {phoneDisplay}
                 </a>
                 <a
-                  href="https://wa.me/22602809906"
+                  href={`https://wa.me/${whatsappNum}`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-5 h-5 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition"
@@ -202,7 +207,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
           </Link>
 
           <a
-            href="tel:+22602809906"
+            href={`tel:${phoneTel}`}
             className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
           >
             <PhoneIcon className="w-4 h-4 shrink-0" />

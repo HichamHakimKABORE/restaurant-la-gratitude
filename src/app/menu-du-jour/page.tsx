@@ -4,14 +4,15 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { PhoneIcon, ChefHatIcon } from '@/components/Icons';
+import { PhoneIcon, ChefHatIcon, BoltIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, type Dish } from '@/lib/db';
 
 export default function MenuDuJourPage() {
-  const { dishes, openDishSelector } = useCart();
+  const { dishes, loadingDishes, settings, openDishSelector } = useCart();
 
-  // Séparation stricte : SEULS les plats avec availability_mode === 'daily' et cochés par l'admin aujourd'hui
-  // apparaissent dans le Menu du Jour. Tant que l'admin n'a pas mis à jour le menu du jour, la liste est vide.
+  const phoneDisplay = settings.phone || '+226 02 80 99 06';
+  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+
   const dailyPrepared = useMemo(
     () =>
       sortDailyMenuDishes(
@@ -34,7 +35,7 @@ export default function MenuDuJourPage() {
 
   return (
     <ClientShell>
-      <div className="bg-white/90 backdrop-blur-[2px] rounded-2xl border-2 border-[#eab308] shadow-lg overflow-hidden relative">
+      <div className="bg-white/95 rounded-2xl border-2 border-[#eab308] shadow-lg overflow-hidden relative">
         <div className="bg-gradient-to-r from-[#7c1d12] via-[#991b1b] to-[#680e0e] text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#eab308]">
           <div>
             <span className="px-3 py-1 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-xs">
@@ -49,16 +50,20 @@ export default function MenuDuJourPage() {
           </div>
 
           <a
-            href="tel:+22602809906"
+            href={`tel:${phoneTel}`}
             className="px-4 py-2.5 rounded-xl bg-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow inline-flex items-center gap-2 whitespace-nowrap transition"
           >
             <PhoneIcon className="w-4 h-4 shrink-0" />
-            <span>Commander au +226 02 80 99 06</span>
+            <span>Commander au {phoneDisplay}</span>
           </a>
         </div>
 
         <div className="p-5 sm:p-6 space-y-6">
-          {dailyPrepared.length === 0 ? (
+          {loadingDishes ? (
+            <div className="p-8 text-center text-xs sm:text-sm text-stone-500">
+              Chargement du Menu du Jour en direct...
+            </div>
+          ) : dailyPrepared.length === 0 ? (
             <div className="p-6 rounded-2xl bg-amber-50 border-2 border-amber-300 text-[#2b1810] text-center space-y-3">
               <ChefHatIcon className="w-8 h-8 text-[#881313] mx-auto" />
               <h3 className="font-extrabold text-base sm:text-lg">
@@ -75,11 +80,11 @@ export default function MenuDuJourPage() {
                   Voir la Carte &amp; Plats sur Commande →
                 </Link>
                 <a
-                  href="tel:+22602809906"
+                  href={`tel:${phoneTel}`}
                   className="px-4 py-2.5 rounded-xl bg-[#881313] text-white font-extrabold text-xs inline-flex items-center gap-2 shadow whitespace-nowrap"
                 >
                   <PhoneIcon className="w-4 h-4 shrink-0" />
-                  <span>Appeler le +226 02 80 99 06</span>
+                  <span>Appeler le {phoneDisplay}</span>
                 </a>
               </div>
             </div>
@@ -101,18 +106,26 @@ export default function MenuDuJourPage() {
                     <div
                       key={dish.id}
                       onClick={() => openDishSelector(dish)}
-                      className="cursor-pointer bg-[#fdf5e8] hover:bg-amber-50 rounded-2xl border-2 border-[#dec6a7] hover:border-[#881313] p-4 flex items-center gap-4 shadow-sm transition"
+                      className="cursor-pointer bg-[#fdf5e8] hover:bg-amber-50 rounded-2xl border-2 border-[#dec6a7] hover:border-[#881313] p-3.5 sm:p-4 flex items-center gap-3.5 shadow-sm transition"
                     >
-                      <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 border-2 border-[#d99b26] shadow">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 border-2 border-[#d99b26] shadow relative">
                         <div
                           className={`w-full h-full dish-photo ${dish.image_quadrant}`}
                           style={{ backgroundImage: `url('${dish.image_url}')` }}
                         />
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <h4 className="font-extrabold text-sm sm:text-base text-[#2b1810] truncate">
-                          {dish.name}
-                        </h4>
+                        <div className="flex items-center justify-between gap-1.5">
+                          <h4 className="font-extrabold text-sm sm:text-base text-[#2b1810] truncate">
+                            {dish.name}
+                          </h4>
+                          {dish.stock_status === 'low' && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-400 text-[#2b1810] font-extrabold text-[10px] inline-flex items-center gap-0.5 shrink-0 whitespace-nowrap">
+                              <BoltIcon className="w-2.5 h-2.5" />
+                              <span>Presque fini</span>
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-stone-600 line-clamp-2">
                           {dish.description}
                         </p>

@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
-import { PrinterIcon, CheckIcon, ChefHatIcon, BoltIcon } from '@/components/Icons';
-import { sortDailyMenuDishes, type DailyMenuRecord } from '@/lib/db';
+import { PrinterIcon, CheckIcon, ChefHatIcon, BoltIcon, CloseIcon } from '@/components/Icons';
+import { sortDailyMenuDishes, getLogicalMenuDate, type DailyMenuRecord } from '@/lib/db';
 
 export default function AdminRapportMenusPage() {
+  const router = useRouter();
   const { dishes, showToast } = useCart();
   const [reports, setReports] = useState<DailyMenuRecord[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -58,8 +60,25 @@ export default function AdminRapportMenusPage() {
   };
 
   const selectTodayOnly = () => {
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayStr = getLogicalMenuDate();
     setSelectedDates([todayStr]);
+  };
+
+  const handleDeleteReport = async (dateStr: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!confirm(`Supprimer définitivement le rapport du ${dateStr} ?`)) return;
+    const res = await fetch(`/api/menu-reports?date=${encodeURIComponent(dateStr)}`, {
+      method: 'DELETE'
+    });
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
+    setReports(prev => prev.filter(r => r.menu_date !== dateStr));
+    setSelectedDates(prev => prev.filter(d => d !== dateStr));
+    showToast(`Rapport du ${dateStr} supprimé.`);
   };
 
   const stats = useMemo(() => {
@@ -91,15 +110,21 @@ export default function AdminRapportMenusPage() {
         is_available_today: d.is_available_today
       }));
 
-      await fetch('/api/menu-reports', {
+      const res = await fetch('/api/menu-reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          menu_date: new Date().toISOString().slice(0, 10),
+          menu_date: getLogicalMenuDate(),
           dishes: activeDaily,
           notes: `Enregistrement manuel (${activeDaily.length} plats cochés)`
         })
       });
+
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
 
       showToast('Menu d’aujourd’hui archivé dans les rapports !');
       await fetchReports();
@@ -246,9 +271,19 @@ export default function AdminRapportMenusPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/80 border border-stone-300 text-stone-700 shrink-0 font-bold">
-                    {rep.menu_date}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/80 border border-stone-300 text-stone-700 font-bold">
+                      {rep.menu_date}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={e => handleDeleteReport(rep.menu_date, e)}
+                      className="p-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition"
+                      title="Supprimer ce rapport"
+                    >
+                      <CloseIcon className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </label>
               );
             })}

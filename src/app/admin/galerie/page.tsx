@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { CameraIcon, CloseIcon, PencilIcon, CheckIcon } from '@/components/Icons';
 import { useCart } from '@/components/CartContext';
@@ -25,7 +26,7 @@ function compressImageToBase64(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const maxDim = 900;
+        const maxDim = 760;
         let w = img.width;
         let h = img.height;
         if (w > h && w > maxDim) {
@@ -40,7 +41,7 @@ function compressImageToBase64(file: File): Promise<string> {
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.82));
+          resolve(canvas.toDataURL('image/jpeg', 0.78));
         } else {
           reject(new Error('Erreur canvas'));
         }
@@ -54,6 +55,7 @@ function compressImageToBase64(file: File): Promise<string> {
 }
 
 export default function AdminGaleriePage() {
+  const router = useRouter();
   // Initialisé à vide [] pour ne JAMAIS afficher les anciennes photos supprimées avant le chargement de la base
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [loadingGallery, setLoadingGallery] = useState(true);
@@ -132,6 +134,11 @@ export default function AdminGaleriePage() {
           display_order: 10
         })
       });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
@@ -163,6 +170,11 @@ export default function AdminGaleriePage() {
     syncGalleryCache(optimistic);
     try {
       const res = await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
@@ -202,6 +214,11 @@ export default function AdminGaleriePage() {
           title: updatedTitle
         })
       });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);

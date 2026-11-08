@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import ClientShell from '@/components/ClientShell';
+import { useCart } from '@/components/CartContext';
 import { CarIcon, WalkIcon, MapPinIcon, CompassIcon, PhoneIcon, ClockIcon } from '@/components/Icons';
 
 // Exact GPS Coordinates of Restaurant La Gratitude (12°19'57.62"N, 1°37'52.36"O)
@@ -29,6 +30,10 @@ function calculateDistanceKm(
 }
 
 export default function ContactPage() {
+  const { settings } = useCart();
+  const phoneDisplay = settings.phone || '+226 02 80 99 06';
+  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
     null
   );
@@ -261,11 +266,11 @@ export default function ContactPage() {
                   <span>Téléphone &amp; WhatsApp :</span>
                 </strong>
                 <span className="font-extrabold text-base text-[#2b1810]">
-                  +226 02 80 99 06
+                  {phoneDisplay}
                 </span>
               </div>
               <a
-                href="tel:+22602809906"
+                href={`tel:${phoneTel}`}
                 className="px-4 py-2 rounded-xl bg-[#881313] text-white font-bold text-xs shadow inline-flex items-center gap-1.5"
               >
                 <PhoneIcon className="w-3.5 h-3.5" />
@@ -279,7 +284,7 @@ export default function ContactPage() {
                 <span>Horaires d’ouverture :</span>
               </strong>
               <p className="font-bold text-[#2b1810]">
-                Lundi au Dimanche : de 07h00 à 23h00
+                {settings.opening_hours || 'Lundi au Dimanche : de 07h00 à 23h00'}
               </p>
             </div>
           </div>

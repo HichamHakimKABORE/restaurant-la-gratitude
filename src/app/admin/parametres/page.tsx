@@ -1,15 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { useCart } from '@/components/CartContext';
 
 export default function AdminParametresPage() {
+  const router = useRouter();
   const [restName, setRestName] = useState('Restaurant La Gratitude');
   const [restSlogan, setRestSlogan] = useState(
     'Une cuisine savoureuse, un service de qualité !'
   );
-  const [restPhone, setRestPhone] = useState('+226 60 18 65 25');
+  const [restPhone, setRestPhone] = useState('+226 02 80 99 06');
   const [restAddress, setRestAddress] = useState(
     'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso'
   );
@@ -17,7 +19,7 @@ export default function AdminParametresPage() {
     'Lundi - Dimanche de 07h00 à 23h00'
   );
   const [saving, setSaving] = useState(false);
-  const { showToast } = useCart();
+  const { showToast, setSettings } = useCart();
 
   useEffect(() => {
     fetch('/api/settings', { cache: 'no-store' })
@@ -50,14 +52,21 @@ export default function AdminParametresPage() {
           restaurant_name: restName,
           slogan: restSlogan,
           phone: restPhone,
+          whatsapp: restPhone.replace(/[^0-9]/g, ''),
           address: restAddress,
           opening_hours: restHours
         })
       });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
+        if (data.settings) setSettings(data.settings);
         showToast(
-          'Paramètres enregistrés dans la base de données Neon PostgreSQL !'
+          'Paramètres enregistrés et mis à jour sur tout le site !'
         );
       } else {
         showToast('Erreur lors de la sauvegarde.');

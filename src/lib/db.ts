@@ -57,56 +57,18 @@ export interface DailyMenuRecord {
   revenue_cfa?: number;
 }
 
-export const INITIAL_MENU_HISTORY: DailyMenuRecord[] = [
-  {
-    id: 1,
-    menu_date: '2026-11-06',
-    total_dishes: 8,
-    notes: 'Service régulier du midi & soir',
-    created_at: '2026-11-06T07:30:00Z',
-    dishes_json: [
-      { id: 1, name: 'Riz gras', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 2, name: 'Riz sauce d’arachide', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 3, name: 'Riz sauce tomate', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 4, name: 'Tô sauce boulvanka', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 5, name: 'Soupe de poulet', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
-      { id: 6, name: 'Soupe de poisson', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
-      { id: 9, name: 'Brochettes Kaya (x5)', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 12, name: 'Alloco doré', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true }
-    ]
-  },
-  {
-    id: 2,
-    menu_date: '2026-11-05',
-    total_dishes: 7,
-    notes: 'Forte affluence sur les grillades',
-    created_at: '2026-11-05T07:15:00Z',
-    dishes_json: [
-      { id: 1, name: 'Riz gras', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 3, name: 'Riz sauce tomate', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 8, name: 'Soupe de boyaux', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
-      { id: 9, name: 'Brochettes Kaya (x5)', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 10, name: 'Brochette Filet (x1)', category: 'Grillades', price: 500, stock_status: 'available', is_available_today: true },
-      { id: 11, name: 'Brochettes Merguez (x4)', category: 'Grillades', price: 2000, stock_status: 'available', is_available_today: true },
-      { id: 12, name: 'Alloco doré', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true }
-    ]
-  },
-  {
-    id: 3,
-    menu_date: '2026-11-04',
-    total_dishes: 6,
-    notes: 'Menu traditionnel du Chef',
-    created_at: '2026-11-04T07:20:00Z',
-    dishes_json: [
-      { id: 1, name: 'Riz gras', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 2, name: 'Riz sauce d’arachide', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 4, name: 'Tô sauce boulvanka', category: 'Plats', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 5, name: 'Soupe de poulet', category: 'Soupes', price: 1500, stock_status: 'available', is_available_today: true },
-      { id: 14, name: 'Assiette de Frites', category: 'Grillades', price: 1000, stock_status: 'available', is_available_today: true },
-      { id: 15, name: 'Omelette Gratitude', category: 'Plats', price: 2000, stock_status: 'available', is_available_today: true }
-    ]
-  }
-];
+export const INITIAL_MENU_HISTORY: DailyMenuRecord[] = [];
+
+/**
+ * Retourne la date logique du service du restaurant (format YYYY-MM-DD).
+ * Le basculement d'une journée à l'autre se fait à 04h00 UTC (04h00 heure de Ouagadougou),
+ * ce qui permet à l'équipe de préparer le Menu du Jour la veille tard le soir sans qu'il
+ * soit effacé à minuit pile, et au service du soir (jusqu'à 23h00-02h00) de rester actif.
+ */
+export function getLogicalMenuDate(): string {
+  const shifted = new Date(Date.now() - 4 * 3600 * 1000);
+  return shifted.toISOString().slice(0, 10);
+}
 
 export const INITIAL_GALLERY_IMAGES: GalleryImage[] = [
   { id: 1, title: 'Ambiance chaleureuse à Zagtouli', image_url: '/images/dishes_grid_1.jpg', display_order: 1 },
@@ -531,10 +493,10 @@ export async function ensureNeonSchema() {
       }
 
       // Ajout de la colonne daily_menu_date pour suivre si l'admin a mis à jour le Menu du Jour aujourd'hui.
-      // Tant que l'admin n'a pas actualisé le Menu du Jour pour la date du jour, aucun plat du jour ne s'affiche.
+      // Tant que l'admin n'a pas actualisé le Menu du Jour pour la date logique du service, aucun plat du jour ne s'affiche.
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_date VARCHAR(20) DEFAULT ''`;
 
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = getLogicalMenuDate();
       const settingsDateRows = await sql`SELECT daily_menu_date FROM restaurant_settings WHERE id = 1`;
       const currentMenuDate = settingsDateRows[0]?.daily_menu_date || '';
       if (currentMenuDate !== todayStr) {
