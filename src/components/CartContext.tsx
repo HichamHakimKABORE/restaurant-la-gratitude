@@ -60,20 +60,21 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       if (Array.isArray(data.dishes) && data.dishes.length > 0) {
         setDishes(data.dishes);
         try {
-          sessionStorage.setItem('gratitude_dishes_cache', JSON.stringify(data.dishes));
+          sessionStorage.setItem('gratitude_dishes_cache_v3', JSON.stringify(data.dishes));
         } catch {}
       }
     } catch {}
   };
 
   useEffect(() => {
-    // Isolation stricte : nettoyage de toute donnée personnelle ou commande stockée localement
+    // Isolation stricte : nettoyage de toute donnée personnelle ou ancien cache stocké localement
     // pour garantir que chaque utilisateur dispose d'un espace 100% propre et isolé.
     try {
       localStorage.removeItem('gratitude_cart_v2');
       localStorage.removeItem('gratitude_my_orders');
       localStorage.removeItem('gratitude_my_orders_v2');
-      const cachedDishes = sessionStorage.getItem('gratitude_dishes_cache');
+      sessionStorage.removeItem('gratitude_dishes_cache');
+      const cachedDishes = sessionStorage.getItem('gratitude_dishes_cache_v3');
       if (cachedDishes) setDishes(JSON.parse(cachedDishes));
     } catch {}
     refreshDishes();
