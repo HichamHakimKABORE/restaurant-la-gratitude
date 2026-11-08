@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CameraIcon, CloseIcon, PencilIcon } from '@/components/Icons';
@@ -54,6 +55,11 @@ export default function AdminPlatsPage() {
   const [newOptions, setNewOptions] = useState('Simple, Avec piment');
   const [newDescription, setNewDescription] = useState('');
   const [newPhotoData, setNewPhotoData] = useState<string>('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handlePhotoUploadForDish = async (dish: Dish, file?: File) => {
     if (!file) return;
@@ -175,6 +181,163 @@ export default function AdminPlatsPage() {
     return d.category === filter;
   });
 
+  const modalContent = addModalOpen ? (
+    <div
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-4"
+      onClick={() => setAddModalOpen(false)}
+    >
+      <form
+        onSubmit={handleSaveDish}
+        onClick={e => e.stopPropagation()}
+        className="bg-white text-[#2b1810] border-2 border-[#881313] rounded-2xl max-w-md w-full p-4 sm:p-5 space-y-3.5 shadow-2xl max-h-[88vh] overflow-y-auto"
+      >
+        <div className="flex items-center justify-between border-b border-stone-200 pb-2.5">
+          <h3 className="font-extrabold text-sm sm:text-base pr-2">
+            {editingDish
+              ? `Modifier : ${editingDish.name}`
+              : 'Ajouter un plat ou une boisson'}
+          </h3>
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(false)}
+            className="w-7 h-7 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 font-bold inline-flex items-center justify-center shrink-0"
+          >
+            <CloseIcon className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="space-y-3 text-xs">
+          <div>
+            <label className="font-bold block mb-1">Nom du plat</label>
+            <input
+              type="text"
+              required
+              value={newName}
+              onChange={e => setNewName(e.target.value)}
+              placeholder="Ex: Riz gras au poulet"
+              className="w-full px-3 py-2 rounded-xl border border-stone-300 font-semibold"
+              autoFocus
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <div>
+              <label className="font-bold block mb-1">Catégorie</label>
+              <select
+                value={newCategory}
+                onChange={e =>
+                  setNewCategory(e.target.value as Dish['category'])
+                }
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 font-semibold bg-white"
+              >
+                <option value="Plats">Plats</option>
+                <option value="Soupes">Soupes</option>
+                <option value="Pizzas">Pizzas</option>
+                <option value="Poulets">Poulets</option>
+                <option value="Grillades">Grillades</option>
+                <option value="Salades">Salades</option>
+                <option value="Boissons">Boissons</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="font-bold block mb-1">Prix (FCFA)</label>
+              <input
+                type="number"
+                required
+                value={newPrice}
+                onChange={e => setNewPrice(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="font-bold block mb-1">
+              Options au choix (séparées par une virgule)
+            </label>
+            <input
+              type="text"
+              value={newOptions}
+              onChange={e => setNewOptions(e.target.value)}
+              placeholder="Ex: Flambé, Rabilé, Sauté, Pané"
+              className="w-full px-3 py-2 rounded-xl border border-stone-300"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold block mb-1">
+              Description du plat
+            </label>
+            <input
+              type="text"
+              value={newDescription}
+              onChange={e => setNewDescription(e.target.value)}
+              placeholder="Ex: Servi chaud avec accompagnement..."
+              className="w-full px-3 py-2 rounded-xl border border-stone-300"
+            />
+          </div>
+
+          <div>
+            <label className="font-bold block mb-1">
+              Photo du plat (depuis téléphone ou ordinateur)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async e => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  const b64 = await compressImageToBase64(file);
+                  setNewPhotoData(b64);
+                }
+              }}
+              className="w-full text-xs"
+            />
+            {newPhotoData && (
+              <img
+                src={newPhotoData}
+                alt="Aperçu"
+                className="mt-2 w-20 h-20 rounded-xl object-cover border border-amber-400"
+              />
+            )}
+          </div>
+
+          <div>
+            <label className="font-bold block mb-1">Type de liste (Menu du Jour ou Sur Commande)</label>
+            <select
+              value={newMode}
+              onChange={e =>
+                setNewMode(e.target.value as Dish['availability_mode'])
+              }
+              className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold bg-white"
+            >
+              <option value="daily">Liste du Menu du Jour (À cocher chaque matin)</option>
+              <option value="order">Uniquement sur commande (Hors Menu du Jour)</option>
+              <option value="always">Sur commande / Carte permanente (Hors Menu du Jour)</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-2 border-t border-stone-200">
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(false)}
+            className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-extrabold text-xs shadow"
+          >
+            Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  ) : null;
+
   return (
     <AdminShell
       title="Plats & Plats sur Commande"
@@ -188,23 +351,23 @@ export default function AdminPlatsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher un plat..."
-            className="w-full sm:w-64 px-3 py-1.5 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium"
+            className="flex-1 sm:flex-none sm:w-64 px-3 py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium min-w-[160px]"
           />
 
           <button
             onClick={openCreateModal}
-            className="px-3.5 py-1.5 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow whitespace-nowrap"
+            className="px-3.5 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow whitespace-nowrap shrink-0"
           >
             + Ajouter un plat
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+        <div className="flex items-center gap-1.5 text-xs overflow-x-auto no-scrollbar pb-1">
           {['Tous', 'Menu du Jour', 'Sur Commande', 'Plats', 'Soupes', 'Pizzas', 'Poulets', 'Grillades', 'Salades', 'Boissons'].map(cat => (
             <button
               key={cat}
               onClick={() => setFilter(cat)}
-              className={`px-2.5 py-1 rounded-lg font-bold transition whitespace-nowrap ${
+              className={`px-2.5 py-1 rounded-lg font-bold transition whitespace-nowrap shrink-0 ${
                 filter === cat
                   ? 'bg-[#881313] text-white shadow-sm'
                   : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
@@ -216,8 +379,7 @@ export default function AdminPlatsPage() {
         </div>
       </div>
 
-      {/* Grille compacte (2 colonnes sur écran moyen/large, 1 colonne ultra-compacte sur téléphone)
-          Zéro scroll horizontal, espacement vertical réduit pour ne pas allonger la page */}
+      {/* Grille compacte (2 colonnes sur écran moyen/large, 1 colonne ultra-compacte sur téléphone) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         {filtered.map(dish => {
           const isDaily = dish.availability_mode === 'daily';
@@ -273,7 +435,7 @@ export default function AdminPlatsPage() {
                       • {dish.category}
                     </span>
                     {Array.isArray(dish.options_json) && dish.options_json.length > 0 && (
-                      <span className="text-[10px] text-stone-400 truncate max-w-[160px]">
+                      <span className="text-[10px] text-stone-400 truncate max-w-[140px] sm:max-w-[160px]">
                         ({dish.options_json.join(', ')})
                       </span>
                     )}
@@ -281,7 +443,7 @@ export default function AdminPlatsPage() {
                 </div>
               </div>
 
-              {/* Droite : Actions directes sans aller au fond à droite */}
+              {/* Droite : Actions directes */}
               <div className="flex items-center gap-1 shrink-0">
                 <button
                   type="button"
@@ -306,158 +468,8 @@ export default function AdminPlatsPage() {
         })}
       </div>
 
-      {/* Add / Edit Dish Modal */}
-      {addModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <form
-            onSubmit={handleSaveDish}
-            className="bg-white text-[#2b1810] border-2 border-[#881313] rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <h3 className="font-extrabold text-base">
-                {editingDish
-                  ? `Modifier : ${editingDish.name}`
-                  : 'Ajouter un plat ou une boisson'}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setAddModalOpen(false)}
-                className="text-stone-500 font-bold inline-flex items-center justify-center"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div>
-                <label className="font-bold block mb-1">Nom du plat</label>
-                <input
-                  type="text"
-                  required
-                  value={newName}
-                  onChange={e => setNewName(e.target.value)}
-                  placeholder="Ex: Riz gras au poulet"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-bold block mb-1">Catégorie</label>
-                  <select
-                    value={newCategory}
-                    onChange={e =>
-                      setNewCategory(e.target.value as Dish['category'])
-                    }
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  >
-                    <option value="Plats">Plats</option>
-                    <option value="Soupes">Soupes</option>
-                    <option value="Pizzas">Pizzas</option>
-                    <option value="Poulets">Poulets</option>
-                    <option value="Grillades">Grillades</option>
-                    <option value="Salades">Salades</option>
-                    <option value="Boissons">Boissons</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-bold block mb-1">Prix (FCFA)</label>
-                  <input
-                    type="number"
-                    required
-                    value={newPrice}
-                    onChange={e => setNewPrice(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">
-                  Options au choix (séparées par une virgule)
-                </label>
-                <input
-                  type="text"
-                  value={newOptions}
-                  onChange={e => setNewOptions(e.target.value)}
-                  placeholder="Ex: Flambé, Rabilé, Sauté, Pané"
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">
-                  Description du plat
-                </label>
-                <input
-                  type="text"
-                  value={newDescription}
-                  onChange={e => setNewDescription(e.target.value)}
-                  placeholder="Ex: Servi chaud avec accompagnement..."
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">
-                  Photo du plat (depuis téléphone ou ordinateur)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async e => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const b64 = await compressImageToBase64(file);
-                      setNewPhotoData(b64);
-                    }
-                  }}
-                  className="w-full text-xs"
-                />
-                {newPhotoData && (
-                  <img
-                    src={newPhotoData}
-                    alt="Aperçu"
-                    className="mt-2 w-20 h-20 rounded-xl object-cover border border-amber-400"
-                  />
-                )}
-              </div>
-
-              <div>
-                <label className="font-bold block mb-1">Type de liste (Menu du Jour ou Sur Commande)</label>
-                <select
-                  value={newMode}
-                  onChange={e =>
-                    setNewMode(e.target.value as Dish['availability_mode'])
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-stone-300 font-bold"
-                >
-                  <option value="daily">Liste du Menu du Jour (À cocher chaque matin)</option>
-                  <option value="order">Uniquement sur commande (Hors Menu du Jour)</option>
-                  <option value="always">Sur commande / Carte permanente (Hors Menu du Jour)</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setAddModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-stone-100 text-stone-700 font-bold text-xs"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded-xl bg-[#881313] text-white font-bold text-xs shadow"
-              >
-                Enregistrer
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      {/* Rendu de la fenêtre modale dans document.body pour qu'elle s'affiche toujours au centre exact de l'écran */}
+      {mounted && modalContent ? createPortal(modalContent, document.body) : null}
     </AdminShell>
   );
 }

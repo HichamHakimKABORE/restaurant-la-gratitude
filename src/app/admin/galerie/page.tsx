@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import AdminShell from '@/components/AdminShell';
 import { CameraIcon, CloseIcon, PencilIcon, CheckIcon } from '@/components/Icons';
 import { useCart } from '@/components/CartContext';
@@ -368,92 +369,95 @@ export default function AdminGaleriePage() {
         </div>
       </div>
 
-      {/* MODAL POUR MODIFIER LA DESCRIPTION D'UNE PHOTO */}
-      {editingImage && (
-        <div
-          className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in"
-          onClick={() => setEditingImage(null)}
-        >
+      {/* MODAL POUR MODIFIER LA DESCRIPTION D'UNE PHOTO (Rendu directement dans document.body au centre de l'écran) */}
+      {editingImage &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
-            className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border-4 border-[#eab308] space-y-4 p-5 sm:p-6"
-            onClick={e => e.stopPropagation()}
+            className="fixed inset-0 z-[99999] bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 animate-fade-in"
+            onClick={() => setEditingImage(null)}
           >
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <h3 className="font-extrabold text-base text-[#2b1810] flex items-center gap-2">
-                <PencilIcon className="w-5 h-5 text-[#881313]" />
-                <span>Modifier la description de la photo</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setEditingImage(null)}
-                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center font-bold"
-              >
-                <CloseIcon className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="h-40 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-[#d99b26] shadow-inner bg-stone-100">
-              <img
-                src={editingImage.image_url}
-                alt={editingImage.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <form onSubmit={handleUpdateTitle} className="space-y-4">
-              <div>
-                <label className="font-extrabold text-xs text-stone-700 block mb-1.5">
-                  Texte ou description de la photo :
-                </label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={e => setEditTitle(e.target.value)}
-                  placeholder="Ex: Restaurant La Gratitude — Zagtouli"
-                  className="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#dec6a7] focus:border-[#881313] bg-[#fffcf7] font-bold text-sm text-[#2b1810] outline-none shadow-sm"
-                  autoFocus
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <span className="text-[11px] font-bold text-stone-500 block">
-                  Suggestions prêtes à l’emploi (cliquez pour choisir) :
-                </span>
-                <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-                  {SUGGESTIONS.map(sug => (
-                    <button
-                      key={sug}
-                      type="button"
-                      onClick={() => setEditTitle(sug)}
-                      className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-[#2b1810] font-bold text-[11px] border border-amber-300 transition text-left"
-                    >
-                      {sug}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-200">
+            <div
+              className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border-4 border-[#eab308] space-y-4 p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <h3 className="font-extrabold text-sm sm:text-base text-[#2b1810] flex items-center gap-2">
+                  <PencilIcon className="w-5 h-5 text-[#881313] shrink-0" />
+                  <span>Modifier la description de la photo</span>
+                </h3>
                 <button
                   type="button"
                   onClick={() => setEditingImage(null)}
-                  className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition"
+                  className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-600 flex items-center justify-center font-bold shrink-0"
                 >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdating}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-extrabold text-xs shadow-md flex items-center gap-1.5 transition"
-                >
-                  <CheckIcon className="w-4 h-4" />
-                  <span>Enregistrer la description</span>
+                  <CloseIcon className="w-4 h-4" />
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
+
+              <div className="h-36 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-[#d99b26] shadow-inner bg-stone-100">
+                <img
+                  src={editingImage.image_url}
+                  alt={editingImage.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <form onSubmit={handleUpdateTitle} className="space-y-4">
+                <div>
+                  <label className="font-extrabold text-xs text-stone-700 block mb-1.5">
+                    Texte ou description de la photo :
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    placeholder="Ex: Restaurant La Gratitude — Zagtouli"
+                    className="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#dec6a7] focus:border-[#881313] bg-[#fffcf7] font-bold text-sm text-[#2b1810] outline-none shadow-sm"
+                    autoFocus
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-stone-500 block">
+                    Suggestions prêtes à l’emploi (cliquez pour choisir) :
+                  </span>
+                  <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+                    {SUGGESTIONS.map(sug => (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => setEditTitle(sug)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-[#2b1810] font-bold text-[11px] border border-amber-300 transition text-left"
+                      >
+                        {sug}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-200">
+                  <button
+                    type="button"
+                    onClick={() => setEditingImage(null)}
+                    className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUpdating}
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-extrabold text-xs shadow-md flex items-center gap-1.5 transition"
+                  >
+                    <CheckIcon className="w-4 h-4" />
+                    <span>Enregistrer la description</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </AdminShell>
   );
 }
