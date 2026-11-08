@@ -73,6 +73,7 @@ export async function GET() {
           SET is_available_today = false, stock_status = 'soldout'
           WHERE availability_mode = 'daily' AND is_available_today = true
         `;
+        await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
       }
       const rows = (await sql`
         SELECT id, slug, name, category, price, availability_mode, is_available_today, stock_status, options_json, image_url, image_quadrant, description, display_order

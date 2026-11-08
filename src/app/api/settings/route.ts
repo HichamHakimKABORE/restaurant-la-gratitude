@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
-import { ensureNeonSchema, getMemorySettings } from '@/lib/db';
+import {
+  ensureNeonSchema,
+  getMemorySettings,
+  invalidateSettingsCache,
+  type RestaurantSettings
+} from '@/lib/db';
 import { isAdminRequest } from '@/lib/session';
 import { hashAdminPassword } from '@/lib/auth-server';
 
@@ -7,28 +12,39 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 
+const SETTINGS_CACHE_TTL_MS = 10000;
+
 export async function GET() {
   try {
+    if (
+      global._settingsCache &&
+      Date.now() - global._settingsCache.ts < SETTINGS_CACHE_TTL_MS
+    ) {
+      return NextResponse.json({
+        source: 'cache',
+        settings: global._settingsCache.data
+      });
+    }
+
     const sql = await ensureNeonSchema();
     if (sql) {
-      await sql`
-        UPDATE restaurant_settings
-        SET phone = '+226 02 80 99 06', whatsapp = '22602809906'
-        WHERE id = 1 AND (phone LIKE '%60%18%' OR whatsapp LIKE '%6018%' OR phone IS NULL);
-      `;
-      const rows = await sql`
+      const rows = (await sql`
         SELECT id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours
         FROM restaurant_settings
         WHERE id = 1
-      `;
+      `) as RestaurantSettings[];
       if (rows.length > 0) {
+        global._settingsCache = { data: rows[0], ts: Date.now() };
         return NextResponse.json({ source: 'neon', settings: rows[0] });
       }
     }
     return NextResponse.json({ source: 'memory', settings: getMemorySettings() });
   } catch (error) {
     console.error('GET /api/settings error:', error);
-    return NextResponse.json({ source: 'fallback', settings: getMemorySettings() });
+    return NextResponse.json({
+      source: 'fallback',
+      settings: global._settingsCache?.data || getMemorySettings()
+    });
   }
 }
 
@@ -51,6 +67,7 @@ export async function PATCH(request: Request) {
     } = body;
 
     const sql = await ensureNeonSchema();
+    invalidateSettingsCache();
     if (sql) {
       await sql`
         UPDATE restaurant_settings
@@ -82,11 +99,14 @@ export async function PATCH(request: Request) {
         `;
       }
 
-      const rows = await sql`
+      const rows = (await sql`
         SELECT id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours
         FROM restaurant_settings
         WHERE id = 1
-      `;
+      `) as RestaurantSettings[];
+      if (rows[0]) {
+        global._settingsCache = { data: rows[0], ts: Date.now() };
+      }
       return NextResponse.json({ ok: true, source: 'neon', settings: rows[0] });
     } else {
       const mem = getMemorySettings();

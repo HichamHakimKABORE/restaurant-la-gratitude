@@ -478,8 +478,6 @@ export async function ensureNeonSchema() {
       const countRows = await sql`SELECT COUNT(*)::int AS cnt FROM dishes`;
       const count = countRows[0]?.cnt ?? 0;
 
-      // Ne plus réinsérer automatiquement INITIAL_GALLERY_IMAGES si l'admin a supprimé toutes les photos.
-
       if (count === 0) {
         for (const d of INITIAL_DISHES) {
           await sql`
@@ -488,37 +486,56 @@ export async function ensureNeonSchema() {
             ON CONFLICT (slug) DO NOTHING
           `;
         }
-        await sql`
-          INSERT INTO restaurant_settings (id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours)
-          VALUES (
-            1,
-            ${INITIAL_SETTINGS.restaurant_name},
-            ${INITIAL_SETTINGS.slogan},
-            ${INITIAL_SETTINGS.sub_slogan},
-            ${INITIAL_SETTINGS.phone},
-            ${INITIAL_SETTINGS.whatsapp},
-            ${INITIAL_SETTINGS.address},
-            ${INITIAL_SETTINGS.opening_hours}
-          )
-          ON CONFLICT (id) DO NOTHING
-        `;
       }
 
-      // Ajout de la colonne daily_menu_date pour suivre si l'admin a mis à jour le Menu du Jour aujourd'hui.
-      // Tant que l'admin n'a pas actualisé le Menu du Jour pour la date logique du service, aucun plat du jour ne s'affiche.
+      // Toujours garantir que la ligne id = 1 existe dans restaurant_settings
+      await sql`
+        INSERT INTO restaurant_settings (id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours)
+        VALUES (
+          1,
+          ${INITIAL_SETTINGS.restaurant_name},
+          ${INITIAL_SETTINGS.slogan},
+          ${INITIAL_SETTINGS.sub_slogan},
+          ${INITIAL_SETTINGS.phone},
+          ${INITIAL_SETTINGS.whatsapp},
+          ${INITIAL_SETTINGS.address},
+          ${INITIAL_SETTINGS.opening_hours}
+        )
+        ON CONFLICT (id) DO NOTHING
+      `;
+
+      // Ajout des colonnes de suivi dans restaurant_settings
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_date VARCHAR(20) DEFAULT ''`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS admin_custom_email VARCHAR(150) DEFAULT ''`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS admin_custom_password_hash VARCHAR(255) DEFAULT ''`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS gallery_initialized BOOLEAN DEFAULT FALSE`;
+
+      // Initialisation unique de la galerie photos (ne réinsère jamais les photos si l'admin les supprime ensuite)
+      const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized FROM restaurant_settings WHERE id = 1`;
+      const isGalleryInit = Boolean(settingsInitRows[0]?.gallery_initialized);
+      if (!isGalleryInit) {
+        const galCountRows = await sql`SELECT COUNT(*)::int AS cnt FROM restaurant_gallery`;
+        const galCount = galCountRows[0]?.cnt ?? 0;
+        if (galCount === 0) {
+          for (const g of INITIAL_GALLERY_IMAGES) {
+            await sql`
+              INSERT INTO restaurant_gallery (title, image_url, display_order)
+              VALUES (${g.title}, ${g.image_url}, ${g.display_order})
+            `;
+          }
+        }
+        await sql`UPDATE restaurant_settings SET gallery_initialized = TRUE WHERE id = 1`;
+      }
 
       const todayStr = getLogicalMenuDate();
-      const settingsDateRows = await sql`SELECT daily_menu_date FROM restaurant_settings WHERE id = 1`;
-      const currentMenuDate = settingsDateRows[0]?.daily_menu_date || '';
+      const currentMenuDate = settingsInitRows[0]?.daily_menu_date || '';
       if (currentMenuDate !== todayStr) {
         await sql`
           UPDATE dishes
           SET is_available_today = false, stock_status = 'soldout'
           WHERE availability_mode = 'daily'
         `;
+        await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
       }
 
       // Correction unique de l'ancien numéro incohérent (60 18 65 25).
