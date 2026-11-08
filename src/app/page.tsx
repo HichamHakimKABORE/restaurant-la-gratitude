@@ -294,10 +294,10 @@ export default function AccueilClientPage() {
               <div className="p-3.5 rounded-xl bg-amber-100/90 border border-amber-300 text-[#2b1810] text-xs space-y-2 text-center">
                 <p className="font-extrabold flex items-center justify-center gap-1 text-[#801313]">
                   <ChefHatIcon className="w-4 h-4 shrink-0" />
-                  <span>Menu du jour non encore publié</span>
+                  <span>Menu du jour en préparation en cuisine</span>
                 </p>
                 <p className="text-stone-700 leading-snug">
-                  Aucun plat n’est affiché tant que l’administrateur n’a pas mis à jour le Menu du Jour d’aujourd’hui.
+                  Les plats du jour s’afficheront ici dès qu’ils seront prêts. Vous pouvez appeler le restaurant ou choisir parmi nos Plats sur Commande :
                 </p>
                 <a
                   href="tel:+22602809906"

@@ -3,21 +3,14 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon } from './Icons';
+import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon, CompassIcon } from './Icons';
 import RestaurantGallerySlider from './RestaurantGallerySlider';
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const navItems = [
-    { href: '/', label: 'Accueil' },
-    { href: '/menu', label: 'Notre Carte & Sur Commande' },
-    { href: '/menu-du-jour', label: 'Menu du Jour' },
-    { href: '/contact', label: 'Contact & GPS' }
-  ];
-
   return (
-    <div className="min-h-screen flex flex-col bg-[#f7efe4] text-[#2b1810] relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#f7efe4] text-[#2b1810] relative overflow-x-hidden pb-16">
       {/* FILIGRANE DU LOGO EN ARRIÈRE-PLAN */}
       <div
         aria-hidden="true"
@@ -34,10 +27,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         </div>
       </div>
 
-      {/* 1. TOP OFFICIAL HEADER BANNER */}
+      {/* 1. EN-TÊTE OFFICIEL EN HAUT (Sans barre de navigation en haut — toute la navigation est en bas) */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 border-[#801313] shadow-md">
-        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-1 sm:py-1.5 flex items-center justify-between gap-2">
-          {/* Left: Logo + Nom */}
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-1.5 flex items-center justify-between gap-2">
+          {/* Gauche : Logo + Nom */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <img
               src="/images/logo_gratitude.jpg"
@@ -57,14 +50,14 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             </div>
           </Link>
 
-          {/* Center: Slogan (desktop only) */}
-          <div className="hidden xl:flex flex-col items-center text-center">
+          {/* Centre : Slogan */}
+          <div className="hidden lg:flex flex-col items-center text-center">
             <p className="font-script text-base text-[#3b1c0e] leading-snug">
               Une cuisine savoureuse, un service de qualité !
             </p>
           </div>
 
-          {/* Right: Zagtouli, Téléphone, Monument */}
+          {/* Droite : Zagtouli, Téléphone, Monument */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="text-[10px] sm:text-xs border-l-2 border-[#801313]/25 pl-2 sm:pl-3 space-y-0.5">
               <div className="hidden sm:flex items-center gap-1 leading-tight">
@@ -113,44 +106,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             </div>
           </div>
         </div>
-
-        {/* Navigation Bar */}
-        <nav className="bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] px-2 sm:px-6 py-1 border-t border-white/15">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none text-[11px] sm:text-xs py-0.5">
-              {navItems.map(item => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg font-bold transition shrink-0 whitespace-nowrap ${
-                      isActive
-                        ? 'bg-[#eab308] text-[#2b1810] shadow'
-                        : 'text-amber-100 hover:bg-white/10 font-medium'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              <a
-                href="tel:+22602809906"
-                className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[11px] sm:text-xs shadow inline-flex items-center gap-1 whitespace-nowrap shrink-0 transition"
-              >
-                <PhoneIcon className="w-3 h-3 shrink-0" />
-                <span>Commander : 02 80 99 06</span>
-              </a>
-            </div>
-          </div>
-        </nav>
       </header>
 
-      {/* 2. PAGE CONTENT */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[86px] sm:pt-[96px] space-y-5">
+      {/* 2. CONTENU DE LA PAGE */}
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[60px] sm:pt-[74px] space-y-5">
         {children}
       </main>
 
@@ -158,8 +117,8 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       <RestaurantGallerySlider />
 
       {/* 3. FOOTER PROMISE BAR */}
-      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-4 pb-16 sm:pb-2">
-        <div className="max-w-7xl mx-auto px-3 sm:px-8 py-2 sm:py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-[11px] sm:text-xs">
+      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-[11px] sm:text-xs">
           <div className="flex flex-wrap items-center gap-3 sm:gap-6">
             <div className="flex items-center gap-1.5 font-bold">
               <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
@@ -193,54 +152,64 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         </div>
       </footer>
 
-      {/* 4. MOBILE BOTTOM APP BAR (4 boutons clairs sans panier en ligne) */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] text-white border-t-2 border-[#eab308] px-1.5 py-1.5 shadow-2xl grid grid-cols-4 gap-1">
-        <Link
-          href="/"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[11px] font-bold ${
-            pathname === '/' ? 'bg-[#eab308] text-[#2b1810]' : 'text-amber-100'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3" />
-          </svg>
-          <span>Accueil</span>
-        </Link>
+      {/* 4. BARRE DE NAVIGATION FIXE EN BAS (Seule barre de navigation : Accueil, La Carte, Menu Jour, Contact & GPS, Appeler) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] text-white border-t-2 border-[#eab308] px-1.5 sm:px-6 py-1.5 shadow-2xl">
+        <div className="max-w-4xl mx-auto grid grid-cols-5 gap-1 sm:gap-2">
+          <Link
+            href="/"
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
+              pathname === '/' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3" />
+            </svg>
+            <span>Accueil</span>
+          </Link>
 
-        <Link
-          href="/menu"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[11px] font-bold ${
-            pathname === '/menu' ? 'bg-[#eab308] text-[#2b1810]' : 'text-amber-100'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-          </svg>
-          <span>La Carte</span>
-        </Link>
+          <Link
+            href="/menu"
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
+              pathname === '/menu' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            <span>La Carte</span>
+          </Link>
 
-        <Link
-          href="/menu-du-jour"
-          className={`flex flex-col items-center justify-center py-1 rounded-lg text-[11px] font-bold ${
-            pathname === '/menu-du-jour' ? 'bg-[#eab308] text-[#2b1810]' : 'text-amber-100'
-          }`}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span>Menu Jour</span>
-        </Link>
+          <Link
+            href="/menu-du-jour"
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
+              pathname === '/menu-du-jour' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            }`}
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>Menu Jour</span>
+          </Link>
 
-        <a
-          href="tel:+22602809906"
-          className="flex flex-col items-center justify-center py-1 rounded-lg bg-[#16a34a] text-white text-[11px] font-extrabold"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-          </svg>
-          <span>Appeler</span>
-        </a>
-      </div>
+          <Link
+            href="/contact"
+            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
+              pathname === '/contact' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            }`}
+          >
+            <CompassIcon className="w-4 h-4 shrink-0" />
+            <span>Contact &amp; GPS</span>
+          </Link>
+
+          <a
+            href="tel:+22602809906"
+            className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
+          >
+            <PhoneIcon className="w-4 h-4 shrink-0" />
+            <span>Appeler</span>
+          </a>
+        </div>
+      </nav>
     </div>
   );
 }

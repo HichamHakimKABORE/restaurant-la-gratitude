@@ -62,10 +62,10 @@ export default function MenuDuJourPage() {
             <div className="p-6 rounded-2xl bg-amber-50 border-2 border-amber-300 text-[#2b1810] text-center space-y-3">
               <ChefHatIcon className="w-8 h-8 text-[#881313] mx-auto" />
               <h3 className="font-extrabold text-base sm:text-lg">
-                Aucun plat n’est encore affiché pour le Menu du Jour
+                Le Menu du Jour est en préparation en cuisine
               </h3>
               <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto">
-                Le Menu du Jour s’affiche ici dès que l’administrateur l’actualise pour la journée. En attendant, vous pouvez consulter nos Plats sur Commande ou appeler directement le restaurant.
+                Les plats du jour s’afficheront ici dès qu’ils seront prêts pour le service. En attendant, vous pouvez consulter nos Plats sur Commande ou appeler directement le restaurant.
               </p>
               <div className="flex flex-wrap justify-center gap-3 pt-1">
                 <Link
