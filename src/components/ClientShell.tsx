@@ -15,11 +15,11 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f7efe4] text-[#2b1810] relative overflow-x-hidden pb-16">
+    <div className="min-h-screen flex flex-col bg-[#f7efe4] text-[#2b1810] relative overflow-x-hidden pb-16 print:pb-0">
       {/* FILIGRANE DU LOGO EN ARRIÈRE-PLAN */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden select-none"
+        className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden select-none print:hidden"
       >
         <div className="relative flex items-center justify-center">
           <div className="w-[300px] h-[300px] sm:w-[480px] sm:h-[480px] lg:w-[620px] lg:h-[620px] rounded-full border-4 border-[#d99b26]/60 p-2 shadow-2xl">
@@ -33,7 +33,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </div>
 
       {/* 1. EN-TÊTE OFFICIEL EN HAUT (Sans barre de navigation en haut — toute la navigation est en bas) */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 border-[#801313] shadow-md">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 border-[#801313] shadow-md print:static">
         <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-1.5 flex items-center justify-between gap-2">
           {/* Gauche : Logo + Nom */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
@@ -114,15 +114,17 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </header>
 
       {/* 2. CONTENU DE LA PAGE */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[60px] sm:pt-[74px] space-y-5">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[60px] sm:pt-[74px] print:pt-4 space-y-5">
         {children}
       </main>
 
       {/* GALERIE DÉFILANTE DES PHOTOS DU RESTAURANT */}
-      <RestaurantGallerySlider />
+      <div className="print:hidden">
+        <RestaurantGallerySlider />
+      </div>
 
       {/* 3. FOOTER PROMISE BAR */}
-      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-4">
+      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-4 print:hidden">
         <div className="max-w-7xl mx-auto px-3 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-[11px] sm:text-xs">
           <div className="flex flex-wrap items-center gap-3 sm:gap-6">
             <div className="flex items-center gap-1.5 font-bold">
@@ -158,7 +160,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </footer>
 
       {/* 4. BARRE DE NAVIGATION FIXE EN BAS (Seule barre de navigation : Accueil, La Carte, Menu Jour, Contact & GPS, Appeler) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] text-white border-t-2 border-[#eab308] px-1.5 sm:px-6 py-1.5 shadow-2xl">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] text-white border-t-2 border-[#eab308] px-1.5 sm:px-6 py-1.5 shadow-2xl print:hidden">
         <div className="max-w-4xl mx-auto grid grid-cols-5 gap-1 sm:gap-2">
           <Link
             href="/"

@@ -366,10 +366,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                     </label>
                     <div className="grid grid-cols-1 gap-1.5 max-h-36 overflow-y-auto">
                       {modalDish.options_json.map(opt => (
-                        <label
+                        <button
                           key={opt}
+                          type="button"
                           onClick={() => setSelectedOpt(opt)}
-                          className={`flex items-center justify-between p-2 rounded-xl border-2 cursor-pointer text-xs font-bold transition ${
+                          className={`w-full flex items-center justify-between p-2 rounded-xl border-2 cursor-pointer text-xs font-bold transition text-left ${
                             selectedOpt === opt
                               ? 'bg-amber-50 border-[#881313] text-[#881313]'
                               : 'bg-white border-stone-200 text-stone-700'
@@ -377,7 +378,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                         >
                           <span>{opt}</span>
                           <span
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 ${
                               selectedOpt === opt
                                 ? 'border-[#881313] bg-[#881313] text-white'
                                 : 'border-stone-400'
@@ -385,7 +386,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                           >
                             {selectedOpt === opt ? <CheckIcon className="w-2.5 h-2.5" /> : null}
                           </span>
-                        </label>
+                        </button>
                       ))}
                     </div>
                   </div>

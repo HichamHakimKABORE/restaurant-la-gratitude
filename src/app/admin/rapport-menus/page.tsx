@@ -9,7 +9,7 @@ import { sortDailyMenuDishes, getLogicalMenuDate, type DailyMenuRecord } from '@
 
 export default function AdminRapportMenusPage() {
   const router = useRouter();
-  const { dishes, showToast } = useCart();
+  const { dishes, settings, showToast } = useCart();
   const [reports, setReports] = useState<DailyMenuRecord[]>([]);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [filterStartDate, setFilterStartDate] = useState<string>('');
@@ -285,7 +285,7 @@ export default function AdminRapportMenusPage() {
             {reports.map(rep => {
               const isSelected = selectedDates.includes(rep.menu_date);
               return (
-                <label
+                <div
                   key={rep.menu_date}
                   onClick={() => toggleDate(rep.menu_date)}
                   className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border cursor-pointer select-none transition ${
@@ -298,8 +298,8 @@ export default function AdminRapportMenusPage() {
                     <input
                       type="checkbox"
                       checked={isSelected}
-                      onChange={() => {}}
-                      className="w-4 h-4 rounded text-[#881313] focus:ring-amber-500 shrink-0"
+                      readOnly
+                      className="w-4 h-4 rounded text-[#881313] focus:ring-amber-500 shrink-0 pointer-events-none"
                     />
                     <div className="min-w-0">
                       <span className="text-xs capitalize block truncate">
@@ -323,7 +323,7 @@ export default function AdminRapportMenusPage() {
                       <CloseIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </label>
+                </div>
               );
             })}
           </div>
@@ -357,13 +357,13 @@ export default function AdminRapportMenusPage() {
             />
             <div>
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#801313] block">
-                Restaurant La Gratitude
+                {settings.restaurant_name || 'Restaurant La Gratitude'}
               </span>
               <h2 className="text-xl sm:text-2xl font-extrabold text-[#2b1810]">
                 Rapport Officiel des Menus du Jour
               </h2>
               <p className="text-xs text-stone-600">
-                Zagtouli, route de Bobo • Ouagadougou, Burkina Faso • Tél : +226 02 80 99 06
+                {settings.address || 'Zagtouli, route de Bobo — Ouagadougou, Burkina Faso'} • Tél : {settings.phone || '+226 02 80 99 06'}
               </p>
             </div>
           </div>
