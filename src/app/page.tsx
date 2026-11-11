@@ -11,14 +11,12 @@ import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
-  { key: 'SurCommande', label: 'Sur Commande', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
-  { key: 'MenuDuJour', label: 'Menu du Jour', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
   { key: 'Pizzas', label: 'Pizzas', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
   { key: 'Poulets', label: 'Poulets', img: '/images/dishes_grid_2.jpg', quad: 'quad-br' },
   { key: 'Grillades', label: 'Grillades', img: '/images/dishes_grid_2.jpg', quad: 'quad-tl' },
   { key: 'Salades', label: 'Salades', img: '/images/dishes_grid_3.jpg', quad: 'quad-tr' },
-  { key: 'Plats', label: 'Plats', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
   { key: 'Soupes', label: 'Soupes', img: '/images/dishes_grid_1.jpg', quad: 'quad-br' },
+  { key: 'Plats', label: 'Plats', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
   { key: 'Boissons', label: 'Boissons', img: '/images/dishes_grid_4.jpg', quad: 'quad-tr' }
 ];
 
@@ -66,25 +64,14 @@ export default function AccueilClientPage() {
 
   const currentDish = rotatingDishes.length > 0 ? rotatingDishes[currentSlideIdx % rotatingDishes.length] : null;
 
-  // Plats affichés dans la section "Notre Carte & Plats sur Commande"
-  // - Par défaut ('Tous') : on place les Plats sur Commande (Pizzas, Poulets, Grillades...) en premier,
-  //   suivis des plats du Menu du Jour actifs.
-  // - Sur l'onglet 'MenuDuJour' : on n'affiche que les plats du jour préparés aujourd'hui (displayedDailyDishes).
+  // Plats affichés dans la section "Notre Carte" :
+  // affiche tous les produits du catalogue par catégorie sans dépendre du Menu du Jour
+  // (le Menu du Jour reste affiché dans l'encart dédié à droite).
   const visibleGridDishes = (() => {
-    let list = dishes;
-    if (selectedCategory === 'SurCommande') {
-      list = onOrderDishes;
-    } else if (selectedCategory === 'MenuDuJour') {
-      list = displayedDailyDishes;
-    } else if (selectedCategory === 'Tous') {
-      list = [...onOrderDishes, ...displayedDailyDishes];
-    } else {
-      list = dishes.filter(
-        d =>
-          d.category === selectedCategory &&
-          (d.availability_mode !== 'daily' || d.is_available_today)
-      );
-    }
+    const list =
+      selectedCategory === 'Tous'
+        ? dishes
+        : dishes.filter(d => d.category === selectedCategory);
     if (homeSearch.trim() !== '') {
       return list.filter(d => matchesDishSearch(d, homeSearch));
     }
@@ -243,7 +230,7 @@ export default function AccueilClientPage() {
                 <svg className="w-5 h-5 text-[#881313] shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
-                <span>Notre Carte &amp; Plats sur Commande</span>
+                <span>Notre Carte &amp; Tous nos Plats</span>
               </h3>
               <Link href="/menu" className="sm:hidden text-xs font-extrabold text-[#881313] hover:underline whitespace-nowrap">
                 Toute la carte →
@@ -295,16 +282,17 @@ export default function AccueilClientPage() {
           {visibleGridDishes.length === 0 ? (
             <div className="p-6 rounded-xl bg-amber-50 border border-amber-200 text-center text-xs text-stone-700 space-y-2">
               <p className="font-extrabold text-[#881313]">
-                {selectedCategory === 'MenuDuJour'
-                  ? 'Le Menu du Jour est actuellement en préparation en cuisine.'
-                  : 'Aucun plat dans cette catégorie pour le moment.'}
+                Aucun plat ne correspond à votre recherche dans cette catégorie.
               </p>
               <button
                 type="button"
-                onClick={() => setSelectedCategory('SurCommande')}
+                onClick={() => {
+                  setSelectedCategory('Tous');
+                  setHomeSearch('');
+                }}
                 className="px-3.5 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs shadow"
               >
-                Voir nos Plats sur Commande
+                Afficher toute la carte
               </button>
             </div>
           ) : (
