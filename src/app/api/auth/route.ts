@@ -10,14 +10,28 @@ import {
 } from '@/lib/auth-server';
 import { ensureNeonSchema } from '@/lib/db';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
+import { isAllowedOrigin } from '@/lib/csrf';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 const MAX_FAILURES_PER_IP = 8;
-const MAX_FAILURES_TOTAL = 40;
+const HIGH_GLOBAL_FAILURE_THRESHOLD = 40;
 
 export async function POST(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json(
+      { ok: false, error: 'Origine non autorisée (CSRF).' },
+      { status: 403 }
+    );
+  }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 16 * 1024) {
+    return NextResponse.json(
+      { ok: false, error: 'Requête trop volumineuse.' },
+      { status: 413 }
+    );
+  }
   try {
     let body: Record<string, unknown>;
     try {
@@ -49,19 +63,28 @@ export async function POST(request: Request) {
     }
 
     // 2e barrière : compteur d'échecs partagé dans la base (valable sur tous les serveurs).
+    // Le blocage est appliqué par IP uniquement (évite qu'un attaquant ne verrouille l'admin légitime).
+    let highGlobalActivity = false;
     try {
       const counts = await getLoginFailureCounts(clientIp);
-      if (counts.ip >= MAX_FAILURES_PER_IP || counts.total >= MAX_FAILURES_TOTAL) {
+      if (counts.ip >= MAX_FAILURES_PER_IP) {
         return NextResponse.json(
           {
             ok: false,
-            error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.'
+            error: 'Trop de tentatives de connexion depuis cet appareil. Réessayez dans 15 minutes.'
           },
           { status: 429 }
         );
       }
+      if (counts.total >= HIGH_GLOBAL_FAILURE_THRESHOLD) {
+        highGlobalActivity = true;
+      }
     } catch (err) {
       console.warn('[AUTH] Compteur d’échecs indisponible :', err);
+    }
+
+    if (highGlobalActivity) {
+      await new Promise(resolve => setTimeout(resolve, 900));
     }
 
     if (!(await verifyAdminCredentials(body.email, body.password))) {

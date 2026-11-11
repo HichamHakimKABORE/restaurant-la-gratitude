@@ -28,10 +28,13 @@ export async function GET() {
       global._settingsCache &&
       Date.now() - global._settingsCache.ts < SETTINGS_CACHE_TTL_MS
     ) {
-      return NextResponse.json({
-        source: 'cache',
-        settings: global._settingsCache.data
-      });
+      return NextResponse.json(
+        {
+          source: 'cache',
+          settings: global._settingsCache.data
+        },
+        { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
+      );
     }
 
     const sql = await ensureNeonSchema();
@@ -43,7 +46,10 @@ export async function GET() {
       `) as RestaurantSettings[];
       if (rows.length > 0) {
         global._settingsCache = { data: rows[0], ts: Date.now() };
-        return NextResponse.json({ source: 'neon', settings: rows[0] });
+        return NextResponse.json(
+          { source: 'neon', settings: rows[0] },
+          { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
+        );
       }
     }
     return NextResponse.json({ source: 'memory', settings: getMemorySettings() });
@@ -59,6 +65,10 @@ export async function GET() {
 export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: 'Origine de requête non autorisée (CSRF).' }, { status: 403 });
+  }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
   }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });

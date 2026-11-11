@@ -147,6 +147,10 @@ export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
   }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
@@ -200,9 +204,12 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true, message: 'Rapport du jour enregistré avec succès' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('API menu-reports POST error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: 'Impossible d’enregistrer le rapport.' },
+      { status: 500 }
+    );
   }
 }
 

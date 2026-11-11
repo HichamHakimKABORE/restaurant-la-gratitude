@@ -26,7 +26,14 @@ export default function AdminLoginPage() {
         localStorage.removeItem('admin_logged_out');
         const params = new URLSearchParams(window.location.search);
         const next = params.get('next');
-        router.push(next && next.startsWith('/admin') ? next : '/admin');
+        const safeNext =
+          next &&
+          next.startsWith('/admin') &&
+          !next.startsWith('//') &&
+          !next.includes('\\')
+            ? next
+            : '/admin';
+        router.push(safeNext);
       } else {
         setError(data.error || 'Identifiant ou mot de passe incorrect.');
       }

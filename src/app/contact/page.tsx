@@ -92,7 +92,8 @@ export default function ContactPage() {
           // If browser blocks geolocation (e.g. non-HTTPS local IP), open Google Maps native navigation which uses Current Location automatically
           window.open(
             `https://www.google.com/maps/dir/?api=1&destination=${RESTAURANT_LAT},${RESTAURANT_LNG}&travelmode=${travelMode}`,
-            '_blank'
+            '_blank',
+            'noopener,noreferrer'
           );
         },
         { enableHighAccuracy: true, timeout: 10000 }
@@ -100,7 +101,8 @@ export default function ContactPage() {
     } else {
       window.open(
         `https://www.google.com/maps/dir/?api=1&destination=${RESTAURANT_LAT},${RESTAURANT_LNG}&travelmode=${travelMode}`,
-        '_blank'
+        '_blank',
+        'noopener,noreferrer'
       );
     }
   };
@@ -110,7 +112,7 @@ export default function ContactPage() {
       ? `&origin=${userPos.lat},${userPos.lng}`
       : '';
     const url = `https://www.google.com/maps/dir/?api=1${originParam}&destination=${RESTAURANT_LAT},${RESTAURANT_LNG}&travelmode=${travelMode}`;
-    window.open(url, '_blank');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const distanceKm = userPos

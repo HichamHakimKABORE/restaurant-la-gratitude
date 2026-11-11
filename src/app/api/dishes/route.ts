@@ -61,10 +61,13 @@ export async function GET() {
       global._dishesCache &&
       Date.now() - global._dishesCache.ts < CACHE_TTL_MS
     ) {
-      return NextResponse.json({
-        source: 'cache',
-        dishes: global._dishesCache.data
-      });
+      return NextResponse.json(
+        {
+          source: 'cache',
+          dishes: global._dishesCache.data
+        },
+        { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
+      );
     }
 
     const sql = await ensureNeonSchema();
@@ -85,7 +88,10 @@ export async function GET() {
         ORDER BY display_order ASC, id ASC
       `) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
-      return NextResponse.json({ source: 'neon', dishes: rows });
+      return NextResponse.json(
+        { source: 'neon', dishes: rows },
+        { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
+      );
     }
     return NextResponse.json({ source: 'memory', dishes: getMemoryDishes() });
   } catch (error) {
@@ -100,6 +106,10 @@ export async function GET() {
 export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
   }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
@@ -216,6 +226,10 @@ export async function PATCH(request: Request) {
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
   }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });

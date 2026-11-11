@@ -347,6 +347,8 @@ export function invalidateMenuHistoryCache() {
   global._menuHistoryCache = undefined;
 }
 
+const CURRENT_SCHEMA_VERSION = 3;
+
 export async function ensureNeonSchema() {
   const sql = getNeonClient();
   if (!sql) return null;
@@ -355,6 +357,23 @@ export async function ensureNeonSchema() {
 
   global._gratitudeSchemaPromise = (async () => {
     try {
+      // Vérification ultra-rapide : si le schéma est déjà à jour, on évite les 25 requêtes DDL
+      // et les verrous AccessExclusiveLock à chaque démarrage de fonction serverless.
+      try {
+        const verRows = await sql`
+          SELECT schema_version
+          FROM restaurant_settings
+          WHERE id = 1
+          LIMIT 1
+        `;
+        if (Number(verRows[0]?.schema_version || 0) >= CURRENT_SCHEMA_VERSION) {
+          global._gratitudeSchemaReady = true;
+          return sql;
+        }
+      } catch {
+        // Table ou colonne absente : on poursuit avec l'initialisation complète
+      }
+
       await sql`
         CREATE TABLE IF NOT EXISTS dishes (
           id SERIAL PRIMARY KEY,
@@ -605,6 +624,9 @@ export async function ensureNeonSchema() {
             OR whatsapp LIKE '%6018%'
           )
       `;
+
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS schema_version INTEGER DEFAULT 0`;
+      await sql`UPDATE restaurant_settings SET schema_version = ${CURRENT_SCHEMA_VERSION} WHERE id = 1`;
 
       global._gratitudeSchemaReady = true;
     } catch (err) {

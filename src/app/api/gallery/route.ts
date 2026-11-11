@@ -23,10 +23,13 @@ export async function GET() {
       global._galleryCache &&
       Date.now() - global._galleryCache.ts < GALLERY_CACHE_TTL_MS
     ) {
-      return NextResponse.json({
-        source: 'cache',
-        images: global._galleryCache.data
-      });
+      return NextResponse.json(
+        {
+          source: 'cache',
+          images: global._galleryCache.data
+        },
+        { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
+      );
     }
 
     const sql = await ensureNeonSchema();
@@ -37,7 +40,10 @@ export async function GET() {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
-      return NextResponse.json({ source: 'neon', images: rows });
+      return NextResponse.json(
+        { source: 'neon', images: rows },
+        { headers: { 'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60' } }
+      );
     }
     return NextResponse.json({ source: 'memory', images: getMemoryGallery() });
   } catch (error) {
@@ -52,6 +58,10 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
   }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
@@ -110,6 +120,10 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 1024 * 1024) {
+    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
   }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
