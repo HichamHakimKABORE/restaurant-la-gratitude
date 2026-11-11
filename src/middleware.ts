@@ -1,28 +1,55 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/session';
+import { neon } from '@neondatabase/serverless';
+import { SESSION_COOKIE, readSessionPayload } from '@/lib/session';
 
 /**
- * Protection des pages admin côté serveur (Avant : simple vérification
- * JavaScript dans AdminShell, contournable en désactivant le JS ou en
- * appelant directement les API).
+ * Protection des pages admin côté serveur (Edge Middleware) :
+ * - vérifie la signature HMAC, l'expiration ET la date de révocation en base (session_valid_after) ;
+ * - force Cache-Control: no-store, private sur toutes les routes /admin/*.
  */
+async function isTokenNotRevoked(issuedAtMs: number): Promise<boolean> {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl || !dbUrl.trim()) return true;
+  try {
+    const cleanUrl = dbUrl.replace('&channel_binding=require', '');
+    const sql = neon(cleanUrl);
+    const rows = await sql`
+      SELECT session_valid_after
+      FROM restaurant_settings
+      WHERE id = 1
+      LIMIT 1
+    `;
+    const validAfter = Number(rows[0]?.session_valid_after || 0);
+    return issuedAtMs >= validAfter;
+  } catch {
+    return false;
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
   if (pathname === '/admin/login') {
-    return NextResponse.next();
+    const res = NextResponse.next();
+    res.headers.set('Cache-Control', 'no-store, private');
+    return res;
   }
 
   const token = request.cookies.get(SESSION_COOKIE)?.value;
-  if (await verifySessionToken(token)) {
-    return NextResponse.next();
+  const payload = await readSessionPayload(token);
+  if (payload && (await isTokenNotRevoked(payload.iat))) {
+    const res = NextResponse.next();
+    res.headers.set('Cache-Control', 'no-store, private');
+    return res;
   }
 
   const loginUrl = request.nextUrl.clone();
   loginUrl.pathname = '/admin/login';
   loginUrl.search = '';
   loginUrl.searchParams.set('next', `${pathname}${search}`);
-  return NextResponse.redirect(loginUrl);
+  const redirectRes = NextResponse.redirect(loginUrl);
+  redirectRes.headers.set('Cache-Control', 'no-store, private');
+  return redirectRes;
 }
 
 export const config = {

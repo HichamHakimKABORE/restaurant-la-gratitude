@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomBytes } from 'node:crypto';
 import {
   ensureNeonSchema,
   getMemoryDishes,
@@ -87,6 +88,7 @@ export async function GET() {
     const todayStr = getLogicalMenuDate();
     if (
       global._dishesCache &&
+      global._dishesCache.date === todayStr &&
       Date.now() - global._dishesCache.ts < CACHE_TTL_MS
     ) {
       return NextResponse.json(
@@ -115,7 +117,7 @@ export async function GET() {
         FROM dishes
         ORDER BY display_order ASC, id ASC
       `) as Dish[];
-      global._dishesCache = { data: rows, ts: Date.now() };
+      global._dishesCache = { data: rows, ts: Date.now(), date: todayStr };
       return NextResponse.json(
         { source: 'neon', dishes: rows },
         { headers: { 'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30' } }
@@ -159,8 +161,14 @@ export async function PATCH(request: Request) {
         `;
         await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
         const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
-        global._dishesCache = { data: rows, ts: Date.now() };
+        global._dishesCache = { data: rows, ts: Date.now(), date: todayStr };
         await autoSyncTodayMenuReport(sql, rows, todayStr);
+        await recordAdminAuditLog(
+          'daily_menu_bulk',
+          null,
+          targetAvail ? 'Menu du Jour : tout coché' : 'Menu du Jour : tout décoché',
+          getClientIp(request)
+        );
         return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
       } else {
         invalidateDishesCache();
@@ -262,7 +270,7 @@ export async function PATCH(request: Request) {
         await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
       }
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
-      global._dishesCache = { data: rows, ts: Date.now() };
+      global._dishesCache = { data: rows, ts: Date.now(), date: todayStr };
       await autoSyncTodayMenuReport(sql, rows, todayStr);
       await recordAdminAuditLog('dish_updated', dishId, cleanName ? `Mise à jour: ${cleanName}` : 'Mise à jour plat', getClientIp(request));
 
@@ -355,15 +363,15 @@ export async function POST(request: Request) {
       }
     }
 
-    const slug =
+    const baseSlug =
       cleanName
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') +
-      '-' +
-      Date.now().toString().slice(-4);
+        .replace(/(^-|-$)/g, '')
+        .slice(0, 80) || 'plat';
+    const slug = `${baseSlug}-${randomBytes(4).toString('hex')}`;
 
     const sql = await ensureNeonSchema();
     const opts = sanitizeDishOptions(options_json) || [];
@@ -393,7 +401,7 @@ export async function POST(request: Request) {
         await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
       }
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
-      global._dishesCache = { data: rows, ts: Date.now() };
+      global._dishesCache = { data: rows, ts: Date.now(), date: todayStr };
       if (mode === 'daily') {
         await autoSyncTodayMenuReport(sql, rows, todayStr);
       }
@@ -436,7 +444,9 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json({ error: 'Identifiant de plat invalide.' }, { status: 400 });
+    }
 
     const sql = await ensureNeonSchema();
     const todayStr = getLogicalMenuDate();
@@ -444,7 +454,7 @@ export async function DELETE(request: Request) {
       await sql`DELETE FROM dishes WHERE id = ${id}`;
       await recordAdminAuditLog('dish_deleted', id, `Suppression plat ID ${id}`, getClientIp(request));
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
-      global._dishesCache = { data: rows, ts: Date.now() };
+      global._dishesCache = { data: rows, ts: Date.now(), date: todayStr };
       await autoSyncTodayMenuReport(sql, rows, todayStr);
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {

@@ -7,7 +7,7 @@ import {
   GalleryImage
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/auth-server';
-import { validateImageSource } from '@/lib/validation';
+import { sanitizeText, validateImageSource } from '@/lib/validation';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
 
@@ -79,6 +79,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: checkImg.error || 'Image non autorisée.' }, { status: 400 });
     }
 
+    const cleanTitle = sanitizeText(title, 180) || 'Photo Restaurant La Gratitude';
+    const orderNum = display_order !== undefined ? Number(display_order) : 50;
+    if (!Number.isInteger(orderNum) || orderNum < 0 || orderNum > 99999) {
+      return NextResponse.json({ error: 'Ordre d’affichage invalide.' }, { status: 400 });
+    }
+
     const sql = await ensureNeonSchema();
     invalidateGalleryCache();
 
@@ -86,9 +92,9 @@ export async function POST(request: Request) {
       await sql`
         INSERT INTO restaurant_gallery (title, image_url, display_order)
         VALUES (
-          ${title || 'Photo Restaurant La Gratitude'},
-          ${image_url},
-          ${Number(display_order || 50)}
+          ${cleanTitle},
+          ${checkImg.value},
+          ${orderNum}
         )
       `;
       const rows = (await sql`
@@ -97,15 +103,15 @@ export async function POST(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
-      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${title || 'Sans titre'}`, getClientIp(request));
+      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${cleanTitle}`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();
       const newImg: GalleryImage = {
         id: mem.length > 0 ? Math.max(...mem.map(i => i.id)) + 1 : 1,
-        title: title || 'Photo Restaurant La Gratitude',
-        image_url,
-        display_order: Number(display_order || 50),
+        title: cleanTitle,
+        image_url: checkImg.value,
+        display_order: orderNum,
         created_at: new Date().toISOString()
       };
       mem.unshift(newImg);
@@ -131,24 +137,41 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json();
     const { id, title, display_order } = body;
-    if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    const imgId = Number(id);
+    if (!Number.isInteger(imgId) || imgId <= 0) {
+      return NextResponse.json({ error: 'Identifiant de photo invalide.' }, { status: 400 });
+    }
+
+    const cleanTitle =
+      title !== undefined
+        ? sanitizeText(title, 180) || 'Photo Restaurant La Gratitude'
+        : null;
+
+    let cleanOrder: number | null = null;
+    if (display_order !== undefined) {
+      const ord = Number(display_order);
+      if (!Number.isInteger(ord) || ord < 0 || ord > 99999) {
+        return NextResponse.json({ error: 'Ordre d’affichage invalide.' }, { status: 400 });
+      }
+      cleanOrder = ord;
+    }
 
     const sql = await ensureNeonSchema();
     invalidateGalleryCache();
 
     if (sql) {
-      if (Number(display_order) === 1) {
+      if (cleanOrder === 1) {
         await sql`
           UPDATE restaurant_gallery
           SET display_order = display_order + 1
-          WHERE id <> ${Number(id)}
+          WHERE id <> ${imgId}
         `;
       }
       await sql`
         UPDATE restaurant_gallery
-        SET title = ${title || 'Photo Restaurant La Gratitude'},
-            display_order = COALESCE(${display_order !== undefined ? Number(display_order) : null}, display_order)
-        WHERE id = ${Number(id)}
+        SET title = COALESCE(${cleanTitle}, title),
+            display_order = COALESCE(${cleanOrder}, display_order)
+        WHERE id = ${imgId}
       `;
       const rows = (await sql`
         SELECT id, title, image_url, display_order, created_at
@@ -156,14 +179,19 @@ export async function PATCH(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
-      await recordAdminAuditLog('gallery_updated', id, `Mise à jour photo: ${title || 'Sans titre'}`, getClientIp(request));
+      await recordAdminAuditLog(
+        'gallery_updated',
+        imgId,
+        cleanTitle ? `Mise à jour photo: ${cleanTitle}` : `Mise à jour ordre photo ID ${imgId}`,
+        getClientIp(request)
+      );
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();
-      const img = mem.find(i => i.id === Number(id));
+      const img = mem.find(i => i.id === imgId);
       if (img) {
-        if (title !== undefined) img.title = title;
-        if (display_order !== undefined) img.display_order = Number(display_order);
+        if (cleanTitle !== null) img.title = cleanTitle;
+        if (cleanOrder !== null) img.display_order = cleanOrder;
       }
       return NextResponse.json({ ok: true, source: 'memory', images: mem });
     }
@@ -183,7 +211,9 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));
-    if (!id) return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    if (!Number.isInteger(id) || id <= 0) {
+      return NextResponse.json({ error: 'Identifiant de photo invalide.' }, { status: 400 });
+    }
 
     const sql = await ensureNeonSchema();
     invalidateGalleryCache();

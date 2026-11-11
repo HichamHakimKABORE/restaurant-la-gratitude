@@ -90,6 +90,9 @@ export default function AdminLoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder="Identifiant"
+              autoComplete="username"
+              maxLength={200}
+              required
               className="bg-transparent w-full text-stone-800 focus:outline-none"
             />
           </div>
@@ -103,6 +106,9 @@ export default function AdminLoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               placeholder="Mot de passe"
+              autoComplete="current-password"
+              maxLength={200}
+              required
               className="bg-transparent w-full text-stone-800 focus:outline-none"
             />
             <button

@@ -61,9 +61,15 @@ export default function AdminMenuDuJourPage() {
         return;
       }
 
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || 'Impossible d’archiver le rapport du jour.');
+        return;
+      }
+
       showToast(`Menu du Jour enregistré et archivé dans les rapports (${activeDailyDishes.length} plats) !`);
     } catch {
-      showToast('Menu synchronisé sur le site client !');
+      showToast('Erreur réseau lors de l’enregistrement du rapport.');
     } finally {
       setIsSavingHistory(false);
     }
@@ -71,6 +77,7 @@ export default function AdminMenuDuJourPage() {
 
   const handleResetDailyMenu = async () => {
     if (!confirm('Voulez-vous décocher tous les plats du Menu du Jour ?')) return;
+    const prevDishes = dishes;
     setDishes(prev =>
       prev.map(d =>
         d.availability_mode === 'daily'
@@ -84,6 +91,7 @@ export default function AdminMenuDuJourPage() {
       body: JSON.stringify({ action: 'reset_daily' })
     });
     if (res.status === 401) {
+      setDishes(prevDishes);
       showToast('Session expirée. Veuillez vous reconnecter.');
       router.push('/admin/login');
       return;
@@ -99,6 +107,7 @@ export default function AdminMenuDuJourPage() {
   };
 
   const handleCheckAllDailyMenu = async () => {
+    const prevDishes = dishes;
     setDishes(prev =>
       prev.map(d =>
         d.availability_mode === 'daily'
@@ -112,6 +121,7 @@ export default function AdminMenuDuJourPage() {
       body: JSON.stringify({ action: 'check_all_daily' })
     });
     if (res.status === 401) {
+      setDishes(prevDishes);
       showToast('Session expirée. Veuillez vous reconnecter.');
       router.push('/admin/login');
       return;

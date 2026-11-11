@@ -261,7 +261,7 @@ declare global {
   // eslint-disable-next-line no-var
   var _gratitudeSchemaPromise: Promise<ReturnType<typeof getNeonClient>> | undefined;
   // eslint-disable-next-line no-var
-  var _dishesCache: { data: Dish[]; ts: number } | undefined;
+  var _dishesCache: { data: Dish[]; ts: number; date?: string } | undefined;
   // eslint-disable-next-line no-var
   var _ordersCache: { data: Order[]; ts: number } | undefined;
   // eslint-disable-next-line no-var
@@ -428,10 +428,10 @@ export async function ensureNeonSchema() {
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_reason TEXT`;
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS needs_review BOOLEAN NOT NULL DEFAULT FALSE`;
 
-      // Les anciennes commandes n'avaient pas de jeton de suivi : on en génère un.
+      // Les anciennes commandes n'avaient pas de jeton de suivi : on en génère un (aléa cryptographique via gen_random_uuid).
       await sql`
         UPDATE orders
-        SET track_token = md5(id::text || created_at::text || random()::text)
+        SET track_token = replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', '')
         WHERE track_token IS NULL
       `;
 

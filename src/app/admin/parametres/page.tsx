@@ -44,7 +44,8 @@ export default function AdminParametresPage() {
             data.settings.opening_hours || 'Lundi - Dimanche de 07h00 à 23h00'
           );
         }
-      });
+      })
+      .catch(() => {});
   }, []);
 
   const normalizeBurkinaWhatsApp = (rawPhone: string) => {
@@ -146,6 +147,7 @@ export default function AdminParametresPage() {
                 type="text"
                 value={restName}
                 onChange={e => setRestName(e.target.value)}
+                maxLength={140}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
               />
             </div>
@@ -158,6 +160,7 @@ export default function AdminParametresPage() {
                 type="text"
                 value={restSlogan}
                 onChange={e => setRestSlogan(e.target.value)}
+                maxLength={240}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
               />
             </div>
@@ -170,6 +173,7 @@ export default function AdminParametresPage() {
                 type="text"
                 value={restPhone}
                 onChange={e => setRestPhone(e.target.value)}
+                maxLength={55}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
               />
             </div>
@@ -182,6 +186,7 @@ export default function AdminParametresPage() {
                 type="text"
                 value={restAddress}
                 onChange={e => setRestAddress(e.target.value)}
+                maxLength={240}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
               />
             </div>
@@ -194,6 +199,7 @@ export default function AdminParametresPage() {
                 type="text"
                 value={restHours}
                 onChange={e => setRestHours(e.target.value)}
+                maxLength={140}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
               />
             </div>
@@ -218,6 +224,8 @@ export default function AdminParametresPage() {
                   value={currentAdminPassword}
                   onChange={e => setCurrentAdminPassword(e.target.value)}
                   placeholder="Saisissez votre mot de passe actuel..."
+                  autoComplete="current-password"
+                  maxLength={200}
                   className="w-full px-3 py-2 pr-16 rounded-xl border border-stone-300 bg-amber-50/40 font-semibold text-xs"
                 />
                 <button
@@ -240,6 +248,8 @@ export default function AdminParametresPage() {
                   value={newAdminEmail}
                   onChange={e => setNewAdminEmail(e.target.value)}
                   placeholder="Ex: admin@lagratitude.bf"
+                  autoComplete="username"
+                  maxLength={180}
                   className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
                 />
               </div>
@@ -253,6 +263,8 @@ export default function AdminParametresPage() {
                     value={newAdminPassword}
                     onChange={e => setNewAdminPassword(e.target.value)}
                     placeholder="Au moins 8 caractères..."
+                    autoComplete="new-password"
+                    maxLength={200}
                     className="w-full px-3 py-2 pr-16 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
                   />
                   <button

@@ -33,11 +33,17 @@ async function main() {
   const schemaPath = path.join(process.cwd(), 'neon_schema.sql');
   const rawSql = fs.readFileSync(schemaPath, 'utf8');
 
-  // Split statements by semicolon at end of line
+  // Split statements by semicolon at end of line and strip leading comment lines cleanly
   const statements = rawSql
     .split(/;\s*\r?\n/)
-    .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith('--'));
+    .map(chunk =>
+      chunk
+        .split(/\r?\n/)
+        .filter(line => !line.trim().startsWith('--'))
+        .join('\n')
+        .trim()
+    )
+    .filter(s => s.length > 0);
 
   for (const stmt of statements) {
     await sql(stmt);

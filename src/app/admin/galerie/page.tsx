@@ -326,6 +326,7 @@ export default function AdminGaleriePage() {
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
                 placeholder="Ex: Notre terrasse ombragée, Nos brochettes..."
+                maxLength={180}
                 className="w-full px-3.5 py-2 rounded-xl border border-stone-300 bg-white font-medium"
               />
             </div>
@@ -514,6 +515,7 @@ export default function AdminGaleriePage() {
                     value={editTitle}
                     onChange={e => setEditTitle(e.target.value)}
                     placeholder="Ex: Restaurant La Gratitude — Zagtouli"
+                    maxLength={180}
                     className="w-full px-3.5 py-2.5 rounded-xl border-2 border-[#dec6a7] focus:border-[#881313] bg-[#fffcf7] font-bold text-sm text-[#2b1810] outline-none shadow-sm"
                     autoFocus
                   />
