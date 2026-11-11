@@ -109,43 +109,43 @@ export default function NotreMenuPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
             {visibleDishes.map(dish => (
               <article
                 key={dish.id}
                 onClick={() => openDishSelector(dish)}
-                className="group min-w-0 cursor-pointer bg-[#fffcf7] rounded-2xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-xl transition flex flex-col justify-between"
+                className="group min-w-0 cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between"
               >
                 <div>
-                  <div className="h-32 sm:h-44 overflow-hidden relative bg-stone-100">
+                  <div className="h-24 sm:h-28 overflow-hidden relative bg-stone-100">
                     <div
                       className={`w-full h-full dish-photo ${dish.image_quadrant}`}
                       style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                     />
-                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 text-amber-300 font-bold text-[10px] sm:text-xs whitespace-nowrap">
+                    <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/70 text-amber-300 font-bold text-[9px] sm:text-[10px] whitespace-nowrap">
                       {dish.category}
                     </span>
                   </div>
-                  <div className="p-2.5 sm:p-3.5 space-y-1">
-                    <h3 className="font-extrabold text-xs sm:text-base text-[#2b1810] line-clamp-1">
+                  <div className="p-2 sm:p-2.5 space-y-0.5">
+                    <h3 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
                       {dish.name}
                     </h3>
-                    <p className="text-[11px] sm:text-xs text-stone-600 line-clamp-2">
+                    <p className="text-[10px] sm:text-[11px] text-stone-600 line-clamp-1">
                       {dish.description}
                     </p>
                     {Array.isArray(dish.options_json) && dish.options_json.length > 0 && (
-                      <p className="text-[10px] sm:text-[11px] font-bold text-[#881313] pt-0.5 truncate">
+                      <p className="text-[9px] sm:text-[10px] font-bold text-[#881313] pt-0.5 truncate">
                         Choix : {dish.options_json.join(' • ')}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div className="p-2.5 sm:p-3.5 pt-2 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
-                  <span className="font-extrabold text-xs sm:text-base text-[#991b1b] whitespace-nowrap">
+                <div className="p-2 sm:p-2.5 pt-1.5 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <span className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
                     {formatCFA(dish.price)}
                   </span>
-                  <span className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 sm:py-1 rounded-lg bg-[#881313] group-hover:bg-[#16a34a] text-white font-extrabold text-[11px] sm:text-xs transition whitespace-nowrap">
+                  <span className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-[#881313] group-hover:bg-[#16a34a] text-white font-extrabold text-[10px] sm:text-[11px] transition whitespace-nowrap">
                     <PhoneIcon className="w-3 h-3 shrink-0" />
                     <span>+ Commander</span>
                   </span>

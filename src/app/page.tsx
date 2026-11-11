@@ -307,8 +307,8 @@ export default function AccueilClientPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-3.5">
-              <div className="grid grid-cols-2 gap-3.5">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-2.5">
                 {(homeSearch.trim() !== '' || selectedCategory !== 'Tous'
                   ? visibleGridDishes
                   : visibleGridDishes.slice(0, 12)
@@ -316,25 +316,25 @@ export default function AccueilClientPage() {
                   <article
                     key={dish.id}
                     onClick={() => openDishSelector(dish)}
-                    className="group cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-lg transition flex flex-col justify-between text-center"
+                    className="group min-w-0 cursor-pointer bg-[#fffcf7] rounded-xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between text-center"
                   >
-                    <div className="h-28 sm:h-32 overflow-hidden relative bg-stone-100">
+                    <div className="h-20 sm:h-24 overflow-hidden relative bg-stone-100">
                       <div
                         className={`w-full h-full dish-photo ${dish.image_quadrant}`}
                         style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                       />
                     </div>
 
-                    <div className="p-2.5 space-y-1">
-                      <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">
+                    <div className="p-1.5 sm:p-2 space-y-0.5">
+                      <h4 className="font-extrabold text-[11px] sm:text-xs text-[#2b1810] line-clamp-1">
                         {dish.name}
                       </h4>
-                      <div className="font-extrabold text-xs sm:text-sm text-[#991b1b] whitespace-nowrap">
+                      <div className="font-extrabold text-[11px] sm:text-xs text-[#991b1b] whitespace-nowrap">
                         {formatCFA(dish.price)}
                       </div>
-                      <div className="pt-1 flex items-center justify-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-xs group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
-                          <PhoneIcon className="w-3 h-3 shrink-0" />
+                      <div className="pt-0.5 flex items-center justify-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#881313]/10 text-[#881313] font-extrabold text-[10px] sm:text-[11px] group-hover:bg-[#881313] group-hover:text-white transition whitespace-nowrap">
+                          <PhoneIcon className="w-2.5 h-2.5 shrink-0" />
                           <span>+ Commander</span>
                         </span>
                       </div>
