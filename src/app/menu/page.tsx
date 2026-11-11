@@ -66,32 +66,33 @@ export default function NotreMenuPage() {
         </div>
 
         {/* Category Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1.5">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {CATEGORY_TABS.map(tab => {
             const isActive = selectedCategory === tab.key;
             return (
               <button
                 key={tab.key}
+                type="button"
                 onClick={() => setSelectedCategory(tab.key)}
-                className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl border transition shrink-0 ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition shrink-0 ${
                   isActive
                     ? 'bg-gradient-to-b from-[#fef08a] to-[#eab308] border-[#b45309] text-[#2b1810] font-extrabold shadow-sm'
                     : 'bg-[#fdf5e8] border-[#e6d5c3] text-stone-700 hover:border-[#eab308]'
                 }`}
               >
-                <div className="w-9 h-9 rounded-full overflow-hidden border border-white shadow-sm">
+                <div className="w-5 h-5 rounded-full overflow-hidden border border-white shadow-sm shrink-0">
                   <div
                     className={`w-full h-full dish-photo ${tab.quad}`}
                     style={{ backgroundImage: `url('${tab.img}')` }}
                   />
                 </div>
-                <span className="text-xs whitespace-nowrap">{tab.label}</span>
+                <span className="text-[11px] sm:text-xs whitespace-nowrap">{tab.label}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Grille stricte à 2 plats sur la même ligne (grid-cols-2) et sans aucun badge Disponible / Non disponible */}
+        {/* Grille compacte des plats (sans badge Disponible / Non disponible) */}
         {visibleDishes.length === 0 ? (
           <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
             <p className="font-extrabold text-sm text-[#881313]">
