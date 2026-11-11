@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import AdminShell from '@/components/AdminShell';
 import { useCart } from '@/components/CartContext';
 import { PrinterIcon, QrCodeIcon, MapPinIcon, PhoneIcon } from '@/components/Icons';
+import { joinPhoneNumbers } from '@/lib/phone';
 
 const QUICK_TABLE_LABELS = [
   'Menu Général',
@@ -159,7 +160,7 @@ export default function AdminQrCodePage() {
               </span>
               <span className="inline-flex items-center gap-1 shrink-0">
                 <PhoneIcon className="w-3.5 h-3.5 text-[#881313] shrink-0" />
-                <span>{settings.phone || '+226 02 80 99 06'}</span>
+                <span>{joinPhoneNumbers(settings.phone, settings.phone_2)}</span>
               </span>
             </div>
           </div>

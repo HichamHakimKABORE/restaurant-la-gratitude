@@ -35,19 +35,19 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
       {/* 1. EN-TÊTE OFFICIEL EN HAUT (Sans barre de navigation en haut — toute la navigation est en bas) */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 border-[#801313] shadow-md print:static">
-        <div className="max-w-7xl mx-auto px-2.5 sm:px-6 py-1.5 flex items-center justify-between gap-2">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 py-1.5 flex items-center justify-between gap-1.5 sm:gap-2">
           {/* Gauche : Logo + Nom */}
-          <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <img
               src="/images/logo_gratitude.jpg"
               alt="Logo Officiel Restaurant La Gratitude"
-              className="w-9 h-9 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-[#d99b26] shadow bg-white shrink-0"
+              className="w-8 h-8 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-[#d99b26] shadow bg-white shrink-0"
             />
             <div>
               <span className="block text-[9px] sm:text-xs font-bold text-[#2b1810] tracking-tight leading-none">
                 Restaurant
               </span>
-              <h1 className="font-script text-lg sm:text-2xl text-[#991b1b] leading-tight">
+              <h1 className="font-script text-base sm:text-2xl text-[#991b1b] leading-tight">
                 La Gratitude
               </h1>
               <p className="hidden sm:block font-script text-[10px] sm:text-xs text-[#3f2314] leading-none">
@@ -64,8 +64,8 @@ export default function ClientShell({ children }: { children: React.ReactNode })
           </div>
 
           {/* Droite : Zagtouli, Téléphone, Monument */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="text-[10px] sm:text-xs border-l-2 border-[#801313]/25 pl-2 sm:pl-3 space-y-0.5">
+          <div className="flex items-center justify-end gap-1.5 sm:gap-3 min-w-0 flex-1 sm:flex-initial">
+            <div className="text-[10px] sm:text-xs border-l border-[#801313]/25 sm:border-l-2 pl-1.5 sm:pl-3 space-y-0.5 min-w-0">
               <div className="hidden sm:flex items-center gap-1 leading-tight">
                 <span className="w-3.5 h-3.5 rounded-full bg-[#991b1b] text-white flex items-center justify-center shrink-0">
                   <MapPinIcon className="w-2.5 h-2.5" />
@@ -74,20 +74,25 @@ export default function ClientShell({ children }: { children: React.ReactNode })
                   Zagtouli, route de Bobo
                 </span>
               </div>
-              <div className="flex flex-wrap items-center gap-1.5 font-extrabold text-[#2b1810]">
-                {phoneList.map((num, idx) => (
-                  <React.Fragment key={num}>
-                    {idx > 0 && <span className="text-stone-400 text-[10px]">/</span>}
-                    <a href={toTelHref(num)} className="hover:text-[#991b1b] text-[11px] sm:text-xs whitespace-nowrap">
-                      {num}
-                    </a>
-                  </React.Fragment>
-                ))}
+              <div className="flex items-center gap-1 sm:gap-1.5 font-extrabold text-[#2b1810]">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-1.5 leading-tight">
+                  {phoneList.map((num, idx) => (
+                    <React.Fragment key={num}>
+                      {idx > 0 && <span className="hidden sm:inline text-stone-400 text-[10px]">/</span>}
+                      <a
+                        href={toTelHref(num)}
+                        className="hover:text-[#991b1b] text-[10px] sm:text-xs whitespace-nowrap"
+                      >
+                        {num}
+                      </a>
+                    </React.Fragment>
+                  ))}
+                </div>
                 <a
                   href={`https://wa.me/${whatsappNum}`}
                   target="_blank"
                   rel="noopener,noreferrer"
-                  className="w-5 h-5 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition"
+                  className="w-5 h-5 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition shrink-0"
                   title="WhatsApp"
                 >
                   <WhatsAppIcon className="w-3 h-3" />
@@ -96,14 +101,14 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             </div>
 
             {/* Vraie Photo du Monument des Martyrs & Drapeau du Burkina Faso */}
-            <div className="flex items-center gap-1.5 bg-[#f3dcb9]/80 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-xl border border-[#d99b26] shadow-sm shrink-0">
+            <div className="flex items-center gap-1 sm:gap-1.5 bg-[#f3dcb9]/80 px-1 py-0.5 sm:px-2 sm:py-1 rounded-xl border border-[#d99b26] shadow-sm shrink-0">
               <img
                 src="/images/monument_exact.jpg"
                 alt="Monument des Martyrs — Ouagadougou"
-                className="w-8 h-8 sm:w-11 sm:h-11 rounded-lg object-cover object-top border border-[#b47b22] shadow-sm bg-white"
+                className="w-7 h-7 sm:w-11 sm:h-11 rounded-lg object-cover object-top border border-[#b47b22] shadow-sm bg-white"
               />
               <svg
-                className="w-6 h-4 sm:w-8 sm:h-5 rounded shadow-sm border border-black/20 shrink-0"
+                className="w-5 h-3.5 sm:w-8 sm:h-5 rounded shadow-sm border border-black/20 shrink-0"
                 viewBox="0 0 60 40"
                 aria-label="Drapeau du Burkina Faso"
               >
@@ -120,7 +125,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </header>
 
       {/* 2. CONTENU DE LA PAGE */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[60px] sm:pt-[74px] print:pt-4 space-y-5">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[64px] sm:pt-[74px] print:pt-4 space-y-5">
         {children}
       </main>
 

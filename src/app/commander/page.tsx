@@ -5,11 +5,11 @@ import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart } from '@/components/CartContext';
 import { PhoneIcon, WhatsAppIcon, MapPinIcon, CompassIcon } from '@/components/Icons';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 export default function CommanderParTelephonePage() {
   const { settings } = useCart();
-  const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = `tel:${phoneDisplay.replace(/[^\d+]/g, '') || '+22602809906'}`;
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   return (
@@ -33,34 +33,42 @@ export default function CommanderParTelephonePage() {
 
         <div className="bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] p-5 space-y-3">
           <p className="text-xs font-bold uppercase text-stone-500">
-            Numéro officiel de commande
+            {phoneList.length > 1 ? 'Numéros officiels de commande' : 'Numéro officiel de commande'}
           </p>
-          <a
-            href={phoneTel}
-            className="text-2xl sm:text-3xl font-extrabold text-[#881313] hover:underline block whitespace-nowrap"
-          >
-            {phoneDisplay}
-          </a>
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {phoneList.map(num => (
+              <a
+                key={num}
+                href={toTelHref(num)}
+                className="text-2xl sm:text-3xl font-extrabold text-[#881313] hover:underline whitespace-nowrap"
+              >
+                {num}
+              </a>
+            ))}
+          </div>
           <p className="text-xs text-stone-600 flex items-center justify-center gap-1.5">
             <MapPinIcon className="w-4 h-4 text-[#881313] shrink-0" />
             <span>{settings.address || 'Zagtouli, route de Bobo — Ouagadougou'} ({settings.opening_hours || '07h00 à 23h00'})</span>
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-          <a
-            href={phoneTel}
-            className="py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
-          >
-            <PhoneIcon className="w-4 h-4 shrink-0" />
-            <span>Appeler le {phoneDisplay}</span>
-          </a>
+        <div className="flex flex-wrap justify-center gap-3 pt-1">
+          {phoneList.map(num => (
+            <a
+              key={num}
+              href={toTelHref(num)}
+              className="py-3.5 px-5 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
+            >
+              <PhoneIcon className="w-4 h-4 shrink-0" />
+              <span>Appeler le {num}</span>
+            </a>
+          ))}
 
           <a
             href={`https://wa.me/${whatsappNum}`}
             target="_blank"
-            rel="noopener noreferrer"
-            className="py-3.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
+            rel="noopener,noreferrer"
+            className="py-3.5 px-5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
           >
             <WhatsAppIcon className="w-4 h-4 shrink-0" />
             <span>Contacter sur WhatsApp</span>

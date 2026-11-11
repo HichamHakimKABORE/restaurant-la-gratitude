@@ -6,9 +6,11 @@ import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { sortDailyMenuDishes } from '@/lib/db';
 import { CheckIcon, PhoneIcon } from '@/components/Icons';
+import { formatPhoneList } from '@/lib/phone';
 
 export default function AdminDashboardOverviewPage() {
   const { dishes, settings } = useCart();
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
 
   const dailyCatalogDishes = dishes.filter(d => d.availability_mode === 'daily');
   const activeDailyDishes = sortDailyMenuDishes(
@@ -56,11 +58,11 @@ export default function AdminDashboardOverviewPage() {
             <PhoneIcon className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-extrabold text-base text-[#991b1b] block whitespace-nowrap">
-              {settings.phone || '+226 02 80 99 06'}
+            <span className="font-extrabold text-sm sm:text-base text-[#991b1b] block">
+              {phoneList.join(' / ')}
             </span>
             <span className="text-xs font-semibold text-stone-600">
-              Numéro de commande directe
+              {phoneList.length > 1 ? 'Numéros de commande directe' : 'Numéro de commande directe'}
             </span>
           </div>
         </div>
