@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCart } from './CartContext';
@@ -18,13 +18,18 @@ export default function AdminShell({
   const pathname = usePathname();
   const router = useRouter();
   const { settings } = useCart();
+  const [dbConnected, setDbConnected] = useState(true);
 
   // Isolation stricte de l'espace Admin : vérification de la session authentifiée
   useEffect(() => {
     fetch('/api/auth', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : { authenticated: false }))
       .then(d => {
-        if (d.authenticated === false) router.push('/admin/login');
+        if (d.authenticated === false) {
+          router.push('/admin/login');
+        } else {
+          setDbConnected(d.database_connected !== false);
+        }
       })
       .catch(() => {});
   }, [router]);
@@ -171,6 +176,12 @@ export default function AdminShell({
           </div>
         </div>
       </header>
+
+      {!dbConnected && (
+        <div className="relative z-20 bg-amber-700 text-amber-50 px-4 py-2 text-xs font-bold text-center border-b border-amber-900 shadow-inner print:hidden">
+          Attention : la base de donnees distante Neon (DATABASE_URL) n est pas connectee. Les donnees actuelles sont conservees en memoire temporaire et seront reinitialisees au prochain redemarrage du serveur.
+        </div>
+      )}
 
       {/* MAIN LAYOUT : Sur ordinateur (lg+), la carte bordeaux à gauche est verrouillée (fixed) et ne bouge jamais au scroll */}
       <div className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-5 lg:p-6">

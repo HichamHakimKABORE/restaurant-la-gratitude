@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import {
   clearAdminSession,
+  clearLoginFailures,
+  getLoginFailureCounts,
   hasAdminSession,
+  recordLoginFailure,
   setAdminSession,
   verifyAdminCredentials
 } from '@/lib/auth-server';
+import { ensureNeonSchema } from '@/lib/db';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+const MAX_FAILURES_PER_IP = 8;
+const MAX_FAILURES_TOTAL = 40;
 
 export async function POST(request: Request) {
   try {
@@ -28,6 +35,8 @@ export async function POST(request: Request) {
     }
 
     const clientIp = getClientIp(request);
+
+    // 1re barrière : limiteur rapide en mémoire.
     const limit = rateLimit(`login:${clientIp}`, 8, 15 * 60_000);
     if (!limit.allowed) {
       return NextResponse.json(
@@ -39,7 +48,28 @@ export async function POST(request: Request) {
       );
     }
 
+    // 2e barrière : compteur d'échecs partagé dans la base (valable sur tous les serveurs).
+    try {
+      const counts = await getLoginFailureCounts(clientIp);
+      if (counts.ip >= MAX_FAILURES_PER_IP || counts.total >= MAX_FAILURES_TOTAL) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.'
+          },
+          { status: 429 }
+        );
+      }
+    } catch (err) {
+      console.warn('[AUTH] Compteur d’échecs indisponible :', err);
+    }
+
     if (!(await verifyAdminCredentials(body.email, body.password))) {
+      try {
+        await recordLoginFailure(clientIp);
+      } catch (err) {
+        console.warn('[AUTH] Enregistrement de l’échec impossible :', err);
+      }
       // Ralentit le bruteforce même quand le limiteur est contourné.
       await new Promise(resolve => setTimeout(resolve, 350));
       return NextResponse.json(
@@ -47,6 +77,10 @@ export async function POST(request: Request) {
         { status: 401 }
       );
     }
+
+    try {
+      await clearLoginFailures(clientIp);
+    } catch {}
 
     await setAdminSession();
     return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
@@ -60,8 +94,25 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  const authenticated = await hasAdminSession();
+  let databaseConnected: boolean | undefined;
+
+  // L'état de la base n'est révélé qu'à l'administrateur connecté.
+  if (authenticated) {
+    try {
+      const sql = await ensureNeonSchema();
+      databaseConnected = Boolean(sql);
+      if (sql) await sql`SELECT 1`;
+    } catch {
+      databaseConnected = false;
+    }
+  }
+
   return NextResponse.json(
-    { authenticated: await hasAdminSession() },
+    {
+      authenticated,
+      ...(authenticated ? { database_connected: databaseConnected } : {})
+    },
     { headers: { 'Cache-Control': 'no-store' } }
   );
 }

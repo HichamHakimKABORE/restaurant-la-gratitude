@@ -8,7 +8,8 @@ import {
   sortDailyMenuDishes,
   Dish
 } from '@/lib/db';
-import { isAdminRequest } from '@/lib/session';
+import { isAdminRequest } from '@/lib/auth-server';
+import { validateImageSource } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -149,6 +150,13 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: 'Dish ID required' }, { status: 400 });
     }
 
+    if (image_url) {
+      const checkImg = validateImageSource(image_url);
+      if (!checkImg.ok) {
+        return NextResponse.json({ error: checkImg.error || 'Image non valide.' }, { status: 400 });
+      }
+    }
+
     if (sql) {
       await sql`
         UPDATE dishes
@@ -218,6 +226,13 @@ export async function POST(request: Request) {
 
     if (!name || !category || price === undefined || Number(price) < 0 || Number.isNaN(Number(price))) {
       return NextResponse.json({ error: 'Champs obligatoires manquants ou prix invalide' }, { status: 400 });
+    }
+
+    if (image_url) {
+      const checkImg = validateImageSource(image_url);
+      if (!checkImg.ok) {
+        return NextResponse.json({ error: checkImg.error || 'Image non valide.' }, { status: 400 });
+      }
     }
 
     const slug =

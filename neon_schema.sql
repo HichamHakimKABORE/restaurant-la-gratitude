@@ -74,8 +74,19 @@ CREATE TABLE IF NOT EXISTS restaurant_settings (
   whatsapp VARCHAR(60) NOT NULL DEFAULT '22602809906',
   address VARCHAR(255) NOT NULL DEFAULT 'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso',
   opening_hours VARCHAR(150) NOT NULL DEFAULT 'Lundi - Dimanche de 07h00 à 23h00',
+  daily_menu_date VARCHAR(20) DEFAULT '',
+  admin_custom_email VARCHAR(180),
+  admin_custom_password_hash TEXT,
+  session_valid_after BIGINT DEFAULT 0,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS admin_login_failures (
+  id SERIAL PRIMARY KEY,
+  ip VARCHAR(80) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS admin_login_failures_ip_idx ON admin_login_failures(ip, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS restaurant_gallery (
   id SERIAL PRIMARY KEY,

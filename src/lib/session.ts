@@ -83,24 +83,41 @@ export async function createSessionToken(
   return `${payload}.${await sign(payload)}`;
 }
 
+export interface SessionPayload {
+  sub: string;
+  iat: number;
+  exp: number;
+}
+
+/** Lit et vérifie (signature + expiration) le contenu d'un jeton de session. */
+export async function readSessionPayload(
+  token?: string | null
+): Promise<SessionPayload | null> {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  try {
+    const expected = await sign(parts[0]);
+    if (!timingSafeEqual(parts[1], expected)) return null;
+    const payload = JSON.parse(decoder.decode(fromBase64Url(parts[0])));
+    if (
+      payload?.sub === 'admin' &&
+      typeof payload.exp === 'number' &&
+      typeof payload.iat === 'number' &&
+      payload.exp > Date.now()
+    ) {
+      return payload as SessionPayload;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function verifySessionToken(
   token?: string | null
 ): Promise<boolean> {
-  if (!token) return false;
-  const parts = token.split('.');
-  if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
-  try {
-    const expected = await sign(parts[0]);
-    if (!timingSafeEqual(parts[1], expected)) return false;
-    const payload = JSON.parse(decoder.decode(fromBase64Url(parts[0])));
-    return (
-      payload?.sub === 'admin' &&
-      typeof payload.exp === 'number' &&
-      payload.exp > Date.now()
-    );
-  } catch {
-    return false;
-  }
+  return (await readSessionPayload(token)) !== null;
 }
 
 export function readSessionCookie(

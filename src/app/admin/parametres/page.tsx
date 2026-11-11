@@ -18,8 +18,10 @@ export default function AdminParametresPage() {
   const [restHours, setRestHours] = useState(
     'Lundi - Dimanche de 07h00 à 23h00'
   );
+  const [currentAdminPassword, setCurrentAdminPassword] = useState('');
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const { showToast, setSettings } = useCart();
@@ -58,52 +60,68 @@ export default function AdminParametresPage() {
   const handleSaveSettings = async () => {
     const hasEmail = newAdminEmail.trim().length > 0;
     const hasPwd = newAdminPassword.trim().length > 0;
-    if ((hasEmail && !hasPwd) || (!hasEmail && hasPwd)) {
-      showToast(
-        'Pour modifier vos accès Admin, remplissez à la fois le nouvel identifiant et le nouveau mot de passe.'
-      );
-      return;
-    }
-    if (hasPwd && newAdminPassword.trim().length < 4) {
-      showToast('Le nouveau mot de passe doit contenir au moins 4 caractères.');
-      return;
+
+    if (hasEmail || hasPwd) {
+      if (!currentAdminPassword.trim()) {
+        showToast(
+          'Pour modifier vos accès, vous devez saisir votre mot de passe Admin actuel.'
+        );
+        return;
+      }
+      if (!hasEmail || !hasPwd) {
+        showToast(
+          'Pour modifier vos accès Admin, remplissez à la fois le nouvel identifiant et le nouveau mot de passe.'
+        );
+        return;
+      }
+      if (newAdminPassword.trim().length < 8) {
+        showToast('Le nouveau mot de passe doit comporter au moins 8 caractères.');
+        return;
+      }
     }
 
     setSaving(true);
     try {
       const normalizedWa = normalizeBurkinaWhatsApp(restPhone);
+      const payload: Record<string, unknown> = {
+        restaurant_name: restName,
+        slogan: restSlogan,
+        phone: restPhone,
+        whatsapp: normalizedWa,
+        address: restAddress,
+        opening_hours: restHours
+      };
+
+      if (hasEmail && hasPwd) {
+        payload.current_admin_password = currentAdminPassword.trim();
+        payload.new_admin_email = newAdminEmail.trim();
+        payload.new_admin_password = newAdminPassword.trim();
+      }
+
       const res = await fetch('/api/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          restaurant_name: restName,
-          slogan: restSlogan,
-          phone: restPhone,
-          whatsapp: normalizedWa,
-          address: restAddress,
-          opening_hours: restHours,
-          ...(newAdminEmail.trim() && newAdminPassword.trim()
-            ? {
-                new_admin_email: newAdminEmail.trim(),
-                new_admin_password: newAdminPassword.trim()
-              }
-            : {})
-        })
+        body: JSON.stringify(payload)
       });
+
       if (res.status === 401) {
         showToast('Session expirée. Veuillez vous reconnecter.');
         router.push('/admin/login');
         return;
       }
+
       const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data.ok) {
         if (data.settings) setSettings(data.settings);
+        setCurrentAdminPassword('');
         setNewAdminPassword('');
         showToast(
-          'Paramètres enregistrés et mis à jour sur tout le site !'
+          hasEmail && hasPwd
+            ? 'Paramètres et nouveaux identifiants enregistrés avec succès !'
+            : 'Paramètres enregistrés et mis à jour sur tout le site !'
         );
       } else {
-        showToast('Erreur lors de la sauvegarde.');
+        showToast(data.error || 'Erreur lors de la sauvegarde.');
       }
     } catch {
       showToast('Erreur réseau lors de la sauvegarde.');
@@ -181,15 +199,38 @@ export default function AdminParametresPage() {
             </div>
           </div>
 
-          {/* Section modification des accès Administrateur */}
+          {/* Section modification des accès Administrateur protégée */}
           <div className="p-4 rounded-2xl bg-[#fdf5e8] border-2 border-[#dec6a7] space-y-3">
             <h3 className="font-extrabold text-sm text-[#881313]">
               Modifier l’identifiant et le mot de passe Administrateur (optionnel)
             </h3>
             <p className="text-xs text-stone-600">
-              Laissez ces champs vides si vous ne souhaitez pas changer votre mot de passe actuel.
+              Laissez ces champs vides si vous ne souhaitez pas modifier vos accès. Pour des raisons de sécurité, le mot de passe actuel est obligatoirement vérifié avant toute modification, et toutes les autres sessions ouvertes seront automatiquement fermées.
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+            <div className="p-3 bg-white rounded-xl border border-amber-300/80 space-y-2">
+              <label className="font-bold text-stone-700 block text-xs">
+                Mot de passe Admin ACTUEL (obligatoire pour modifier vos accès)
+              </label>
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentAdminPassword}
+                  onChange={e => setCurrentAdminPassword(e.target.value)}
+                  placeholder="Saisissez votre mot de passe actuel..."
+                  className="w-full px-3 py-2 pr-16 rounded-xl border border-stone-300 bg-amber-50/40 font-semibold text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(v => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 px-2 py-0.5 rounded bg-stone-100 hover:bg-stone-200 text-[10px] font-extrabold text-stone-700"
+                >
+                  {showCurrentPassword ? 'Masquer' : 'Voir'}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="font-bold text-stone-700 block mb-1 text-xs">
                   Nouvel identifiant Admin
@@ -204,14 +245,14 @@ export default function AdminParametresPage() {
               </div>
               <div>
                 <label className="font-bold text-stone-700 block mb-1 text-xs">
-                  Nouveau mot de passe Admin
+                  Nouveau mot de passe Admin (min. 8 caractères)
                 </label>
                 <div className="relative">
                   <input
                     type={showNewPassword ? 'text' : 'password'}
                     value={newAdminPassword}
                     onChange={e => setNewAdminPassword(e.target.value)}
-                    placeholder="Nouveau mot de passe..."
+                    placeholder="Au moins 8 caractères..."
                     className="w-full px-3 py-2 pr-16 rounded-xl border border-stone-300 bg-white font-semibold text-xs"
                   />
                   <button
@@ -239,7 +280,7 @@ export default function AdminParametresPage() {
           <button
             disabled={saving}
             onClick={handleSaveSettings}
-            className="w-full py-3 px-4 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow-lg transition"
+            className="w-full py-3 px-4 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow-lg transition disabled:opacity-50"
           >
             {saving ? 'Enregistrement...' : 'Enregistrer les paramètres'}
           </button>

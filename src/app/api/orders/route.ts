@@ -9,7 +9,7 @@ import {
   type Order,
   type OrderItem
 } from '@/lib/db';
-import { isAdminRequest } from '@/lib/session';
+import { isAdminRequest } from '@/lib/auth-server';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import {
   normalizeOrderStatus,

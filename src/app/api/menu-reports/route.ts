@@ -10,7 +10,7 @@ import {
   type DailyMenuRecord,
   type Dish
 } from '@/lib/db';
-import { isAdminRequest } from '@/lib/session';
+import { isAdminRequest } from '@/lib/auth-server';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

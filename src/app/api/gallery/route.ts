@@ -5,7 +5,8 @@ import {
   invalidateGalleryCache,
   GalleryImage
 } from '@/lib/db';
-import { isAdminRequest } from '@/lib/session';
+import { isAdminRequest } from '@/lib/auth-server';
+import { validateImageSource } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -55,6 +56,11 @@ export async function POST(request: Request) {
 
     if (!image_url || !image_url.trim()) {
       return NextResponse.json({ error: 'Image requise' }, { status: 400 });
+    }
+
+    const checkImg = validateImageSource(image_url);
+    if (!checkImg.ok) {
+      return NextResponse.json({ error: checkImg.error || 'Image non autorisée.' }, { status: 400 });
     }
 
     const sql = await ensureNeonSchema();

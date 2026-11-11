@@ -231,3 +231,42 @@ export function validateOrderPayload(body: unknown): ValidationResult {
     }
   };
 }
+
+/** Taille maximale d'une photo envoyée (data URL Base64), environ 650 Ko d'image. */
+export const MAX_IMAGE_DATA_URL_LENGTH = 900_000;
+
+export type ImageValidationResult =
+  | { ok: true; value: string }
+  | { ok: false; error: string };
+
+/**
+ * N'accepte que :
+ * - une image du site (/images/...) sans caractères dangereux ;
+ * - une vraie image Base64 (jpeg, png, webp, gif) de taille raisonnable.
+ */
+export function validateImageSource(value: unknown): ImageValidationResult {
+  if (typeof value !== 'string' || !value.trim()) {
+    return { ok: false, error: 'Image requise.' };
+  }
+  const v = value.trim();
+
+  if (v.length > MAX_IMAGE_DATA_URL_LENGTH) {
+    return {
+      ok: false,
+      error: 'Photo trop lourde. Choisissez une photo plus petite.'
+    };
+  }
+
+  if (v.startsWith('/images/')) {
+    if (v.includes('..') || v.length > 200 || !/^[\w\-./]+$/.test(v)) {
+      return { ok: false, error: 'Chemin d’image invalide.' };
+    }
+    return { ok: true, value: v };
+  }
+
+  if (/^data:image\/(jpeg|jpg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)) {
+    return { ok: true, value: v };
+  }
+
+  return { ok: false, error: 'Format d’image non autorisé (JPG, PNG, WEBP ou GIF).' };
+}

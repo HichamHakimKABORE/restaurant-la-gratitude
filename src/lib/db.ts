@@ -537,7 +537,19 @@ export async function ensureNeonSchema() {
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_date VARCHAR(20) DEFAULT ''`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS admin_custom_email VARCHAR(150) DEFAULT ''`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS admin_custom_password_hash VARCHAR(255) DEFAULT ''`;
+      await sql`ALTER TABLE restaurant_settings ALTER COLUMN admin_custom_password_hash TYPE TEXT`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS gallery_initialized BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS session_valid_after BIGINT DEFAULT 0`;
+
+      // Journal des échecs de connexion Admin (limitation des essais partagée entre serveurs)
+      await sql`
+        CREATE TABLE IF NOT EXISTS admin_login_failures (
+          id SERIAL PRIMARY KEY,
+          ip VARCHAR(80) NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS admin_login_failures_created_idx ON admin_login_failures(created_at)`;
 
       // Initialisation unique de la galerie photos (ne réinsère jamais les photos si l'admin les supprime ensuite)
       const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized FROM restaurant_settings WHERE id = 1`;
