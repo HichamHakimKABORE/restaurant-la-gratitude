@@ -30,11 +30,17 @@ export default function AdminQrCodePage() {
 
   const [qrFallback, setQrFallback] = useState(false);
 
+  const trimmedUrl = siteUrl.trim();
+  const isValidHttpUrl = /^https?:\/\/.+/i.test(trimmedUrl);
+  const safeQrUrl = isValidHttpUrl
+    ? trimmedUrl
+    : 'https://restaurantlagratitude.com/menu-du-jour';
+
   const primaryQrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(
-    siteUrl
+    safeQrUrl
   )}`;
   const backupQrSrc = `https://quickchart.io/qr?size=280&text=${encodeURIComponent(
-    siteUrl
+    safeQrUrl
   )}`;
   const qrImageSrc = qrFallback ? backupQrSrc : primaryQrSrc;
 
@@ -54,11 +60,16 @@ export default function AdminQrCodePage() {
               Lien du Menu du Jour encodé dans le QR Code :
             </label>
             <input
-              type="text"
+              type="url"
               value={siteUrl}
               onChange={e => setSiteUrl(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-stone-300 bg-white font-semibold"
             />
+            {!isValidHttpUrl && (
+              <p className="text-[11px] font-bold text-red-700 mt-1">
+                L’URL doit commencer par http:// ou https:// (lien par défaut utilisé).
+              </p>
+            )}
           </div>
 
           <div>

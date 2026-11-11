@@ -31,22 +31,30 @@ function fromBase64Url(value: string): Uint8Array {
   return bytes;
 }
 
-function getSecret(): string {
+function getSecret(): string | null {
   const customSecret = process.env.ADMIN_SESSION_SECRET;
   if (customSecret && customSecret.trim().length >= 16) {
     return `la-gratitude-session-hmac:${customSecret.trim()}`;
   }
-  // Dérivation renforcée : combine le mot de passe et l'URL secrète de la base Neon
-  // Un attaquant connaissant uniquement ADMIN_PASSWORD ne peut pas forger de cookie.
+  const hasPassword = Boolean(process.env.ADMIN_PASSWORD);
+  const hasDb = Boolean(process.env.DATABASE_URL);
+  if (process.env.NODE_ENV === 'production' && !hasPassword && !hasDb) {
+    console.error('[SESSION] Aucun secret de session configuré en production (ADMIN_SESSION_SECRET requis).');
+    return null;
+  }
+  // Dérivation de repli hors-production ou tant que ADMIN_SESSION_SECRET n'est pas défini :
+  // combine le mot de passe et l'URL secrète de la base Neon.
   const base = process.env.ADMIN_PASSWORD || 'la-gratitude-root-pwd';
   const dbBound = process.env.DATABASE_URL || 'no-db-bound';
   return `la-gratitude-session-derived:${base}:${dbBound}`;
 }
 
-async function sign(payload: string): Promise<string> {
+async function sign(payload: string): Promise<string | null> {
+  const secret = getSecret();
+  if (!secret) return null;
   const key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(getSecret()),
+    encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
@@ -82,7 +90,11 @@ export async function createSessionToken(
       })
     )
   );
-  return `${payload}.${await sign(payload)}`;
+  const sig = await sign(payload);
+  if (!sig) {
+    throw new Error('Configuration de sécurité manquante : ADMIN_SESSION_SECRET requis.');
+  }
+  return `${payload}.${sig}`;
 }
 
 export interface SessionPayload {
@@ -100,7 +112,7 @@ export async function readSessionPayload(
   if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
   try {
     const expected = await sign(parts[0]);
-    if (!timingSafeEqual(parts[1], expected)) return null;
+    if (!expected || !timingSafeEqual(parts[1], expected)) return null;
     const payload = JSON.parse(decoder.decode(fromBase64Url(parts[0])));
     if (
       payload?.sub === 'admin' &&

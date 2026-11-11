@@ -1,21 +1,32 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
-import { INITIAL_ORDERS, type Order } from '@/lib/db';
+import { type Order } from '@/lib/db';
 
 export default function AdminStatistiquesPage() {
-  const { dishes } = useCart();
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+  const router = useRouter();
+  const { dishes, showToast } = useCart();
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/orders', { cache: 'no-store' })
-      .then(r => r.json())
+      .then(async r => {
+        if (r.status === 401) {
+          showToast('Session expirée. Veuillez vous reconnecter.');
+          router.push('/admin/login');
+          return null;
+        }
+        return r.json();
+      })
       .then(oData => {
-        if (oData.orders) setOrders(oData.orders);
-      });
+        if (oData?.orders) setOrders(oData.orders);
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const validOrders = orders.filter(o => o.status !== 'Annulée');

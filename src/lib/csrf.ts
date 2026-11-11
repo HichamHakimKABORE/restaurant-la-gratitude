@@ -36,5 +36,5 @@ export function isAllowedOrigin(request: Request): boolean {
     }
   }
 
-  return true;
+  return secFetchSite === 'same-origin';
 }

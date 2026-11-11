@@ -42,6 +42,12 @@ export default function AdminShell({
 
   const handleLogout = async () => {
     localStorage.setItem('admin_logged_out', 'true');
+    try {
+      sessionStorage.removeItem('gratitude_gallery_cache_v2');
+      sessionStorage.removeItem('gratitude_dishes_cache_v3');
+    } catch {
+      // ignore storage errors
+    }
     await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

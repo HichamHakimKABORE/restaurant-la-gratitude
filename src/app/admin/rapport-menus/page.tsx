@@ -19,6 +19,10 @@ export default function AdminRapportMenusPage() {
   const fetchReports = async () => {
     try {
       const res = await fetch('/api/menu-reports', { cache: 'no-store' });
+      if (res.status === 401) {
+        router.push('/admin/login');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data.reports)) {
         setReports(data.reports);
@@ -139,6 +143,14 @@ export default function AdminRapportMenusPage() {
     window.print();
   };
 
+  const sanitizeCsvCell = (raw: string): string => {
+    const cleaned = (raw || '').replace(/[\r\n;]+/g, ',').trim();
+    if (/^[=+\-@\t\r]/.test(cleaned)) {
+      return `'${cleaned}`;
+    }
+    return cleaned;
+  };
+
   const handleExportCsv = () => {
     if (displayedReports.length === 0) return;
     const rows: string[] = [
@@ -153,9 +165,9 @@ export default function AdminRapportMenusPage() {
             : d.is_available_today
             ? 'Disponible'
             : 'Non disponible';
-        const safeName = (d.name || '').replace(/;/g, ',');
-        const safeCat = (d.category || '').replace(/;/g, ',');
-        rows.push(`${rep.menu_date};${safeName};${safeCat};${d.price};${st}`);
+        const safeName = sanitizeCsvCell(d.name || '');
+        const safeCat = sanitizeCsvCell(d.category || '');
+        rows.push(`${sanitizeCsvCell(rep.menu_date)};${safeName};${safeCat};${Number(d.price) || 0};${st}`);
       }
     }
     const csvContent = '\uFEFF' + rows.join('\r\n');

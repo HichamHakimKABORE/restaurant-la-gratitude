@@ -88,7 +88,12 @@ export default function AdminMenuDuJourPage() {
       router.push('/admin/login');
       return;
     }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setDishes(prevDishes);
+      showToast(data.error || 'Mise à jour impossible.');
+      return;
+    }
     if (data.dishes) setDishes(data.dishes);
     showToast('Menu du Jour réinitialisé (0 plat coché).');
   };
@@ -111,7 +116,12 @@ export default function AdminMenuDuJourPage() {
       router.push('/admin/login');
       return;
     }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setDishes(prevDishes);
+      showToast(data.error || 'Mise à jour impossible.');
+      return;
+    }
     if (data.dishes) setDishes(data.dishes);
     showToast('Tous les plats du Menu du Jour ont été cochés (Prêt) !');
   };
@@ -148,7 +158,7 @@ export default function AdminMenuDuJourPage() {
       await navigator.clipboard.writeText(text);
       showToast('Texte du Menu du Jour copié ! Prêt à coller sur WhatsApp.');
     } catch {
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -177,7 +187,12 @@ export default function AdminMenuDuJourPage() {
       router.push('/admin/login');
       return;
     }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      setDishes(prevDishes);
+      showToast(data.error || 'Mise à jour impossible.');
+      return;
+    }
     if (data.dishes) setDishes(data.dishes);
     showToast(
       `${dish.name} : ${

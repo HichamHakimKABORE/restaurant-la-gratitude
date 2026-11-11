@@ -15,6 +15,7 @@ import {
 } from '@/lib/auth-server';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
+import { sanitizeText } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -137,19 +138,28 @@ export async function PATCH(request: Request) {
       await setAdminSession();
     }
 
+    const cleanName = restaurant_name !== undefined ? sanitizeText(restaurant_name, 140) || null : null;
+    const cleanSlogan = slogan !== undefined ? sanitizeText(slogan, 240) || null : null;
+    const cleanSubSlogan = sub_slogan !== undefined ? sanitizeText(sub_slogan, 240) || null : null;
+    const cleanPhone = phone !== undefined ? sanitizeText(phone, 55) || null : null;
+    const cleanWaDigits =
+      whatsapp !== undefined ? String(whatsapp).replace(/[^0-9]/g, '').slice(0, 20) || null : null;
+    const cleanAddress = address !== undefined ? sanitizeText(address, 240) || null : null;
+    const cleanHours = opening_hours !== undefined ? sanitizeText(opening_hours, 140) || null : null;
+
     const sql = await ensureNeonSchema();
     invalidateSettingsCache();
     if (sql) {
       await sql`
         UPDATE restaurant_settings
         SET
-          restaurant_name = COALESCE(${restaurant_name ?? null}, restaurant_name),
-          slogan = COALESCE(${slogan ?? null}, slogan),
-          sub_slogan = COALESCE(${sub_slogan ?? null}, sub_slogan),
-          phone = COALESCE(${phone ?? null}, phone),
-          whatsapp = COALESCE(${whatsapp ?? null}, whatsapp),
-          address = COALESCE(${address ?? null}, address),
-          opening_hours = COALESCE(${opening_hours ?? null}, opening_hours),
+          restaurant_name = COALESCE(${cleanName}, restaurant_name),
+          slogan = COALESCE(${cleanSlogan}, slogan),
+          sub_slogan = COALESCE(${cleanSubSlogan}, sub_slogan),
+          phone = COALESCE(${cleanPhone}, phone),
+          whatsapp = COALESCE(${cleanWaDigits}, whatsapp),
+          address = COALESCE(${cleanAddress}, address),
+          opening_hours = COALESCE(${cleanHours}, opening_hours),
           updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
       `;
@@ -173,13 +183,13 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ ok: true, source: 'neon', settings: rows[0] });
     } else {
       const mem = getMemorySettings();
-      if (restaurant_name !== undefined) mem.restaurant_name = restaurant_name;
-      if (slogan !== undefined) mem.slogan = slogan;
-      if (sub_slogan !== undefined) mem.sub_slogan = sub_slogan;
-      if (phone !== undefined) mem.phone = phone;
-      if (whatsapp !== undefined) mem.whatsapp = whatsapp;
-      if (address !== undefined) mem.address = address;
-      if (opening_hours !== undefined) mem.opening_hours = opening_hours;
+      if (cleanName) mem.restaurant_name = cleanName;
+      if (cleanSlogan) mem.slogan = cleanSlogan;
+      if (cleanSubSlogan) mem.sub_slogan = cleanSubSlogan;
+      if (cleanPhone) mem.phone = cleanPhone;
+      if (cleanWaDigits) mem.whatsapp = cleanWaDigits;
+      if (cleanAddress) mem.address = cleanAddress;
+      if (cleanHours) mem.opening_hours = cleanHours;
       return NextResponse.json({ ok: true, source: 'memory', settings: mem });
     }
   } catch (error) {

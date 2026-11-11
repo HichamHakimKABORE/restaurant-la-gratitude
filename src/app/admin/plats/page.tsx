@@ -92,7 +92,11 @@ export default function AdminPlatsPage() {
         router.push('/admin/login');
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Impossible de mettre à jour la photo.');
+        return;
+      }
       if (data.dishes) setDishes(data.dishes);
       showToast(`Photo de "${dish.name}" mise à jour !`);
     } catch (e) {
@@ -109,7 +113,11 @@ export default function AdminPlatsPage() {
       router.push('/admin/login');
       return;
     }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(data.error || 'Suppression impossible.');
+      return;
+    }
     if (data.dishes) setDishes(data.dishes);
     showToast(`${name} supprimé`);
   };
@@ -173,7 +181,11 @@ export default function AdminPlatsPage() {
         router.push('/admin/login');
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Modification impossible.');
+        return;
+      }
       if (data.dishes) setDishes(data.dishes);
       setAddModalOpen(false);
       setEditingDish(null);
@@ -201,7 +213,11 @@ export default function AdminPlatsPage() {
       router.push('/admin/login');
       return;
     }
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      showToast(data.error || 'Ajout impossible.');
+      return;
+    }
     if (data.dishes) setDishes(data.dishes);
     setNewName('');
     setNewPhotoData('');

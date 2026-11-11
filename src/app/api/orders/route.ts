@@ -5,6 +5,7 @@ import {
   ensureNeonSchema,
   getMemoryDishes,
   getMemoryOrders,
+  recordAdminAuditLog,
   type Dish,
   type Order,
   type OrderItem
@@ -644,6 +645,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return jsonError('Origine non autorisée (CSRF).', 403);
+  }
   if (!(await isAdminRequest(request))) {
     return jsonError('Non autorisé.', 401);
   }
@@ -657,7 +661,18 @@ export async function DELETE(request: Request) {
 
     const sql = await ensureNeonSchema();
     if (sql) {
-      await sql`DELETE FROM orders WHERE id = ${id}`;
+      const deletedRows = (await sql`
+        DELETE FROM orders WHERE id = ${id}
+        RETURNING order_code, total_cfa
+      `) as Array<{ order_code: string; total_cfa: number }>;
+      if (deletedRows[0]) {
+        await recordAdminAuditLog(
+          'order_deleted',
+          id,
+          `Suppression commande ${deletedRows[0].order_code} (${deletedRows[0].total_cfa} FCFA)`,
+          getClientIp(request)
+        );
+      }
       return NextResponse.json({
         ok: true,
         orders: await readAllOrders(sql)

@@ -27,31 +27,38 @@ if (fs.existsSync(artifactDir)) {
   }
 }
 
-// Synchronise automatiquement les fichiers manquants dans le dossier de sauvegarde H:\Appli\Restaurant_Sauvegarde_Commandes
-// sans écraser les fichiers déjà sauvegardés avant la modification.
-try {
-  const backupRoot = 'h:\\Appli\\Restaurant_Sauvegarde_Commandes';
-  const projectRoot = process.cwd();
-  const skipDirs = new Set(['node_modules', '.next', '.git']);
+// Synchronise automatiquement les fichiers manquants dans le dossier de sauvegarde Windows
+// sans écraser les fichiers déjà sauvegardés avant la modification, et sans copier les secrets (.env*).
+if (process.platform === 'win32') {
+  try {
+    const backupRoot = 'h:\\Appli\\Restaurant_Sauvegarde_Commandes';
+    const projectRoot = process.cwd();
+    const skipDirs = new Set(['node_modules', '.next', '.git']);
 
-  function copyMissingRecursive(srcDir, destDir) {
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
+    function isSensitiveFile(name) {
+      return name.startsWith('.env') || name.endsWith('.pem') || name.endsWith('.key');
     }
-    const entries = fs.readdirSync(srcDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (skipDirs.has(entry.name)) continue;
-      const srcFull = path.join(srcDir, entry.name);
-      const destFull = path.join(destDir, entry.name);
-      if (entry.isDirectory()) {
-        copyMissingRecursive(srcFull, destFull);
-      } else if (!fs.existsSync(destFull)) {
-        fs.copyFileSync(srcFull, destFull);
+
+    function copyMissingRecursive(srcDir, destDir) {
+      if (!fs.existsSync(destDir)) {
+        fs.mkdirSync(destDir, { recursive: true });
+      }
+      const entries = fs.readdirSync(srcDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (skipDirs.has(entry.name)) continue;
+        if (!entry.isDirectory() && isSensitiveFile(entry.name)) continue;
+        const srcFull = path.join(srcDir, entry.name);
+        const destFull = path.join(destDir, entry.name);
+        if (entry.isDirectory()) {
+          copyMissingRecursive(srcFull, destFull);
+        } else if (!fs.existsSync(destFull)) {
+          fs.copyFileSync(srcFull, destFull);
+        }
       }
     }
-  }
 
-  copyMissingRecursive(projectRoot, backupRoot);
-} catch (err) {
-  // Ignore backup errors on Vercel cloud builds
+    copyMissingRecursive(projectRoot, backupRoot);
+  } catch (err) {
+    // Ignore backup errors
+  }
 }

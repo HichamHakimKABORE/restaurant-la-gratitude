@@ -14,6 +14,7 @@ import {
 import { isAdminRequest } from '@/lib/auth-server';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
+import { sanitizeNotes, sanitizeText } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -161,8 +162,18 @@ export async function POST(request: Request) {
     if (!isValidDateStr(menuDate)) {
       return NextResponse.json({ error: 'Date invalide.' }, { status: 400 });
     }
-    const dishesList = Array.isArray(body.dishes) ? body.dishes : [];
-    const notes = body.notes || 'Enregistré depuis l’espace Admin';
+    const rawDishes = Array.isArray(body.dishes) ? body.dishes.slice(0, 200) : [];
+    const dishesList = rawDishes.map((item: any) => ({
+      id: Number(item?.id) || 0,
+      name: sanitizeText(item?.name, 160) || 'Plat',
+      category: sanitizeText(item?.category, 60) || 'Plats',
+      price: Math.max(0, Math.round(Number(item?.price) || 0)),
+      stock_status: ['available', 'low', 'soldout'].includes(item?.stock_status)
+        ? item.stock_status
+        : 'available',
+      is_available_today: Boolean(item?.is_available_today)
+    }));
+    const notes = sanitizeNotes(body.notes, 400) || 'Enregistré depuis l’espace Admin';
     const totalDishes = dishesList.length;
 
     const sql = await ensureNeonSchema();
@@ -179,6 +190,7 @@ export async function POST(request: Request) {
       `;
 
       invalidateMenuHistoryCache();
+      await recordAdminAuditLog('menu_report_saved', menuDate, `Rapport enregistré (${totalDishes} plats)`, getClientIp(request));
       return NextResponse.json({ success: true, message: 'Rapport du jour enregistré avec succès' });
     }
 

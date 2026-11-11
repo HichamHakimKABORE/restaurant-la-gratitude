@@ -1,22 +1,32 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { WhatsAppIcon } from '@/components/Icons';
-import { INITIAL_ORDERS, type Order } from '@/lib/db';
+import { type Order } from '@/lib/db';
 
 export default function AdminCommandesPage() {
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
   const [orderFilter, setOrderFilter] = useState<string>('Toutes');
   const { showToast } = useCart();
 
   const loadOrders = () => {
     fetch('/api/orders', { cache: 'no-store' })
-      .then(r => r.json())
+      .then(async r => {
+        if (r.status === 401) {
+          showToast('Session expirée. Veuillez vous reconnecter.');
+          router.push('/admin/login');
+          return null;
+        }
+        return r.json();
+      })
       .then(d => {
-        if (d.orders) setOrders(d.orders);
-      });
+        if (d?.orders) setOrders(d.orders);
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -37,6 +47,11 @@ export default function AdminCommandesPage() {
       })
     });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
     if (!res.ok) {
       showToast(data.error || 'Mise à jour impossible.');
       if (res.status === 409) loadOrders();
@@ -53,6 +68,11 @@ export default function AdminCommandesPage() {
       body: JSON.stringify({ id: order.id, action: 'mark_paid' })
     });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
     if (!res.ok) {
       showToast(data.error || 'Impossible de marquer la commande comme payée.');
       return;
@@ -69,6 +89,11 @@ export default function AdminCommandesPage() {
 
     const res = await fetch(`/api/orders?id=${id}`, { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      showToast('Session expirée. Veuillez vous reconnecter.');
+      router.push('/admin/login');
+      return;
+    }
     if (!res.ok) {
       showToast(data.error || 'Suppression impossible.');
       return;

@@ -9,8 +9,8 @@ import { PhoneIcon, WhatsAppIcon, MapPinIcon, CompassIcon } from '@/components/I
 export default function CommanderParTelephonePage() {
   const { settings } = useCart();
   const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = `tel:${phoneDisplay.replace(/\s+/g, '')}`;
-  const whatsappNum = settings.whatsapp || '22602809906';
+  const phoneTel = `tel:${phoneDisplay.replace(/[^\d+]/g, '') || '+22602809906'}`;
+  const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   return (
     <ClientShell>
@@ -59,7 +59,7 @@ export default function CommanderParTelephonePage() {
           <a
             href={`https://wa.me/${whatsappNum}`}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             className="py-3.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
           >
             <WhatsAppIcon className="w-4 h-4 shrink-0" />

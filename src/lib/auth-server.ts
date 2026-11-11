@@ -87,7 +87,13 @@ export async function setAdminSession(): Promise<void> {
 }
 
 export function clearAdminSession(): void {
-  cookies().delete(SESSION_COOKIE);
+  cookies().set(SESSION_COOKIE, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0
+  });
 }
 
 /**
@@ -113,7 +119,7 @@ export async function isValidAdminToken(token?: string | null): Promise<boolean>
     return payload.iat >= validAfter;
   } catch (err) {
     console.warn('[AUTH] Vérification de révocation indisponible :', err);
-    return true;
+    return false;
   }
 }
 

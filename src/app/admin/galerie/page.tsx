@@ -150,7 +150,11 @@ export default function AdminGaleriePage() {
         router.push('/admin/login');
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Impossible d’ajouter cette photo.');
+        return;
+      }
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
       } else {
@@ -177,21 +181,29 @@ export default function AdminGaleriePage() {
 
   const handleDelete = async (id: number, title: string) => {
     if (!confirm(`Supprimer définitivement cette photo ("${title}") ?`)) return;
+    const prevImages = images;
     const optimistic = images.filter(img => img.id !== id);
     syncGalleryCache(optimistic);
     try {
       const res = await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' });
       if (res.status === 401) {
+        syncGalleryCache(prevImages);
         showToast('Session expirée. Veuillez vous reconnecter.');
         router.push('/admin/login');
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        syncGalleryCache(prevImages);
+        showToast(data.error || 'Suppression impossible.');
+        return;
+      }
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
       }
       showToast('Photo retirée définitivement de la galerie');
     } catch {
+      syncGalleryCache(prevImages);
       showToast('Erreur lors de la suppression');
     }
   };
@@ -202,12 +214,12 @@ export default function AdminGaleriePage() {
   };
 
   const handlePutFirst = async (img: GalleryImage) => {
+    const prevImages = images;
     const reordered = [
       { ...img, display_order: 1 },
       ...images.filter(i => i.id !== img.id).map((item, idx) => ({ ...item, display_order: idx + 2 }))
     ];
     syncGalleryCache(reordered);
-    showToast(`"${img.title || 'Photo'}" placée en 1re position !`);
 
     try {
       const res = await fetch('/api/gallery', {
@@ -220,16 +232,25 @@ export default function AdminGaleriePage() {
         })
       });
       if (res.status === 401) {
+        syncGalleryCache(prevImages);
         showToast('Session expirée. Veuillez vous reconnecter.');
         router.push('/admin/login');
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        syncGalleryCache(prevImages);
+        showToast(data.error || 'Impossible de modifier l’ordre.');
+        return;
+      }
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
       }
+      showToast(`"${img.title || 'Photo'}" placée en 1re position !`);
     } catch (err) {
+      syncGalleryCache(prevImages);
       console.error('Erreur ordre galerie:', err);
+      showToast('Erreur lors de la mise à jour de l’ordre.');
     }
   };
 
@@ -239,13 +260,13 @@ export default function AdminGaleriePage() {
 
     const updatedTitle = editTitle.trim() || 'Restaurant La Gratitude — Zagtouli';
     const targetId = editingImage.id;
+    const prevImages = images;
 
     const optimistic = images.map(item =>
       item.id === targetId ? { ...item, title: updatedTitle } : item
     );
     syncGalleryCache(optimistic);
     setEditingImage(null);
-    showToast(`Description enregistrée : "${updatedTitle}" !`);
 
     setIsUpdating(true);
     try {
@@ -258,16 +279,25 @@ export default function AdminGaleriePage() {
         })
       });
       if (res.status === 401) {
+        syncGalleryCache(prevImages);
         showToast('Session expirée. Veuillez vous reconnecter.');
         router.push('/admin/login');
         return;
       }
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        syncGalleryCache(prevImages);
+        showToast(data.error || 'Modification impossible.');
+        return;
+      }
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
       }
+      showToast(`Description enregistrée : "${updatedTitle}" !`);
     } catch (err) {
+      syncGalleryCache(prevImages);
       console.error('Erreur PATCH gallery:', err);
+      showToast('Erreur lors de la modification.');
     } finally {
       setIsUpdating(false);
     }

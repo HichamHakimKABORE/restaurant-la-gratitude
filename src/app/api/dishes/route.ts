@@ -10,7 +10,7 @@ import {
   Dish
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/auth-server';
-import { validateImageSource } from '@/lib/validation';
+import { sanitizeText, validateImageSource } from '@/lib/validation';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
 
@@ -19,6 +19,34 @@ export const runtime = 'nodejs';
 export const revalidate = 0;
 
 const CACHE_TTL_MS = 10000; // 10 seconds server RAM cache (invalidated immediately on any write)
+
+const ALLOWED_CATEGORIES = new Set([
+  'Plats',
+  'Pizzas',
+  'Salades',
+  'Poulets',
+  'Soupes',
+  'Grillades',
+  'Boissons'
+]);
+const ALLOWED_MODES = new Set(['daily', 'always', 'order']);
+const ALLOWED_STOCK = new Set(['available', 'low', 'soldout']);
+const ALLOWED_QUADRANTS = new Set([
+  'quad-tl',
+  'quad-tr',
+  'quad-bl',
+  'quad-br',
+  'quad-full',
+  'full'
+]);
+
+function sanitizeDishOptions(raw: unknown): string[] | null {
+  if (!Array.isArray(raw)) return null;
+  return raw
+    .slice(0, 20)
+    .map(item => sanitizeText(item, 60))
+    .filter(Boolean);
+}
 
 async function autoSyncTodayMenuReport(sql: any, allDishes: Dish[], todayStr: string) {
   try {
@@ -162,9 +190,49 @@ export async function PATCH(request: Request) {
       display_order
     } = body;
 
-    if (!id) {
-      return NextResponse.json({ error: 'Dish ID required' }, { status: 400 });
+    const dishId = Number(id);
+    if (!Number.isInteger(dishId) || dishId <= 0) {
+      return NextResponse.json({ error: 'Identifiant de plat invalide.' }, { status: 400 });
     }
+
+    const cleanName = name !== undefined ? sanitizeText(name, 160) : null;
+    if (name !== undefined && !cleanName) {
+      return NextResponse.json({ error: 'Le nom du plat ne peut pas être vide.' }, { status: 400 });
+    }
+
+    let cleanPrice: number | null = null;
+    if (price !== undefined) {
+      const p = Number(price);
+      if (!Number.isFinite(p) || p < 0 || p > 5_000_000) {
+        return NextResponse.json({ error: 'Prix invalide (doit être compris entre 0 et 5 000 000 FCFA).' }, { status: 400 });
+      }
+      cleanPrice = Math.round(p);
+    }
+
+    if (category !== undefined && !ALLOWED_CATEGORIES.has(String(category))) {
+      return NextResponse.json({ error: 'Catégorie de plat invalide.' }, { status: 400 });
+    }
+    if (availability_mode !== undefined && !ALLOWED_MODES.has(String(availability_mode))) {
+      return NextResponse.json({ error: 'Mode de disponibilité invalide.' }, { status: 400 });
+    }
+    if (stock_status !== undefined && !ALLOWED_STOCK.has(String(stock_status))) {
+      return NextResponse.json({ error: 'Statut de stock invalide.' }, { status: 400 });
+    }
+    if (image_quadrant !== undefined && !ALLOWED_QUADRANTS.has(String(image_quadrant))) {
+      return NextResponse.json({ error: 'Cadrage image invalide.' }, { status: 400 });
+    }
+
+    let cleanOrder: number | null = null;
+    if (display_order !== undefined) {
+      const ord = Number(display_order);
+      if (!Number.isInteger(ord) || ord < 0 || ord > 99999) {
+        return NextResponse.json({ error: 'Ordre d’affichage invalide.' }, { status: 400 });
+      }
+      cleanOrder = ord;
+    }
+
+    const cleanDescription = description !== undefined ? sanitizeText(description, 600) : null;
+    const cleanOptions = options_json !== undefined ? sanitizeDishOptions(options_json) : null;
 
     if (image_url) {
       const checkImg = validateImageSource(image_url);
@@ -177,18 +245,18 @@ export async function PATCH(request: Request) {
       await sql`
         UPDATE dishes
         SET
-          name = COALESCE(${name ?? null}, name),
-          price = COALESCE(${price !== undefined ? Number(price) : null}, price),
+          name = COALESCE(${cleanName}, name),
+          price = COALESCE(${cleanPrice}, price),
           category = COALESCE(${category ?? null}, category),
           availability_mode = COALESCE(${availability_mode ?? null}, availability_mode),
           is_available_today = COALESCE(${typeof is_available_today === 'boolean' ? is_available_today : null}, is_available_today),
           stock_status = COALESCE(${stock_status ?? null}, stock_status),
           image_url = COALESCE(${image_url ?? null}, image_url),
           image_quadrant = COALESCE(${image_quadrant ?? null}, image_quadrant),
-          description = COALESCE(${description ?? null}, description),
-          display_order = COALESCE(${display_order !== undefined ? Number(display_order) : null}, display_order),
-          options_json = COALESCE(${options_json ? JSON.stringify(options_json) : null}::jsonb, options_json)
-        WHERE id = ${Number(id)}
+          description = COALESCE(${cleanDescription}, description),
+          display_order = COALESCE(${cleanOrder}, display_order),
+          options_json = COALESCE(${cleanOptions ? JSON.stringify(cleanOptions) : null}::jsonb, options_json)
+        WHERE id = ${dishId}
       `;
       if (typeof is_available_today === 'boolean') {
         await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
@@ -196,24 +264,25 @@ export async function PATCH(request: Request) {
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
       await autoSyncTodayMenuReport(sql, rows, todayStr);
-      await recordAdminAuditLog('dish_updated', id, name ? `Mise à jour: ${name}` : 'Mise à jour plat', getClientIp(request));
+      await recordAdminAuditLog('dish_updated', dishId, cleanName ? `Mise à jour: ${cleanName}` : 'Mise à jour plat', getClientIp(request));
 
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {
       invalidateDishesCache();
       const mem = getMemoryDishes();
-      const target = mem.find(d => d.id === Number(id));
+      const target = mem.find(d => d.id === dishId);
       if (target) {
         if (typeof is_available_today === 'boolean') target.is_available_today = is_available_today;
         if (stock_status !== undefined) target.stock_status = stock_status;
-        if (name !== undefined) target.name = name;
-        if (price !== undefined) target.price = Number(price);
+        if (cleanName !== null) target.name = cleanName;
+        if (cleanPrice !== null) target.price = cleanPrice;
         if (category !== undefined) target.category = category;
         if (availability_mode !== undefined) target.availability_mode = availability_mode;
         if (image_url !== undefined) target.image_url = image_url;
         if (image_quadrant !== undefined) target.image_quadrant = image_quadrant;
-        if (description !== undefined) target.description = description;
-        if (options_json !== undefined) target.options_json = options_json;
+        if (cleanDescription !== null) target.description = cleanDescription;
+        if (cleanOptions !== null) target.options_json = cleanOptions;
+        if (cleanOrder !== null) target.display_order = cleanOrder;
       }
       return NextResponse.json({ ok: true, source: 'memory', dishes: mem });
     }
@@ -248,8 +317,35 @@ export async function POST(request: Request) {
       display_order
     } = body;
 
-    if (!name || !category || price === undefined || Number(price) < 0 || Number.isNaN(Number(price))) {
-      return NextResponse.json({ error: 'Champs obligatoires manquants ou prix invalide' }, { status: 400 });
+    const cleanName = sanitizeText(name, 160);
+    const cleanPrice = Number(price);
+    if (
+      !cleanName ||
+      !ALLOWED_CATEGORIES.has(String(category)) ||
+      price === undefined ||
+      !Number.isFinite(cleanPrice) ||
+      cleanPrice < 0 ||
+      cleanPrice > 5_000_000
+    ) {
+      return NextResponse.json(
+        { error: 'Champs obligatoires manquants, catégorie ou prix invalide.' },
+        { status: 400 }
+      );
+    }
+
+    const mode = availability_mode ? String(availability_mode) : 'daily';
+    if (!ALLOWED_MODES.has(mode)) {
+      return NextResponse.json({ error: 'Mode de disponibilité invalide.' }, { status: 400 });
+    }
+
+    const quad = image_quadrant ? String(image_quadrant) : 'quad-tl';
+    if (!ALLOWED_QUADRANTS.has(quad)) {
+      return NextResponse.json({ error: 'Cadrage image invalide.' }, { status: 400 });
+    }
+
+    const orderNum = display_order !== undefined ? Number(display_order) : 50;
+    if (!Number.isInteger(orderNum) || orderNum < 0 || orderNum > 99999) {
+      return NextResponse.json({ error: 'Ordre d’affichage invalide.' }, { status: 400 });
     }
 
     if (image_url) {
@@ -260,7 +356,7 @@ export async function POST(request: Request) {
     }
 
     const slug =
-      name
+      cleanName
         .toLowerCase()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
@@ -270,9 +366,9 @@ export async function POST(request: Request) {
       Date.now().toString().slice(-4);
 
     const sql = await ensureNeonSchema();
-    const opts = Array.isArray(options_json) ? options_json : [];
-    const mode = availability_mode || 'daily';
-    const orderNum = display_order !== undefined ? Number(display_order) : 50;
+    const opts = sanitizeDishOptions(options_json) || [];
+    const cleanDescription = sanitizeText(description, 600);
+    const roundedPrice = Math.round(cleanPrice);
     const todayStr = getLogicalMenuDate();
 
     if (sql) {
@@ -280,16 +376,16 @@ export async function POST(request: Request) {
         INSERT INTO dishes (slug, name, category, price, availability_mode, is_available_today, stock_status, options_json, image_url, image_quadrant, description, display_order)
         VALUES (
           ${slug},
-          ${name},
-          ${category},
-          ${Number(price)},
+          ${cleanName},
+          ${String(category)},
+          ${roundedPrice},
           ${mode},
           true,
           'available',
           ${JSON.stringify(opts)}::jsonb,
           ${image_url || '/images/dishes_grid_1.jpg'},
-          ${image_quadrant || 'quad-tl'},
-          ${description || ''},
+          ${quad},
+          ${cleanDescription},
           ${orderNum}
         )
       `;
@@ -301,7 +397,7 @@ export async function POST(request: Request) {
       if (mode === 'daily') {
         await autoSyncTodayMenuReport(sql, rows, todayStr);
       }
-      await recordAdminAuditLog('dish_created', slug, `Création plat: ${name} (${Number(price)} FCFA)`, getClientIp(request));
+      await recordAdminAuditLog('dish_created', slug, `Création plat: ${cleanName} (${roundedPrice} FCFA)`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {
       invalidateDishesCache();
@@ -309,17 +405,17 @@ export async function POST(request: Request) {
       const newDish: Dish = {
         id: mem.length > 0 ? Math.max(...mem.map(d => d.id)) + 1 : 1,
         slug,
-        name,
-        category,
-        price: Number(price),
-        availability_mode: mode,
+        name: cleanName,
+        category: category as Dish['category'],
+        price: roundedPrice,
+        availability_mode: mode as Dish['availability_mode'],
         is_available_today: true,
         stock_status: 'available',
         options_json: opts,
         image_url: image_url || '/images/dishes_grid_1.jpg',
-        image_quadrant: image_quadrant || 'quad-tl',
-        description: description || '',
-        display_order: 99
+        image_quadrant: quad as Dish['image_quadrant'],
+        description: cleanDescription,
+        display_order: orderNum
       };
       mem.push(newDish);
       return NextResponse.json({ ok: true, source: 'memory', dishes: mem });
