@@ -6,6 +6,7 @@ import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { PrinterIcon, CheckIcon, ChefHatIcon, BoltIcon, CloseIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getLogicalMenuDate, type DailyMenuRecord } from '@/lib/db';
+import { downloadMenuReportsPdf, printWithAutoDocumentTitle } from '@/lib/pdf-report';
 
 export default function AdminRapportMenusPage() {
   const router = useRouter();
@@ -162,8 +163,25 @@ export default function AdminRapportMenusPage() {
     }
   };
 
+  const buildAutoReportBaseName = () => {
+    if (displayedReports.length === 1) {
+      return `Rapport-Menu-La-Gratitude-${displayedReports[0].menu_date}`;
+    }
+    if (filterStartDate && filterEndDate) {
+      return `Rapport-Menus-La-Gratitude-${filterStartDate}-au-${filterEndDate}`;
+    }
+    return `Rapport-Menus-La-Gratitude-${getLogicalMenuDate()}`;
+  };
+
+  const handleDownloadPdf = () => {
+    if (displayedReports.length === 0) return;
+    const baseName = buildAutoReportBaseName();
+    downloadMenuReportsPdf(displayedReports, settings, `${baseName}.pdf`);
+    showToast(`PDF "${baseName}.pdf" téléchargé automatiquement !`);
+  };
+
   const handlePrint = () => {
-    window.print();
+    printWithAutoDocumentTitle(buildAutoReportBaseName());
   };
 
   const sanitizeCsvCell = (raw: string): string => {
@@ -270,12 +288,20 @@ export default function AdminRapportMenusPage() {
               <span>Exporter Excel (.csv)</span>
             </button>
             <button
-              onClick={handlePrint}
+              onClick={handleDownloadPdf}
               disabled={displayedReports.length === 0}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs shadow-md flex items-center gap-2 transition disabled:opacity-50"
             >
               <PrinterIcon className="w-4 h-4" />
-              <span>Générer le PDF / Imprimer le rapport</span>
+              <span>Générer le PDF</span>
+            </button>
+            <button
+              onClick={handlePrint}
+              disabled={displayedReports.length === 0}
+              className="px-3.5 py-2 rounded-xl bg-white hover:bg-stone-100 text-[#2b1810] border border-[#dec6a7] font-extrabold text-xs shadow-sm flex items-center gap-1.5 transition disabled:opacity-50"
+            >
+              <PrinterIcon className="w-3.5 h-3.5 text-[#881313]" />
+              <span>Imprimer</span>
             </button>
           </div>
         </div>

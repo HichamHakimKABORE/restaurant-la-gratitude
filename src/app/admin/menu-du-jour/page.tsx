@@ -8,6 +8,7 @@ import { formatCFA, useCart } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, CloseIcon, WhatsAppIcon, PrinterIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, getLogicalMenuDate, type Dish, type StockStatus } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
+import { printWithAutoDocumentTitle } from '@/lib/pdf-report';
 
 export default function AdminMenuDuJourPage() {
   const router = useRouter();
@@ -400,7 +401,7 @@ export default function AdminMenuDuJourPage() {
 
           <button
             type="button"
-            onClick={() => window.print()}
+            onClick={() => printWithAutoDocumentTitle(`Affiche-Menu-du-Jour-La-Gratitude-${getLogicalMenuDate()}`)}
             className="w-full py-2.5 px-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-[#2b1810] border border-amber-400 font-extrabold text-xs shadow-sm flex items-center justify-center gap-2 transition"
           >
             <PrinterIcon className="w-4 h-4 text-[#881313] shrink-0" />
