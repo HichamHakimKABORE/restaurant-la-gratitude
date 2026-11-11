@@ -5,17 +5,34 @@ import { createPortal } from 'react-dom';
 import { type GalleryImage } from '@/lib/db';
 import { CameraIcon, CloseIcon } from './Icons';
 
+const GALLERY_MEMORY_TTL_MS = 60_000;
+let moduleGalleryCache: { images: GalleryImage[]; ts: number } | null = null;
+
 export default function RestaurantGallerySlider() {
-  const [images, setImages] = useState<GalleryImage[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [images, setImages] = useState<GalleryImage[]>(
+    () => moduleGalleryCache?.images || []
+  );
+  const [loaded, setLoaded] = useState<boolean>(
+    () => Boolean(moduleGalleryCache)
+  );
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
 
   useEffect(() => {
+    if (
+      moduleGalleryCache &&
+      Date.now() - moduleGalleryCache.ts < GALLERY_MEMORY_TTL_MS
+    ) {
+      setImages(moduleGalleryCache.images);
+      setLoaded(true);
+      return;
+    }
+
     try {
       const cached = sessionStorage.getItem('gratitude_gallery_cache_v2');
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed)) {
+          moduleGalleryCache = { images: parsed, ts: Date.now() };
           setImages(parsed);
           setLoaded(true);
         }
@@ -26,6 +43,7 @@ export default function RestaurantGallerySlider() {
       .then(r => r.json())
       .then(d => {
         if (Array.isArray(d.images)) {
+          moduleGalleryCache = { images: d.images, ts: Date.now() };
           setImages(d.images);
           try {
             sessionStorage.setItem('gratitude_gallery_cache_v2', JSON.stringify(d.images));
@@ -56,17 +74,17 @@ export default function RestaurantGallerySlider() {
   const displayList = [...baseTrack, ...baseTrack];
 
   return (
-    <section className="relative z-10 max-w-7xl w-full mx-auto px-4 sm:px-6 my-6 space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#dec6a7] pb-2">
+    <section className="relative z-10 max-w-7xl w-full mx-auto px-2 sm:px-6 my-2.5 sm:my-6 space-y-1.5 sm:space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#dec6a7] pb-1.5 sm:pb-2">
         <div className="flex items-center gap-2">
-          <span className="w-7 h-7 rounded-full bg-[#881313] text-white flex items-center justify-center shadow-sm">
-            <CameraIcon className="w-4 h-4" />
+          <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-[#881313] text-white flex items-center justify-center shadow-sm">
+            <CameraIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
           <div>
-            <h3 className="font-extrabold text-sm sm:text-base text-[#2b1810] leading-none">
+            <h3 className="font-extrabold text-xs sm:text-base text-[#2b1810] leading-none">
               Ambiance &amp; Cadre de Notre Restaurant
             </h3>
-            <span className="text-[11px] text-[#6b4c3b]">
+            <span className="text-[10px] sm:text-[11px] text-[#6b4c3b]">
               Zagtouli, Route de Bobo — Ouagadougou
             </span>
           </div>
@@ -74,13 +92,13 @@ export default function RestaurantGallerySlider() {
       </div>
 
       {/* Défilement continu horizontal sans bouton Défilement actif ni texte Photo figée */}
-      <div className="overflow-hidden rounded-2xl border-2 border-[#dec6a7] bg-[#fffcf7] p-2.5 shadow-sm select-none">
-        <div className="flex items-center gap-3 overflow-x-auto scrollbar-none py-1 animate-marquee">
+      <div className="overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#dec6a7] bg-[#fffcf7] p-1.5 sm:p-2.5 shadow-sm select-none">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none py-0.5 sm:py-1 animate-marquee">
           {displayList.map((img, idx) => (
             <div
               key={`${img.id}-${idx}`}
               onClick={() => setSelectedImage(img)}
-              className="cursor-pointer w-48 sm:w-60 h-32 sm:h-40 rounded-xl overflow-hidden shrink-0 border-2 border-[#eab308]/60 hover:border-[#881313] shadow-sm relative group/card bg-stone-100 transition-all duration-300"
+              className="cursor-pointer w-36 h-24 sm:w-60 sm:h-40 rounded-lg sm:rounded-xl overflow-hidden shrink-0 border-2 border-[#eab308]/60 sm:hover:border-[#881313] shadow-sm relative group/card bg-stone-100 transition-all duration-300"
             >
               <img
                 src={img.image_url}

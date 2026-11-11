@@ -37,13 +37,13 @@ export default function NotreMenuPage() {
 
   return (
     <ClientShell>
-      <div className="bg-white/95 rounded-2xl border-2 border-[#e6d5c3] shadow-lg p-4 sm:p-6 space-y-4 relative overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3">
+      <div className="bg-white/95 rounded-2xl border-2 border-[#e6d5c3] shadow-lg p-2.5 sm:p-6 space-y-2.5 sm:space-y-4 relative overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-2 sm:pb-3">
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#2b1810]">
+            <h2 className="text-base sm:text-2xl font-extrabold text-[#2b1810]">
               Notre Carte — Tous nos Plats &amp; Spécialités
             </h2>
-            <p className="text-xs sm:text-sm text-stone-600">
+            <p className="text-[11px] sm:text-sm text-stone-600">
               Pour commander un plat, cliquez dessus ou appelez directement le{' '}
               {phoneList.map((num, idx) => (
                 <React.Fragment key={num}>
@@ -61,7 +61,7 @@ export default function NotreMenuPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Rechercher un plat, pizza, poulet..."
-            className="w-full sm:w-72 px-3.5 py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs sm:text-sm"
+            className="w-full sm:w-72 px-3 py-1.5 sm:py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs sm:text-sm"
           />
         </div>
 

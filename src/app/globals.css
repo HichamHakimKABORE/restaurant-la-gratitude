@@ -10,6 +10,13 @@ body {
   color: #2b1810;
 }
 
+a,
+button,
+[role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .font-script {
   font-family: 'Kaushan Script', Georgia, serif;
 }

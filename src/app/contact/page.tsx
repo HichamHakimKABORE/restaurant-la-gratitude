@@ -226,11 +226,11 @@ export default function ContactPage() {
               </div>
             )}
 
-            <div className="space-y-2 pt-1">
+            <div className="space-y-2 pt-0.5">
               <button
                 type="button"
                 onClick={handleStartLiveRoute}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2"
+                className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl bg-gradient-to-r from-[#facc15] to-[#eab308] sm:hover:brightness-110 active:scale-95 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow-lg transition flex items-center justify-center gap-2"
               >
                 <MapPinIcon className="w-4 h-4 shrink-0" />
                 <span>Tracer l’itinéraire depuis ma position sur la carte</span>
@@ -239,7 +239,7 @@ export default function ContactPage() {
               <button
                 type="button"
                 onClick={openNativeGpsNavigation}
-                className="w-full py-2.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-2"
+                className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl bg-[#16a34a] sm:hover:bg-[#15803d] active:scale-95 text-white font-extrabold text-xs shadow transition flex items-center justify-center gap-2"
               >
                 <CompassIcon className="w-4 h-4 shrink-0" />
                 <span>Lancer le guidage vocal Google Maps (Suivi en direct)</span>
@@ -248,8 +248,8 @@ export default function ContactPage() {
           </div>
 
           {/* Info Cards */}
-          <div className="space-y-3 text-xs sm:text-sm">
-            <div className="p-3.5 rounded-xl bg-[#fdf5e8] border border-[#dec6a7]">
+          <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+            <div className="p-2.5 sm:p-3.5 rounded-xl bg-[#fdf5e8] border border-[#dec6a7]">
               <strong className="flex items-center gap-1.5 text-[#881313] mb-0.5">
                 <MapPinIcon className="w-4 h-4 shrink-0" />
                 <span>Adresse &amp; Coordonnées GPS exactes :</span>

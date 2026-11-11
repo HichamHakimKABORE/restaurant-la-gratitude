@@ -37,34 +37,34 @@ export default function MenuDuJourPage() {
   return (
     <ClientShell>
       <div className="bg-white/95 rounded-2xl border-2 border-[#eab308] shadow-lg overflow-hidden relative">
-        <div className="bg-gradient-to-r from-[#7c1d12] via-[#991b1b] to-[#680e0e] text-white p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-[#eab308]">
+        <div className="bg-gradient-to-r from-[#7c1d12] via-[#991b1b] to-[#680e0e] text-white p-3.5 sm:p-6 flex flex-wrap items-center justify-between gap-2.5 sm:gap-4 border-b-2 border-[#eab308]">
           <div>
-            <span className="px-3 py-1 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-xs">
+            <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-[10px] sm:text-xs">
               Ardoise du Jour en Direct
             </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold mt-2">
+            <h2 className="text-lg sm:text-3xl font-extrabold mt-1.5 sm:mt-2">
               Menu du Jour — Préparé Aujourd’hui
             </h2>
-            <p className="text-xs sm:text-sm text-amber-100 mt-1">
+            <p className="text-[11px] sm:text-sm text-amber-100 mt-0.5 sm:mt-1">
               Classé par spécialités : d’abord nos plats de Riz, ensuite nos Soupes, puis nos accompagnements et grillades.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {phoneList.map(num => (
               <a
                 key={num}
                 href={toTelHref(num)}
-                className="px-4 py-2.5 rounded-xl bg-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow inline-flex items-center gap-2 whitespace-nowrap transition"
+                className="px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-xl bg-[#eab308] sm:hover:brightness-110 active:scale-95 text-[#2b1810] font-extrabold text-[11px] sm:text-sm shadow inline-flex items-center gap-1.5 sm:gap-2 whitespace-nowrap transition"
               >
-                <PhoneIcon className="w-4 h-4 shrink-0" />
+                <PhoneIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span>Commander au {num}</span>
               </a>
             ))}
           </div>
         </div>
 
-        <div className="p-5 sm:p-6 space-y-6">
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
           {loadingDishes ? (
             <div className="p-8 text-center text-xs sm:text-sm text-stone-500">
               Chargement du Menu du Jour en direct...

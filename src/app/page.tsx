@@ -505,9 +505,9 @@ export default function AccueilClientPage() {
             </Link>
           </div>
 
-          <div className="bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] p-4 space-y-2 shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#e6d5c3] pb-2">
-              <h4 className="font-extrabold text-sm text-[#2b1810]">
+          <div className="bg-[#fdf5e8] rounded-2xl border-2 border-[#dec6a7] p-3 sm:p-4 space-y-1.5 sm:space-y-2 shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#e6d5c3] pb-1.5 sm:pb-2">
+              <h4 className="font-extrabold text-xs sm:text-sm text-[#2b1810]">
                 Horaires
               </h4>
               <span
@@ -528,31 +528,31 @@ export default function AccueilClientPage() {
       </section>
 
       {/* BOTTOM CTA ROW */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 pt-1">
+      <section className="grid grid-cols-2 lg:grid-cols-4 gap-1.5 sm:gap-2.5 pt-0.5">
         <a
           href={`https://wa.me/${whatsappNum}`}
           target="_blank"
           rel="noopener,noreferrer"
-          className="bg-[#f3e5d0] hover:bg-[#ebd5b3] border-2 border-[#d6be9c] rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex flex-col items-center justify-center text-center gap-1.5 shadow-sm transition"
+          className="bg-[#f3e5d0] sm:hover:bg-[#ebd5b3] active:scale-95 border border-[#d6be9c] rounded-xl p-1.5 sm:p-2.5 flex flex-col items-center justify-center text-center gap-1 shadow-sm transition"
         >
-          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow shrink-0">
-            <WhatsAppIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow shrink-0">
+            <WhatsAppIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
-          <span className="font-extrabold text-[11px] sm:text-sm text-[#2b1810] leading-tight">
+          <span className="font-extrabold text-[10px] sm:text-xs text-[#2b1810] leading-tight">
             Contacter sur WhatsApp
           </span>
         </a>
 
-        <div className="bg-gradient-to-b from-[#8b261d] to-[#681811] text-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex flex-col items-center text-center justify-center gap-1.5 shadow-md">
-          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center shrink-0">
-            <PhoneIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+        <div className="bg-gradient-to-b from-[#8b261d] to-[#681811] text-white rounded-xl p-1.5 sm:p-2.5 flex flex-col items-center text-center justify-center gap-1 shadow-sm">
+          <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center shrink-0">
+            <PhoneIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </span>
           <div className="flex flex-col gap-0.5">
             {phoneList.map(num => (
               <a
                 key={num}
                 href={toTelHref(num)}
-                className="font-extrabold text-[10px] sm:text-xs hover:text-[#facc15] underline-offset-2 hover:underline leading-tight transition"
+                className="font-extrabold text-[10px] sm:text-xs sm:hover:text-[#facc15] underline-offset-2 hover:underline leading-tight transition"
               >
                 Appeler le {num}
               </a>
@@ -562,23 +562,24 @@ export default function AccueilClientPage() {
 
         <Link
           href="/menu"
-          className="bg-gradient-to-b from-[#7a1212] to-[#540b0b] hover:brightness-110 text-white rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex flex-col items-center text-center justify-center gap-1.5 shadow-md transition"
+          prefetch={true}
+          className="bg-gradient-to-b from-[#7a1212] to-[#540b0b] sm:hover:brightness-110 active:scale-95 text-white rounded-xl p-1.5 sm:p-2.5 flex flex-col items-center text-center justify-center gap-1 shadow-sm transition"
         >
-          <span className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center shrink-0">
-            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center shrink-0">
+            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-3.866 0-7 2.686-7 6h14c0-3.314-3.134-6-7-6zm-9 8h18M12 5v3" />
             </svg>
           </span>
-          <span className="font-extrabold text-[11px] sm:text-sm leading-tight">
+          <span className="font-extrabold text-[10px] sm:text-xs leading-tight">
             Découvrir nos Plats sur Commande
           </span>
         </Link>
 
-        <div className="bg-[#fdf5e8] border-2 border-[#dec6a7] rounded-xl sm:rounded-2xl p-2.5 sm:p-3.5 flex flex-col items-center justify-center text-center">
-          <p className="font-script text-lg sm:text-xl text-[#3b1c0e] leading-tight">
+        <div className="bg-[#fdf5e8] border border-[#dec6a7] rounded-xl p-1.5 sm:p-2.5 flex flex-col items-center justify-center text-center">
+          <p className="font-script text-sm sm:text-lg text-[#3b1c0e] leading-tight">
             Merci de votre confiance !
           </p>
-          <div className="w-24 sm:w-28 h-1 rounded-full bg-gradient-to-r from-transparent via-[#eab308] to-transparent mt-1" />
+          <div className="w-16 sm:w-24 h-0.5 rounded-full bg-gradient-to-r from-transparent via-[#eab308] to-transparent mt-1" />
         </div>
       </section>
     </ClientShell>

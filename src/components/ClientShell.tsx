@@ -23,7 +23,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center overflow-hidden select-none print:hidden"
       >
         <div className="relative flex items-center justify-center">
-          <div className="w-[300px] h-[300px] sm:w-[480px] sm:h-[480px] lg:w-[620px] lg:h-[620px] rounded-full border-4 border-[#d99b26]/60 p-2 shadow-2xl">
+          <div className="w-[220px] h-[220px] sm:w-[480px] sm:h-[480px] lg:w-[620px] lg:h-[620px] rounded-full border-4 border-[#d99b26]/60 p-2 shadow-2xl">
             <img
               src="/images/logo_gratitude.jpg"
               alt=""
@@ -125,7 +125,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </header>
 
       {/* 2. CONTENU DE LA PAGE */}
-      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 pt-[64px] sm:pt-[74px] print:pt-4 space-y-5">
+      <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto p-2 sm:p-6 pt-[60px] sm:pt-[74px] print:pt-4 space-y-3 sm:space-y-5">
         {children}
       </main>
 
@@ -135,48 +135,49 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </div>
 
       {/* 3. FOOTER PROMISE BAR */}
-      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-4 print:hidden">
-        <div className="max-w-7xl mx-auto px-3 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-2.5 text-[11px] sm:text-xs">
-          <div className="flex flex-wrap items-center gap-3 sm:gap-6">
-            <div className="flex items-center gap-1.5 font-bold">
-              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
-                <ChefHatIcon className="w-3 h-3" />
+      <footer className="relative z-10 bg-gradient-to-r from-[#431407] via-[#5c190b] to-[#431407] text-white border-t-2 sm:border-t-4 border-[#eab308] mt-2 sm:mt-4 print:hidden">
+        <div className="max-w-7xl mx-auto px-2.5 sm:px-8 py-2 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-xs">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 sm:gap-6">
+            <div className="flex items-center gap-1 font-bold">
+              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <ChefHatIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </span>
               <span>Cuisine de qualité</span>
             </div>
-            <div className="flex items-center gap-1.5 font-bold">
-              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
-                <StarIcon className="w-3 h-3" />
+            <div className="flex items-center gap-1 font-bold">
+              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <StarIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </span>
               <span>Service rapide</span>
             </div>
-            <div className="flex items-center gap-1.5 font-bold">
-              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
-                <ThumbUpIcon className="w-3 h-3" />
+            <div className="flex items-center gap-1 font-bold">
+              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <ThumbUpIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </span>
               <span>Des prix abordables</span>
             </div>
-            <div className="flex items-center gap-1.5 font-bold">
-              <span className="w-5 h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
-                <HeartIcon className="w-3 h-3" />
+            <div className="flex items-center gap-1 font-bold">
+              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#eab308] text-[#2b1810] flex items-center justify-center shrink-0">
+                <HeartIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
               </span>
               <span>Votre satisfaction, notre priorité</span>
             </div>
           </div>
 
-          <div className="px-3 py-1 rounded-full bg-gradient-to-r from-[#facc15] via-[#eab308] to-[#ca8a04] text-[#2b1810] font-script text-xs sm:text-sm shadow-sm">
+          <div className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-gradient-to-r from-[#facc15] via-[#eab308] to-[#ca8a04] text-[#2b1810] font-script text-[11px] sm:text-sm shadow-sm">
             Restaurant La Gratitude... Toujours avec vous !
           </div>
         </div>
       </footer>
 
       {/* 4. BARRE DE NAVIGATION FIXE EN BAS (Seule barre de navigation : Accueil, La Carte, Menu Jour, Contact & GPS, Appeler) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] text-white border-t-2 border-[#eab308] px-1.5 sm:px-6 py-1.5 shadow-2xl print:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-gradient-to-r from-[#680e0e] via-[#881313] to-[#5a0b0b] text-white border-t-2 border-[#eab308] px-1.5 sm:px-6 py-1 sm:py-1.5 shadow-2xl print:hidden touch-manipulation">
         <div className="max-w-4xl mx-auto grid grid-cols-5 gap-1 sm:gap-2">
           <Link
             href="/"
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
-              pathname === '/' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            prefetch={true}
+            className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
+              pathname === '/' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -187,8 +188,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
           <Link
             href="/menu"
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
-              pathname === '/menu' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            prefetch={true}
+            className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
+              pathname === '/menu' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -199,8 +201,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
           <Link
             href="/menu-du-jour"
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
-              pathname === '/menu-du-jour' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            prefetch={true}
+            className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
+              pathname === '/menu-du-jour' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -211,8 +214,9 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
           <Link
             href="/contact"
-            className={`flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap ${
-              pathname === '/contact' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 hover:bg-white/10'
+            prefetch={true}
+            className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
+              pathname === '/contact' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <CompassIcon className="w-4 h-4 shrink-0" />
@@ -225,7 +229,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
               onClick={() => setCallMenuOpen(prev => !prev)}
               aria-expanded={callMenuOpen}
               aria-haspopup="dialog"
-              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
+              className="touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] sm:hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition active:scale-95"
             >
               <PhoneIcon className="w-4 h-4 shrink-0" />
               <span>Appeler</span>
@@ -233,7 +237,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
           ) : (
             <a
               href={toTelHref(phoneList[0])}
-              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
+              className="touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] sm:hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition active:scale-95"
             >
               <PhoneIcon className="w-4 h-4 shrink-0" />
               <span>Appeler</span>
