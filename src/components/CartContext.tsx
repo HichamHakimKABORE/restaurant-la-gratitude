@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { INITIAL_DISHES, INITIAL_SETTINGS, type Dish, type RestaurantSettings } from '@/lib/db';
 import { CheckIcon, CloseIcon, PhoneIcon, WhatsAppIcon } from './Icons';
 import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_PHONE_TEL, RESTAURANT_WHATSAPP } from '@/lib/constants';
@@ -53,7 +53,7 @@ export function formatCFA(price: number) {
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [dishes, setDishes] = useState<Dish[]>(INITIAL_DISHES);
+  const [dishes, setDishesState] = useState<Dish[]>(INITIAL_DISHES);
   const [loadingDishes, setLoadingDishes] = useState<boolean>(true);
   const [settings, setSettings] = useState<RestaurantSettings>(INITIAL_SETTINGS);
   const [toast, setToast] = useState<string | null>(null);
@@ -61,21 +61,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [selectedOpt, setSelectedOpt] = useState<string>('');
   const [modalQty, setModalQty] = useState<number>(1);
   const [selectionList, setSelectionList] = useState<CartItem[]>([]);
+  const lastLocalWriteRef = useRef<number>(0);
+
+  // Toute modification locale (Admin) marque l'heure d'écriture pour qu'un ancien
+  // rafraîchissement automatique en cours n'écrase pas les cases cochées à l'instant.
+  const setDishes: React.Dispatch<React.SetStateAction<Dish[]>> = value => {
+    lastLocalWriteRef.current = Date.now();
+    setDishesState(value);
+  };
+
+  // Cache léger : les photos Base64 (très lourdes) ne sont pas stockées dans sessionStorage
+  // pour éviter de saturer la mémoire du navigateur (limite d'environ 5 Mo).
+  useEffect(() => {
+    try {
+      const lightCache = dishes.map(d => ({
+        ...d,
+        image_url: d.image_url?.startsWith('data:') ? '/images/dishes_grid_1.jpg' : d.image_url,
+        image_quadrant: d.image_url?.startsWith('data:') ? 'quad-tl' : d.image_quadrant
+      }));
+      sessionStorage.setItem('gratitude_dishes_cache_v3', JSON.stringify(lightCache));
+    } catch {}
+  }, [dishes]);
 
   const refreshDishes = async () => {
+    const startedAt = Date.now();
     try {
       const res = await fetch('/api/dishes', { cache: 'no-store' });
       const data = await res.json();
+      // Ignore une réponse partie avant (ou juste autour) d'une modification Admin locale
+      if (lastLocalWriteRef.current >= startedAt - 3000) return;
       if (Array.isArray(data.dishes) && data.dishes.length > 0) {
-        setDishes(data.dishes);
-        // Stockage léger dans sessionStorage (on ne duplique pas les grosses images base64 pour éviter QuotaExceededError)
-        try {
-          const lightCache = data.dishes.map((d: Dish) => ({
-            ...d,
-            image_url: d.image_url?.startsWith('data:') ? d.image_url : d.image_url
-          }));
-          sessionStorage.setItem('gratitude_dishes_cache_v3', JSON.stringify(lightCache));
-        } catch {}
+        setDishesState(data.dishes);
       }
     } catch {} finally {
       setLoadingDishes(false);
@@ -91,7 +107,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem('gratitude_dishes_cache');
       const cachedDishes = sessionStorage.getItem('gratitude_dishes_cache_v3');
       if (cachedDishes) {
-        setDishes(JSON.parse(cachedDishes));
+        setDishesState(JSON.parse(cachedDishes));
         setLoadingDishes(false);
       }
     } catch {}

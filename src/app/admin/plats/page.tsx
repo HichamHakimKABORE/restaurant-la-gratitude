@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CameraIcon, CloseIcon, PencilIcon } from '@/components/Icons';
-import type { Dish } from '@/lib/db';
+import { matchesDishSearch, type Dish } from '@/lib/db';
 
 function compressImageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -63,6 +63,15 @@ export default function AdminPlatsPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!addModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setAddModalOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [addModalOpen]);
 
   const handlePhotoUploadForDish = async (dish: Dish, file?: File) => {
     if (!file) return;
@@ -201,7 +210,7 @@ export default function AdminPlatsPage() {
   };
 
   const filtered = dishes.filter(d => {
-    if (search.trim() && !d.name.toLowerCase().includes(search.toLowerCase())) return false;
+    if (search.trim() && !matchesDishSearch(d, search)) return false;
     if (filter === 'Tous') return true;
     if (filter === 'Menu du Jour') return d.availability_mode === 'daily';
     if (filter === 'Sur Commande') return d.availability_mode !== 'daily';
@@ -314,11 +323,21 @@ export default function AdminPlatsPage() {
             <div className="flex items-center gap-3">
               {/* Aperçu de la nouvelle photo ou de la photo actuelle du plat */}
               {newPhotoData ? (
-                <img
-                  src={newPhotoData}
-                  alt="Nouvel aperçu"
-                  className="w-16 h-16 rounded-xl object-cover border-2 border-[#16a34a] shrink-0"
-                />
+                <div className="relative shrink-0">
+                  <img
+                    src={newPhotoData}
+                    alt="Nouvel aperçu"
+                    className="w-16 h-16 rounded-xl object-cover border-2 border-[#16a34a]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setNewPhotoData('')}
+                    className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-rose-600 hover:bg-rose-700 text-white flex items-center justify-center shadow"
+                    title="Retirer la nouvelle photo"
+                  >
+                    <CloseIcon className="w-3 h-3" />
+                  </button>
+                </div>
               ) : editingDish ? (
                 <div className="w-16 h-16 rounded-xl overflow-hidden border border-amber-400 shrink-0">
                   <div

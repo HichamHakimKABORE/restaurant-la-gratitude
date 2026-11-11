@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS dishes (
   is_available_today BOOLEAN NOT NULL DEFAULT true,
   stock_status VARCHAR(30) NOT NULL DEFAULT 'available', -- 'available' | 'low' | 'soldout'
   options_json JSONB NOT NULL DEFAULT '[]'::jsonb,       -- Ex: ["Flambé", "Rabilé", "Sauté"]
-  image_url VARCHAR(255) NOT NULL,
+  image_url TEXT NOT NULL,
   image_quadrant VARCHAR(20) NOT NULL DEFAULT 'quad-tl',  -- 'quad-tl' | 'quad-tr' | 'quad-bl' | 'quad-br' | 'full'
   description TEXT,
   display_order INTEGER NOT NULL DEFAULT 100,

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { PhoneIcon } from '@/components/Icons';
-import { sortDailyMenuDishes } from '@/lib/db';
+import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Toute la Carte', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -45,12 +45,7 @@ export default function NotreMenuPage() {
     );
   })();
 
-  const visibleDishes = baseList.filter(d => {
-    if (search.trim() !== '' && !d.name.toLowerCase().includes(search.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
+  const visibleDishes = baseList.filter(d => matchesDishSearch(d, search));
 
   return (
     <ClientShell>

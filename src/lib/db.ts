@@ -215,6 +215,34 @@ export function sortDailyMenuDishes<T extends { name: string; category?: string;
   });
 }
 
+function stripAccents(str: string): string {
+  return (str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+/**
+ * Recherche insensible aux accents (ex: "to" trouve "Tô", "rabile" trouve "Rabilé")
+ * dans le nom, la catégorie, la description et les options d'un plat.
+ */
+export function matchesDishSearch(
+  dish: { name: string; category?: string; description?: string; options_json?: string[] },
+  query: string
+): boolean {
+  const q = stripAccents(query.trim());
+  if (!q) return true;
+  const haystack = stripAccents(
+    [
+      dish.name,
+      dish.category || '',
+      dish.description || '',
+      Array.isArray(dish.options_json) ? dish.options_json.join(' ') : ''
+    ].join(' ')
+  );
+  return haystack.includes(q);
+}
+
 declare global {
   // eslint-disable-next-line no-var
   var _gratitudeDishes: Dish[] | undefined;
@@ -368,6 +396,7 @@ export async function ensureNeonSchema() {
       // ---------------------------------------------------------------------
       await sql`ALTER TABLE dishes ADD COLUMN IF NOT EXISTS stock_status VARCHAR(30) NOT NULL DEFAULT 'available'`;
       await sql`ALTER TABLE dishes ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '[]'::jsonb`;
+      await sql`ALTER TABLE dishes ALTER COLUMN image_url TYPE TEXT`;
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key TEXT`;
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS track_token TEXT`;
       await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_ref TEXT`;

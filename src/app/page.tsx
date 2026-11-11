@@ -5,7 +5,7 @@ import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
-import { sortDailyMenuDishes } from '@/lib/db';
+import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -85,8 +85,7 @@ export default function AccueilClientPage() {
       );
     }
     if (homeSearch.trim() !== '') {
-      const q = homeSearch.trim().toLowerCase();
-      return list.filter(d => d.name.toLowerCase().includes(q));
+      return list.filter(d => matchesDishSearch(d, homeSearch));
     }
     return list;
   })();
