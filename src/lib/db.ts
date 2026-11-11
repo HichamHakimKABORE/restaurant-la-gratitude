@@ -551,6 +551,19 @@ export async function ensureNeonSchema() {
       `;
       await sql`CREATE INDEX IF NOT EXISTS admin_login_failures_created_idx ON admin_login_failures(created_at)`;
 
+      // Journal d'audit des actions administrateur (créations, modifications, suppressions)
+      await sql`
+        CREATE TABLE IF NOT EXISTS admin_audit_logs (
+          id SERIAL PRIMARY KEY,
+          action VARCHAR(40) NOT NULL,
+          target_id VARCHAR(60),
+          details TEXT,
+          ip VARCHAR(80),
+          created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `;
+      await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_action_idx ON admin_audit_logs(action, created_at DESC)`;
+
       // Initialisation unique de la galerie photos (ne réinsère jamais les photos si l'admin les supprime ensuite)
       const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized FROM restaurant_settings WHERE id = 1`;
       const isGalleryInit = Boolean(settingsInitRows[0]?.gallery_initialized);
@@ -603,4 +616,23 @@ export async function ensureNeonSchema() {
   })();
 
   return global._gratitudeSchemaPromise;
+}
+
+export async function recordAdminAuditLog(
+  action: string,
+  targetId?: string | number | null,
+  details?: string | null,
+  ip?: string | null
+): Promise<void> {
+  try {
+    const sql = await ensureNeonSchema();
+    if (sql) {
+      await sql`
+        INSERT INTO admin_audit_logs (action, target_id, details, ip)
+        VALUES (${action}, ${targetId ? String(targetId) : null}, ${details || null}, ${ip || null})
+      `;
+    }
+  } catch (err) {
+    console.warn('[AUDIT] Impossible d’enregistrer le log :', err);
+  }
 }

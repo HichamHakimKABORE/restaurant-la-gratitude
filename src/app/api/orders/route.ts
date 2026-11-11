@@ -10,6 +10,7 @@ import {
   type OrderItem
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/auth-server';
+import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import {
   normalizeOrderStatus,
@@ -460,6 +461,9 @@ async function readAllOrders(sql: unknown): Promise<Order[]> {
 }
 
 export async function PATCH(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return jsonError('Origine non autorisée (CSRF).', 403);
+  }
   if (!(await isAdminRequest(request))) {
     return jsonError('Non autorisé.', 401);
   }

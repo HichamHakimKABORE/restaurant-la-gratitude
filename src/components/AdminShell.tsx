@@ -19,6 +19,7 @@ export default function AdminShell({
   const router = useRouter();
   const { settings } = useCart();
   const [dbConnected, setDbConnected] = useState(true);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
 
   // Isolation stricte de l'espace Admin : vérification de la session authentifiée
   useEffect(() => {
@@ -26,12 +27,17 @@ export default function AdminShell({
       .then(r => (r.ok ? r.json() : { authenticated: false }))
       .then(d => {
         if (d.authenticated === false) {
+          setAuthorized(false);
           router.push('/admin/login');
         } else {
+          setAuthorized(true);
           setDbConnected(d.database_connected !== false);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setAuthorized(false);
+        router.push('/admin/login');
+      });
   }, [router]);
 
   const handleLogout = async () => {
@@ -88,6 +94,21 @@ export default function AdminShell({
       icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'
     }
   ];
+
+  if (authorized !== true) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f3e7d7] text-[#2b1810] p-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-[#881313] p-8 shadow-xl max-w-sm w-full text-center space-y-3">
+          <div className="font-extrabold text-sm text-[#881313]">
+            Contrôle des autorisations...
+          </div>
+          <p className="text-xs text-stone-600">
+            Vérification de la session auprès du serveur sécurisé.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f3e7d7] text-[#2b1810] relative overflow-x-hidden pb-20 lg:pb-6">
@@ -304,7 +325,22 @@ export default function AdminShell({
             navLinks[4]  // Galerie
           ].map(item => {
             const isActive = pathname === item.href;
-            return (
+            if (authorized !== true) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f3e7d7] text-[#2b1810] p-4">
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-[#881313] p-8 shadow-xl max-w-sm w-full text-center space-y-3">
+          <div className="font-extrabold text-sm text-[#881313]">
+            Contrôle des autorisations...
+          </div>
+          <p className="text-xs text-stone-600">
+            Vérification de la session auprès du serveur sécurisé.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
               <Link
                 key={item.href}
                 href={item.href}

@@ -88,6 +88,16 @@ CREATE TABLE IF NOT EXISTS admin_login_failures (
 );
 CREATE INDEX IF NOT EXISTS admin_login_failures_ip_idx ON admin_login_failures(ip, created_at DESC);
 
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id SERIAL PRIMARY KEY,
+  action VARCHAR(40) NOT NULL,
+  target_id VARCHAR(60),
+  details TEXT,
+  ip VARCHAR(80),
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS admin_audit_logs_action_idx ON admin_audit_logs(action, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS restaurant_gallery (
   id SERIAL PRIMARY KEY,
   title VARCHAR(180) NOT NULL DEFAULT 'Photo du Restaurant',

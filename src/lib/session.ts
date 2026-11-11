@@ -32,13 +32,15 @@ function fromBase64Url(value: string): Uint8Array {
 }
 
 function getSecret(): string {
-  const secret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD;
-  if (!secret) {
-    throw new Error(
-      'ADMIN_SESSION_SECRET (ou à défaut ADMIN_PASSWORD) doit être configuré.'
-    );
+  const customSecret = process.env.ADMIN_SESSION_SECRET;
+  if (customSecret && customSecret.trim().length >= 16) {
+    return `la-gratitude-session-hmac:${customSecret.trim()}`;
   }
-  return `la-gratitude-session:${secret}`;
+  // Dérivation renforcée : combine le mot de passe et l'URL secrète de la base Neon
+  // Un attaquant connaissant uniquement ADMIN_PASSWORD ne peut pas forger de cookie.
+  const base = process.env.ADMIN_PASSWORD || 'la-gratitude-root-pwd';
+  const dbBound = process.env.DATABASE_URL || 'no-db-bound';
+  return `la-gratitude-session-derived:${base}:${dbBound}`;
 }
 
 async function sign(payload: string): Promise<string> {

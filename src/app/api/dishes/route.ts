@@ -6,10 +6,13 @@ import {
   invalidateMenuHistoryCache,
   getLogicalMenuDate,
   sortDailyMenuDishes,
+  recordAdminAuditLog,
   Dish
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/auth-server';
 import { validateImageSource } from '@/lib/validation';
+import { isAllowedOrigin } from '@/lib/csrf';
+import { getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -95,6 +98,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
@@ -180,6 +186,7 @@ export async function PATCH(request: Request) {
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
       await autoSyncTodayMenuReport(sql, rows, todayStr);
+      await recordAdminAuditLog('dish_updated', id, name ? `Mise à jour: ${name}` : 'Mise à jour plat', getClientIp(request));
 
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {
@@ -207,6 +214,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
@@ -277,6 +287,7 @@ export async function POST(request: Request) {
       if (mode === 'daily') {
         await autoSyncTodayMenuReport(sql, rows, todayStr);
       }
+      await recordAdminAuditLog('dish_created', slug, `Création plat: ${name} (${Number(price)} FCFA)`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
     } else {
       invalidateDishesCache();
@@ -306,6 +317,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
@@ -318,6 +332,7 @@ export async function DELETE(request: Request) {
     const todayStr = getLogicalMenuDate();
     if (sql) {
       await sql`DELETE FROM dishes WHERE id = ${id}`;
+      await recordAdminAuditLog('dish_deleted', id, `Suppression plat ID ${id}`, getClientIp(request));
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now() };
       await autoSyncTodayMenuReport(sql, rows, todayStr);

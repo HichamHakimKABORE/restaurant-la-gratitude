@@ -3,10 +3,13 @@ import {
   ensureNeonSchema,
   getMemoryGallery,
   invalidateGalleryCache,
+  recordAdminAuditLog,
   GalleryImage
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/auth-server';
 import { validateImageSource } from '@/lib/validation';
+import { isAllowedOrigin } from '@/lib/csrf';
+import { getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -47,6 +50,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
@@ -81,6 +87,7 @@ export async function POST(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
+      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${title || 'Sans titre'}`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();
@@ -101,6 +108,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
@@ -132,6 +142,7 @@ export async function PATCH(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
+      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${title || 'Sans titre'}`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();
@@ -149,6 +160,9 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
@@ -162,12 +176,14 @@ export async function DELETE(request: Request) {
 
     if (sql) {
       await sql`DELETE FROM restaurant_gallery WHERE id = ${id}`;
+      await recordAdminAuditLog('gallery_deleted', id, `Suppression photo ID ${id}`, getClientIp(request));
       const rows = (await sql`
         SELECT id, title, image_url, display_order, created_at
         FROM restaurant_gallery
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
+      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${title || 'Sans titre'}`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();

@@ -3,6 +3,7 @@ import {
   ensureNeonSchema,
   getMemorySettings,
   invalidateSettingsCache,
+  recordAdminAuditLog,
   type RestaurantSettings
 } from '@/lib/db';
 import {
@@ -12,6 +13,8 @@ import {
   setAdminSession,
   MIN_ADMIN_PASSWORD_LENGTH
 } from '@/lib/auth-server';
+import { isAllowedOrigin } from '@/lib/csrf';
+import { getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -54,6 +57,9 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine de requête non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
@@ -146,6 +152,14 @@ export async function PATCH(request: Request) {
       if (rows[0]) {
         global._settingsCache = { data: rows[0], ts: Date.now() };
       }
+      const clientIp = getClientIp(request);
+      await recordAdminAuditLog(
+        'settings_updated',
+        '1',
+        wantsCredentialsChange ? 'Paramètres et identifiants modifiés' : 'Paramètres généraux modifiés',
+        clientIp
+      );
+
       return NextResponse.json({ ok: true, source: 'neon', settings: rows[0] });
     } else {
       const mem = getMemorySettings();

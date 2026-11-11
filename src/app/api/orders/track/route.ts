@@ -9,6 +9,28 @@ export const revalidate = 0;
 
 const TOKEN_PATTERN = /^[a-f0-9]{32,64}$/i;
 
+function maskPhone(phone: string): string {
+  const p = phone.trim();
+  if (p.length < 8) return '••••';
+  return p.slice(0, 5) + ' •• •• ' + p.slice(-2);
+}
+
+function sanitizeTrackingOrder(order: any) {
+  return {
+    id: order.id,
+    order_code: order.order_code,
+    customer_name: order.customer_name,
+    customer_phone: maskPhone(order.customer_phone || ''),
+    order_type: order.order_type,
+    order_detail: order.order_detail,
+    payment_method: order.payment_method,
+    items_json: order.items_json,
+    total_cfa: order.total_cfa,
+    status: order.status,
+    created_at: order.created_at
+  };
+}
+
 /**
  * Suivi public d'une commande.
  * Le client ne peut lire QUE les commandes dont il possède le jeton secret
@@ -59,8 +81,8 @@ export async function GET(request: Request) {
     if (sql) {
       const rows = (await sql`
         SELECT id, order_code, customer_name, customer_phone, order_type,
-               order_detail, payment_method, payment_ref, items_json, total_cfa,
-               status, notes, created_at
+               order_detail, payment_method, items_json, total_cfa,
+               status, created_at
         FROM orders
         WHERE track_token IN (
           SELECT value FROM jsonb_array_elements_text(${JSON.stringify(rawTokens)}::jsonb)
@@ -69,14 +91,14 @@ export async function GET(request: Request) {
       `) as Order[];
 
       return NextResponse.json(
-        { orders: rows, restaurant },
+        { orders: rows.map(sanitizeTrackingOrder), restaurant },
         { headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
-    const memoryOrders = getMemoryOrders().filter(
-      order => order.track_token && rawTokens.includes(order.track_token)
-    );
+    const memoryOrders = getMemoryOrders()
+      .filter(order => order.track_token && rawTokens.includes(order.track_token))
+      .map(sanitizeTrackingOrder);
 
     return NextResponse.json(
       { orders: memoryOrders, restaurant },

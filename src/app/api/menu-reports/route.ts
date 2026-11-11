@@ -7,14 +7,24 @@ import {
   invalidateMenuHistoryCache,
   getLogicalMenuDate,
   sortDailyMenuDishes,
+  recordAdminAuditLog,
   type DailyMenuRecord,
   type Dish
 } from '@/lib/db';
 import { isAdminRequest } from '@/lib/auth-server';
+import { isAllowedOrigin } from '@/lib/csrf';
+import { getClientIp } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const revalidate = 0;
+
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+function isValidDateStr(val: unknown): val is string {
+  if (typeof val !== 'string' || !DATE_REGEX.test(val)) return false;
+  const d = new Date(val);
+  return !isNaN(d.getTime());
+}
 
 export async function GET(request: Request) {
   if (!(await isAdminRequest(request))) {
@@ -24,6 +34,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
+
+    if ((startDate && !isValidDateStr(startDate)) || (endDate && !isValidDateStr(endDate))) {
+      return NextResponse.json(
+        { error: 'Format de date invalide (attendu: AAAA-MM-JJ).' },
+        { status: 400 }
+      );
+    }
 
     const sql = await ensureNeonSchema();
     const todayStr = getLogicalMenuDate();
@@ -127,6 +144,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
@@ -134,6 +154,9 @@ export async function POST(request: Request) {
     const body = await request.json();
     const todayStr = getLogicalMenuDate();
     const menuDate = body.menu_date || todayStr;
+    if (!isValidDateStr(menuDate)) {
+      return NextResponse.json({ error: 'Date invalide.' }, { status: 400 });
+    }
     const dishesList = Array.isArray(body.dishes) ? body.dishes : [];
     const notes = body.notes || 'Enregistré depuis l’espace Admin';
     const totalDishes = dishesList.length;
@@ -184,14 +207,17 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isAllowedOrigin(request)) {
+    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+  }
   if (!(await isAdminRequest(request))) {
     return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
   }
   try {
     const { searchParams } = new URL(request.url);
     const menuDate = searchParams.get('date');
-    if (!menuDate) {
-      return NextResponse.json({ error: 'Date requise' }, { status: 400 });
+    if (!menuDate || !isValidDateStr(menuDate)) {
+      return NextResponse.json({ error: 'Date invalide (AAAA-MM-JJ requis).' }, { status: 400 });
     }
 
     const sql = await ensureNeonSchema();
@@ -199,6 +225,7 @@ export async function DELETE(request: Request) {
 
     if (sql) {
       await sql`DELETE FROM daily_menu_history WHERE menu_date = ${menuDate}::date`;
+      await recordAdminAuditLog('menu_report_deleted', menuDate, `Suppression rapport date ${menuDate}`, getClientIp(request));
       return NextResponse.json({ ok: true });
     } else {
       const history = getMemoryMenuHistory();
