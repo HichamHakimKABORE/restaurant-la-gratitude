@@ -12,7 +12,8 @@ import {
   createSessionToken,
   readSessionCookie,
   readSessionPayload,
-  timingSafeEqual
+  timingSafeEqual,
+  timingSafeEqualDigest
 } from './session';
 
 declare global {
@@ -149,7 +150,7 @@ async function getCustomCredentials(): Promise<{ email: string; hash: string } |
   return email && hash ? { email, hash } : null;
 }
 
-function verifyEnvCredentials(inputEmail: string, password: string): boolean {
+async function verifyEnvCredentials(inputEmail: string, password: string): Promise<boolean> {
   const expectedEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
   const expectedPassword = process.env.ADMIN_PASSWORD || '';
 
@@ -160,8 +161,10 @@ function verifyEnvCredentials(inputEmail: string, password: string): boolean {
     return false;
   }
 
-  const emailOk = timingSafeEqual(inputEmail, expectedEmail);
-  const passwordOk = timingSafeEqual(password, expectedPassword);
+  const [emailOk, passwordOk] = await Promise.all([
+    timingSafeEqualDigest(inputEmail, expectedEmail),
+    timingSafeEqualDigest(password, expectedPassword)
+  ]);
   return emailOk && passwordOk;
 }
 
@@ -190,7 +193,7 @@ export async function verifyAdminCredentials(
   }
 
   if (custom) {
-    const emailOk = timingSafeEqual(inputEmail, custom.email);
+    const emailOk = await timingSafeEqualDigest(inputEmail, custom.email);
     const check = await verifyPasswordHash(password, custom.hash);
     if (emailOk && check.ok) {
       if (check.legacy) {
@@ -209,7 +212,7 @@ export async function verifyAdminCredentials(
     if (process.env.ADMIN_FORCE_ENV_LOGIN !== 'true') return false;
   }
 
-  return verifyEnvCredentials(inputEmail, password);
+  return await verifyEnvCredentials(inputEmail, password);
 }
 
 /** Vérifie le mot de passe ACTUEL (exigé avant tout changement d'accès Admin). */
@@ -225,7 +228,7 @@ export async function verifyCurrentAdminPassword(password: unknown): Promise<boo
     return (await verifyPasswordHash(password, custom.hash)).ok;
   }
   const expected = process.env.ADMIN_PASSWORD || '';
-  return Boolean(expected) && timingSafeEqual(password, expected);
+  return Boolean(expected) && (await timingSafeEqualDigest(password, expected));
 }
 
 /**

@@ -6,12 +6,12 @@ import { usePathname } from 'next/navigation';
 import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon, CompassIcon } from './Icons';
 import RestaurantGallerySlider from './RestaurantGallerySlider';
 import { useCart } from './CartContext';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { settings } = useCart();
-  const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   return (
@@ -73,10 +73,15 @@ export default function ClientShell({ children }: { children: React.ReactNode })
                   Zagtouli, route de Bobo
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 font-extrabold text-[#2b1810]">
-                <a href={`tel:${phoneTel}`} className="hover:text-[#991b1b] text-[11px] sm:text-xs whitespace-nowrap">
-                  {phoneDisplay}
-                </a>
+              <div className="flex flex-wrap items-center gap-1.5 font-extrabold text-[#2b1810]">
+                {phoneList.map((num, idx) => (
+                  <React.Fragment key={num}>
+                    {idx > 0 && <span className="text-stone-400 text-[10px]">/</span>}
+                    <a href={toTelHref(num)} className="hover:text-[#991b1b] text-[11px] sm:text-xs whitespace-nowrap">
+                      {num}
+                    </a>
+                  </React.Fragment>
+                ))}
                 <a
                   href={`https://wa.me/${whatsappNum}`}
                   target="_blank"
@@ -209,7 +214,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
           </Link>
 
           <a
-            href={`tel:${phoneTel}`}
+            href={toTelHref(phoneList[0])}
             className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
           >
             <PhoneIcon className="w-4 h-4 shrink-0" />

@@ -1,7 +1,7 @@
 /**
  * Protection contre les attaques CSRF (Cross-Site Request Forgery).
  * Vérifie que toute requête de modification (POST, PATCH, DELETE, PUT)
- * provient strictement du même hôte que le site.
+ * provient strictement du même hôte et du même protocole que le serveur.
  */
 export function isAllowedOrigin(request: Request): boolean {
   const method = request.method.toUpperCase();
@@ -10,30 +10,45 @@ export function isAllowedOrigin(request: Request): boolean {
   }
 
   const secFetchSite = request.headers.get('sec-fetch-site');
-  if (secFetchSite === 'cross-site') {
+  if (secFetchSite === 'cross-site' || secFetchSite === 'same-site') {
     return false;
   }
 
-  const origin = request.headers.get('origin');
-  const host = request.headers.get('host');
+  const rawHost = request.headers.get('host');
+  const forwardedHost = request.headers.get('x-forwarded-host')?.split(',')[0]?.trim();
+  const effectiveHost = forwardedHost || rawHost;
+  if (!effectiveHost) return false;
 
-  if (origin && host) {
+  // Vérifie la cohérence entre Host et l'URL de requête si les deux sont présents
+  try {
+    const reqUrlHost = new URL(request.url).host;
+    if (reqUrlHost && rawHost && reqUrlHost !== rawHost && reqUrlHost !== forwardedHost) {
+      return false;
+    }
+  } catch {}
+
+  const expectHttps =
+    request.headers.get('x-forwarded-proto') === 'https' ||
+    request.url.startsWith('https://');
+
+  const isSameOriginUrl = (rawUrl: string): boolean => {
     try {
-      const originHost = new URL(origin).host;
-      return originHost === host;
+      const parsed = new URL(rawUrl);
+      if (expectHttps && parsed.protocol !== 'https:') return false;
+      return parsed.host === effectiveHost || parsed.host === rawHost;
     } catch {
       return false;
     }
+  };
+
+  const origin = request.headers.get('origin');
+  if (origin) {
+    return isSameOriginUrl(origin);
   }
 
   const referer = request.headers.get('referer');
-  if (referer && host) {
-    try {
-      const refererHost = new URL(referer).host;
-      return refererHost === host;
-    } catch {
-      return false;
-    }
+  if (referer) {
+    return isSameOriginUrl(referer);
   }
 
   return secFetchSite === 'same-origin';

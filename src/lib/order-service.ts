@@ -171,6 +171,7 @@ export function buildOrderWhatsAppText(order: WhatsAppOrderInput): string {
 export interface RestaurantInfo {
   name: string;
   phone: string;
+  phone_2: string;
   whatsapp: string;
 }
 
@@ -183,6 +184,7 @@ export async function getRestaurantInfo(sql: unknown): Promise<RestaurantInfo> {
   const fallback: RestaurantInfo = {
     name: INITIAL_SETTINGS.restaurant_name,
     phone: INITIAL_SETTINGS.phone,
+    phone_2: INITIAL_SETTINGS.phone_2 || '',
     whatsapp: INITIAL_SETTINGS.whatsapp
   };
 
@@ -191,12 +193,13 @@ export async function getRestaurantInfo(sql: unknown): Promise<RestaurantInfo> {
   try {
     // neon() renvoie une fonction de template tag : on la type localement.
     const query = sql as (strings: TemplateStringsArray, ...values: unknown[]) => Promise<Array<Record<string, unknown>>>;
-    const rows = await query`SELECT restaurant_name, phone, whatsapp FROM restaurant_settings WHERE id = 1`;
+    const rows = await query`SELECT restaurant_name, phone, COALESCE(phone_2, '') AS phone_2, whatsapp FROM restaurant_settings WHERE id = 1`;
     const row = rows[0];
     if (!row) return fallback;
     return {
       name: String(row.restaurant_name || fallback.name),
       phone: String(row.phone || fallback.phone),
+      phone_2: String(row.phone_2 || ''),
       whatsapp: normalizeWhatsAppNumber(String(row.whatsapp || fallback.whatsapp))
     };
   } catch {

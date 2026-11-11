@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import ClientShell from '@/components/ClientShell';
 import { useCart } from '@/components/CartContext';
 import { CarIcon, WalkIcon, MapPinIcon, CompassIcon, PhoneIcon, ClockIcon, WhatsAppIcon } from '@/components/Icons';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 // Exact GPS Coordinates of Restaurant La Gratitude (12°19'57.62"N, 1°37'52.36"O)
 const RESTAURANT_LAT = 12.332672;
@@ -31,8 +32,7 @@ function calculateDistanceKm(
 
 export default function ContactPage() {
   const { settings } = useCart();
-  const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
@@ -268,22 +268,30 @@ export default function ContactPage() {
                   <PhoneIcon className="w-4 h-4 shrink-0" />
                   <span>Téléphone &amp; WhatsApp :</span>
                 </strong>
-                <span className="font-extrabold text-base text-[#2b1810]">
-                  {phoneDisplay}
-                </span>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-extrabold text-base text-[#2b1810]">
+                  {phoneList.map((num, idx) => (
+                    <React.Fragment key={num}>
+                      {idx > 0 && <span className="text-stone-400 font-bold">/</span>}
+                      <span>{num}</span>
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href={`tel:${phoneTel}`}
-                  className="px-3.5 py-2 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-bold text-xs shadow inline-flex items-center gap-1.5 transition"
-                >
-                  <PhoneIcon className="w-3.5 h-3.5" />
-                  <span>Appeler</span>
-                </a>
+              <div className="flex flex-wrap items-center gap-2">
+                {phoneList.map((num, idx) => (
+                  <a
+                    key={num}
+                    href={toTelHref(num)}
+                    className="px-3.5 py-2 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-bold text-xs shadow inline-flex items-center gap-1.5 transition"
+                  >
+                    <PhoneIcon className="w-3.5 h-3.5" />
+                    <span>{phoneList.length > 1 ? `Appeler ${idx + 1}` : 'Appeler'}</span>
+                  </a>
+                ))}
                 <a
                   href={`https://wa.me/${whatsappNum}`}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener,noreferrer"
                   className="px-3.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs shadow inline-flex items-center gap-1.5 transition"
                 >
                   <WhatsAppIcon className="w-3.5 h-3.5" />

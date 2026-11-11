@@ -6,6 +6,7 @@ import { useCart, formatCFA } from '@/components/CartContext';
 import { PhoneIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Toute la Carte', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -25,8 +26,7 @@ export default function NotreMenuPage() {
   const [search, setSearch] = useState('');
   const { dishes, settings, openDishSelector } = useCart();
 
-  const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
 
   const onOrderDishes = dishes.filter(d => d.availability_mode !== 'daily');
   const activeDailyDishes = sortDailyMenuDishes(
@@ -58,9 +58,14 @@ export default function NotreMenuPage() {
             </h2>
             <p className="text-xs sm:text-sm text-stone-600">
               Pour commander un plat, cliquez dessus ou appelez directement le{' '}
-              <a href={`tel:${phoneTel}`} className="font-extrabold text-[#881313] underline whitespace-nowrap">
-                {phoneDisplay}
-              </a>.
+              {phoneList.map((num, idx) => (
+                <React.Fragment key={num}>
+                  {idx > 0 && ' / '}
+                  <a href={toTelHref(num)} className="font-extrabold text-[#881313] underline whitespace-nowrap">
+                    {num}
+                  </a>
+                </React.Fragment>
+              ))}.
             </p>
           </div>
 

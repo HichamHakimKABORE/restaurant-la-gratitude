@@ -36,17 +36,23 @@ function getSecret(): string | null {
   if (customSecret && customSecret.trim().length >= 16) {
     return `la-gratitude-session-hmac:${customSecret.trim()}`;
   }
-  const hasPassword = Boolean(process.env.ADMIN_PASSWORD);
-  const hasDb = Boolean(process.env.DATABASE_URL);
-  if (process.env.NODE_ENV === 'production' && !hasPassword && !hasDb) {
-    console.error('[SESSION] Aucun secret de session configuré en production (ADMIN_SESSION_SECRET requis).');
-    return null;
+  const password = process.env.ADMIN_PASSWORD || '';
+  const dbUrl = process.env.DATABASE_URL || '';
+  if (process.env.NODE_ENV === 'production') {
+    if (!password && !dbUrl) {
+      console.error(
+        '[SESSION] Aucun secret de session configuré en production (ADMIN_SESSION_SECRET requis).'
+      );
+      return null;
+    }
+    console.warn(
+      '[SESSION] ADMIN_SESSION_SECRET non défini (ou < 16 caractères) : ajoutez-le dans Vercel pour renforcer les sessions.'
+    );
   }
-  // Dérivation de repli hors-production ou tant que ADMIN_SESSION_SECRET n'est pas défini :
-  // combine le mot de passe et l'URL secrète de la base Neon.
-  const base = process.env.ADMIN_PASSWORD || 'la-gratitude-root-pwd';
-  const dbBound = process.env.DATABASE_URL || 'no-db-bound';
-  return `la-gratitude-session-derived:${base}:${dbBound}`;
+  if (!password && !dbUrl) {
+    return 'la-gratitude-dev-ephemeral-session-key';
+  }
+  return `la-gratitude-session-derived:${password}:${dbUrl}`;
 }
 
 async function sign(payload: string): Promise<string | null> {
@@ -69,12 +75,29 @@ async function sign(payload: string): Promise<string | null> {
 
 /** Comparaison à temps constant (évite les attaques temporelles). */
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  const maxLen = Math.max(a.length, b.length, 1);
+  let diff = a.length ^ b.length;
+  for (let i = 0; i < maxLen; i += 1) {
+    const ca = i < a.length ? a.charCodeAt(i) : 0;
+    const cb = i < b.length ? b.charCodeAt(i) : 0;
+    diff |= ca ^ cb;
   }
   return diff === 0;
+}
+
+/** Comparaison cryptographique à longueur fixe (SHA-256) sans fuite de taille. */
+export async function timingSafeEqualDigest(a: string, b: string): Promise<boolean> {
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(a)),
+    crypto.subtle.digest('SHA-256', encoder.encode(b))
+  ]);
+  const ba = new Uint8Array(ha);
+  const bb = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < ba.length; i += 1) {
+    diff |= ba[i] ^ bb[i];
+  }
+  return diff === 0 && a.length === b.length;
 }
 
 export async function createSessionToken(

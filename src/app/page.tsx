@@ -7,6 +7,7 @@ import { useCart, formatCFA } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -31,8 +32,7 @@ export default function AccueilClientPage() {
   const currentUtcHour = new Date().getUTCHours();
   const isOpenNow = currentUtcHour >= 7 && currentUtcHour < 23;
 
-  const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
   // Menu du Jour : uniquement les plats du jour cochés aujourd'hui.
@@ -129,13 +129,16 @@ export default function AccueilClientPage() {
             >
               <span>Menu du Jour ({displayedDailyDishes.length})</span>
             </Link>
-            <a
-              href={`tel:${phoneTel}`}
-              className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[9px] sm:text-xs shadow inline-flex items-center gap-1 whitespace-nowrap"
-            >
-              <PhoneIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-              <span>Appeler : {phoneDisplay.replace('+226 ', '')}</span>
-            </a>
+            {phoneList.map(num => (
+              <a
+                key={num}
+                href={toTelHref(num)}
+                className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-[9px] sm:text-xs shadow inline-flex items-center gap-1 whitespace-nowrap"
+              >
+                <PhoneIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                <span>Appeler : {num.replace('+226 ', '')}</span>
+              </a>
+            ))}
           </div>
         </div>
 
@@ -379,13 +382,18 @@ export default function AccueilClientPage() {
                 <p className="text-stone-700 leading-snug">
                   Les plats du jour s’afficheront ici dès qu’ils seront prêts. Vous pouvez appeler le restaurant ou choisir parmi nos Plats sur Commande :
                 </p>
-                <a
-                  href={`tel:${phoneTel}`}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs whitespace-nowrap shadow"
-                >
-                  <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{phoneDisplay}</span>
-                </a>
+                <div className="flex flex-wrap items-center justify-center gap-1.5">
+                  {phoneList.map(num => (
+                    <a
+                      key={num}
+                      href={toTelHref(num)}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#881313] text-white font-extrabold text-xs whitespace-nowrap shadow"
+                    >
+                      <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
+                      <span>{num}</span>
+                    </a>
+                  ))}
+                </div>
               </div>
             ) : (
               displayedDailyDishes.slice(0, 12).map(dish => (
@@ -453,13 +461,16 @@ export default function AccueilClientPage() {
               Pour passer commande (Plats sur Commande ou Menu du Jour), appelez directement le restaurant :
             </p>
 
-            <a
-              href={`tel:${phoneTel}`}
-              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm text-center shadow-md flex items-center justify-center gap-2 whitespace-nowrap transition"
-            >
-              <PhoneIcon className="w-4 h-4 shrink-0" />
-              <span>{phoneDisplay}</span>
-            </a>
+            {phoneList.map(num => (
+              <a
+                key={num}
+                href={toTelHref(num)}
+                className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-[#facc15] to-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm text-center shadow-md flex items-center justify-center gap-2 whitespace-nowrap transition"
+              >
+                <PhoneIcon className="w-4 h-4 shrink-0" />
+                <span>{num}</span>
+              </a>
+            ))}
 
             <a
               href={`https://wa.me/${whatsappNum}`}
@@ -482,12 +493,19 @@ export default function AccueilClientPage() {
                 <span>{settings.address || 'Zagtouli, route de Bobo'}</span>
               </p>
               <p className="text-xs font-mono text-stone-500 pl-5">12°19&apos;57.62&quot;N 1°37&apos;52.36&quot;O</p>
-              <p className="font-extrabold text-[#2b1810] flex items-center gap-1.5">
-                <PhoneIcon className="w-4 h-4 text-[#881313] shrink-0" />
-                <a href={`tel:${phoneTel}`} className="hover:text-[#881313] whitespace-nowrap">
-                  {phoneDisplay}
-                </a>
-              </p>
+              <div className="font-extrabold text-[#2b1810] flex items-start gap-1.5">
+                <PhoneIcon className="w-4 h-4 text-[#881313] shrink-0 mt-0.5" />
+                <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                  {phoneList.map((num, idx) => (
+                    <React.Fragment key={num}>
+                      {idx > 0 && <span className="text-stone-400 font-bold">/</span>}
+                      <a href={toTelHref(num)} className="hover:text-[#881313] whitespace-nowrap">
+                        {num}
+                      </a>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
             </div>
             <Link
               href="/contact"
@@ -536,15 +554,22 @@ export default function AccueilClientPage() {
           </span>
         </a>
 
-        <a
-          href={`tel:${phoneTel}`}
-          className="bg-gradient-to-b from-[#8b261d] to-[#681811] hover:brightness-110 text-white rounded-2xl p-4 flex flex-col items-center text-center justify-center gap-2 shadow-md transition"
-        >
+        <div className="bg-gradient-to-b from-[#8b261d] to-[#681811] text-white rounded-2xl p-4 flex flex-col items-center text-center justify-center gap-2 shadow-md">
           <span className="w-12 h-12 rounded-full bg-white/15 text-[#facc15] flex items-center justify-center">
             <PhoneIcon className="w-6 h-6" />
           </span>
-          <span className="font-extrabold text-sm">Appeler le {phoneDisplay}</span>
-        </a>
+          <div className="flex flex-col gap-1">
+            {phoneList.map(num => (
+              <a
+                key={num}
+                href={toTelHref(num)}
+                className="font-extrabold text-sm hover:text-[#facc15] underline-offset-2 hover:underline transition"
+              >
+                Appeler le {num}
+              </a>
+            ))}
+          </div>
+        </div>
 
         <Link
           href="/menu"

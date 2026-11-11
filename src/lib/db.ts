@@ -24,6 +24,7 @@ export interface RestaurantSettings {
   slogan: string;
   sub_slogan: string;
   phone: string;
+  phone_2?: string;
   whatsapp: string;
   address: string;
   opening_hours: string;
@@ -84,6 +85,7 @@ export const INITIAL_SETTINGS: RestaurantSettings = {
   slogan: 'Une cuisine savoureuse, un service de qualité !',
   sub_slogan: 'Bon goût, bonne humeur !',
   phone: '+226 02 80 99 06',
+  phone_2: '',
   whatsapp: '22602809906',
   address: 'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso',
   opening_hours: 'Lundi - Dimanche de 07h00 à 23h00'
@@ -347,7 +349,7 @@ export function invalidateMenuHistoryCache() {
   global._menuHistoryCache = undefined;
 }
 
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 
 export async function ensureNeonSchema() {
   const sql = getNeonClient();
@@ -559,6 +561,7 @@ export async function ensureNeonSchema() {
       await sql`ALTER TABLE restaurant_settings ALTER COLUMN admin_custom_password_hash TYPE TEXT`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS gallery_initialized BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS session_valid_after BIGINT DEFAULT 0`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS phone_2 VARCHAR(60) DEFAULT ''`;
 
       // Journal des échecs de connexion Admin (limitation des essais partagée entre serveurs)
       await sql`
@@ -601,14 +604,19 @@ export async function ensureNeonSchema() {
       }
 
       const todayStr = getLogicalMenuDate();
-      const currentMenuDate = settingsInitRows[0]?.daily_menu_date || '';
-      if (currentMenuDate !== todayStr) {
+      const rolloverRows = await sql`
+        UPDATE restaurant_settings
+        SET daily_menu_date = ${todayStr}
+        WHERE id = 1
+          AND COALESCE(daily_menu_date, '') <> ${todayStr}
+        RETURNING id
+      `;
+      if (rolloverRows.length > 0) {
         await sql`
           UPDATE dishes
           SET is_available_today = false, stock_status = 'soldout'
           WHERE availability_mode = 'daily'
         `;
-        await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
       }
 
       // Correction unique de l'ancien numéro incohérent (60 18 65 25).
@@ -629,12 +637,14 @@ export async function ensureNeonSchema() {
       await sql`UPDATE restaurant_settings SET schema_version = ${CURRENT_SCHEMA_VERSION} WHERE id = 1`;
 
       global._gratitudeSchemaReady = true;
+      return sql;
     } catch (err) {
+      global._gratitudeSchemaReady = false;
       console.error('Auto-init Neon schema error:', err);
+      return null;
     } finally {
       global._gratitudeSchemaPromise = undefined;
     }
-    return sql;
   })();
 
   return global._gratitudeSchemaPromise;

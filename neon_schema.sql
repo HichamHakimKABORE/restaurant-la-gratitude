@@ -78,7 +78,8 @@ CREATE TABLE IF NOT EXISTS restaurant_settings (
   admin_custom_email VARCHAR(180),
   admin_custom_password_hash TEXT,
   session_valid_after BIGINT DEFAULT 0,
-  schema_version INTEGER DEFAULT 3,
+  schema_version INTEGER DEFAULT 4,
+  phone_2 VARCHAR(60) DEFAULT '',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 

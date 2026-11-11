@@ -9,6 +9,7 @@ import { CheckIcon, BoltIcon, CloseIcon, WhatsAppIcon, PrinterIcon } from '@/com
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, getLogicalMenuDate, type Dish, type StockStatus } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
 import { printWithAutoDocumentTitle } from '@/lib/pdf-report';
+import { joinPhoneNumbers } from '@/lib/phone';
 
 export default function AdminMenuDuJourPage() {
   const router = useRouter();
@@ -174,7 +175,7 @@ export default function AdminMenuDuJourPage() {
       lines.push(`- *${d.name}* : ${formatCFA(d.price)}`);
     }
     lines.push(``);
-    lines.push(`*Commandes & Réservations :* ${settings.phone || '+226 02 80 99 06'}`);
+    lines.push(`*Commandes & Réservations :* ${joinPhoneNumbers(settings.phone, settings.phone_2)}`);
     lines.push(`*Zagtouli, route de Bobo — Ouagadougou*`);
     return lines.join('\n');
   };
@@ -434,7 +435,7 @@ export default function AdminMenuDuJourPage() {
                 MENU DU JOUR — {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
               </h1>
               <p className="text-xs font-semibold text-stone-600">
-                {settings.address || 'Zagtouli, route de Bobo — Ouagadougou'} • Tél : {settings.phone || '+226 02 80 99 06'}
+                {settings.address || 'Zagtouli, route de Bobo — Ouagadougou'} • Tél : {joinPhoneNumbers(settings.phone, settings.phone_2)}
               </p>
             </div>
           </div>

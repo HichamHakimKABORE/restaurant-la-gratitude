@@ -7,12 +7,12 @@ import { useCart, formatCFA } from '@/components/CartContext';
 import { PhoneIcon, ChefHatIcon, BoltIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, type Dish } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 export default function MenuDuJourPage() {
   const { dishes, loadingDishes, settings, openDishSelector } = useCart();
 
-  const phoneDisplay = settings.phone || '+226 02 80 99 06';
-  const phoneTel = phoneDisplay.replace(/\s+/g, '');
+  const phoneList = formatPhoneList(settings.phone, settings.phone_2);
 
   const dailyPrepared = useMemo(
     () =>
@@ -50,13 +50,18 @@ export default function MenuDuJourPage() {
             </p>
           </div>
 
-          <a
-            href={`tel:${phoneTel}`}
-            className="px-4 py-2.5 rounded-xl bg-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow inline-flex items-center gap-2 whitespace-nowrap transition"
-          >
-            <PhoneIcon className="w-4 h-4 shrink-0" />
-            <span>Commander au {phoneDisplay}</span>
-          </a>
+          <div className="flex flex-wrap gap-2">
+            {phoneList.map(num => (
+              <a
+                key={num}
+                href={toTelHref(num)}
+                className="px-4 py-2.5 rounded-xl bg-[#eab308] hover:brightness-110 text-[#2b1810] font-extrabold text-xs sm:text-sm shadow inline-flex items-center gap-2 whitespace-nowrap transition"
+              >
+                <PhoneIcon className="w-4 h-4 shrink-0" />
+                <span>Commander au {num}</span>
+              </a>
+            ))}
+          </div>
         </div>
 
         <div className="p-5 sm:p-6 space-y-6">
@@ -80,13 +85,16 @@ export default function MenuDuJourPage() {
                 >
                   Voir la Carte &amp; Plats sur Commande →
                 </Link>
-                <a
-                  href={`tel:${phoneTel}`}
-                  className="px-4 py-2.5 rounded-xl bg-[#881313] text-white font-extrabold text-xs inline-flex items-center gap-2 shadow whitespace-nowrap"
-                >
-                  <PhoneIcon className="w-4 h-4 shrink-0" />
-                  <span>Appeler le {phoneDisplay}</span>
-                </a>
+                {phoneList.map(num => (
+                  <a
+                    key={num}
+                    href={toTelHref(num)}
+                    className="px-4 py-2.5 rounded-xl bg-[#881313] text-white font-extrabold text-xs inline-flex items-center gap-2 shadow whitespace-nowrap"
+                  >
+                    <PhoneIcon className="w-4 h-4 shrink-0" />
+                    <span>Appeler le {num}</span>
+                  </a>
+                ))}
               </div>
             </div>
           ) : (

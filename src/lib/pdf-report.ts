@@ -1,6 +1,7 @@
 'use client';
 
 import { sortDailyMenuDishes, type DailyMenuRecord, type RestaurantSettings } from './db';
+import { joinPhoneNumbers } from './phone';
 
 const PAGE_WIDTH = 595;
 const PAGE_HEIGHT = 842;
@@ -236,7 +237,7 @@ export function downloadMenuReportsPdf(
 ): void {
   const restaurantName = settings.restaurant_name || 'Restaurant La Gratitude';
   const address = settings.address || 'Zagtouli, route de Bobo - Ouagadougou';
-  const phone = settings.phone || '+226 02 80 99 06';
+  const phone = joinPhoneNumbers(settings.phone, settings.phone_2);
 
   const doc = new PdfPageBuilder(restaurantName, `${address} | Tel : ${phone}`);
 

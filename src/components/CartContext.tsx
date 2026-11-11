@@ -3,8 +3,9 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { INITIAL_DISHES, INITIAL_SETTINGS, type Dish, type RestaurantSettings } from '@/lib/db';
 import { CheckIcon, CloseIcon, PhoneIcon, WhatsAppIcon } from './Icons';
-import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_PHONE_TEL, RESTAURANT_WHATSAPP } from '@/lib/constants';
+import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_WHATSAPP } from '@/lib/constants';
 import { safeCssImageUrl } from '@/lib/validation';
+import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 export interface CartItem extends Dish {
   cartKey: string;
@@ -178,7 +179,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const updateQty = () => {};
   const clearCart = () => {};
 
-  const activePhoneDisplay = settings.phone || RESTAURANT_PHONE_DISPLAY;
+  const activePhoneList = formatPhoneList(settings.phone, settings.phone_2, RESTAURANT_PHONE_DISPLAY);
+  const activePhoneDisplay = activePhoneList[0];
   const activePhoneTel = activePhoneDisplay.replace(/\s+/g, '');
   const activeWhatsApp = (settings.whatsapp || RESTAURANT_WHATSAPP).replace(/[^0-9]/g, '') || RESTAURANT_WHATSAPP;
 
@@ -317,19 +319,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <a
               href={getSelectionOnlyWhatsAppUrl()}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener,noreferrer"
               className="px-3 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
             >
               <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
               <span>WhatsApp</span>
             </a>
-            <a
-              href={`tel:${activePhoneTel}`}
-              className="px-3 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
-            >
-              <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
-              <span>Appeler</span>
-            </a>
+            {activePhoneList.map((num, idx) => (
+              <a
+                key={num}
+                href={toTelHref(num)}
+                className="px-3 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
+              >
+                <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
+                <span>{activePhoneList.length > 1 ? `N° ${idx + 1}` : 'Appeler'}</span>
+              </a>
+            ))}
           </div>
         </div>
       )}
@@ -485,13 +490,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 <p className="text-[11px] text-center font-bold text-stone-600">
                   Pour commander, appelez directement le restaurant :
                 </p>
-                <a
-                  href={`tel:${activePhoneTel}`}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 whitespace-nowrap transition"
-                >
-                  <PhoneIcon className="w-4 h-4 shrink-0" />
-                  <span>Appeler le {activePhoneDisplay}</span>
-                </a>
+                {activePhoneList.map(num => (
+                  <a
+                    key={num}
+                    href={toTelHref(num)}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#881313] to-[#680e0e] hover:brightness-110 text-white font-extrabold text-xs sm:text-sm shadow-lg flex items-center justify-center gap-2 whitespace-nowrap transition"
+                  >
+                    <PhoneIcon className="w-4 h-4 shrink-0" />
+                    <span>Appeler le {num}</span>
+                  </a>
+                ))}
                 <a
                   href={getWhatsAppDirectUrl(modalDish, selectedOpt, modalQty)}
                   target="_blank"

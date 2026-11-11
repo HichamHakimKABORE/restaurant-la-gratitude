@@ -11,10 +11,11 @@ import {
   verifyCurrentAdminPassword,
   updateAdminCredentials,
   setAdminSession,
+  recordLoginFailure,
   MIN_ADMIN_PASSWORD_LENGTH
 } from '@/lib/auth-server';
 import { isAllowedOrigin } from '@/lib/csrf';
-import { getClientIp } from '@/lib/rate-limit';
+import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { sanitizeText, validateAdminIdentifier } from '@/lib/validation';
 import { readJsonObjectBody } from '@/lib/request-body';
 
@@ -42,7 +43,7 @@ export async function GET() {
     const sql = await ensureNeonSchema();
     if (sql) {
       const rows = (await sql`
-        SELECT id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours
+        SELECT id, restaurant_name, slogan, sub_slogan, phone, COALESCE(phone_2, '') AS phone_2, whatsapp, address, opening_hours
         FROM restaurant_settings
         WHERE id = 1
       `) as RestaurantSettings[];
@@ -80,12 +81,14 @@ export async function PATCH(request: Request) {
   const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
   if (!parsed.ok) return parsed.response;
   try {
+    const clientIp = getClientIp(request);
     const body = parsed.data;
     const {
       restaurant_name,
       slogan,
       sub_slogan,
       phone,
+      phone_2,
       whatsapp,
       address,
       opening_hours,
@@ -99,6 +102,14 @@ export async function PATCH(request: Request) {
       (typeof new_admin_password === 'string' && new_admin_password.trim() !== '');
 
     if (wantsCredentialsChange) {
+      const pwdChangeLimit = rateLimit(`pwd-change:${clientIp}`, 5, 15 * 60_000);
+      if (!pwdChangeLimit.allowed) {
+        return NextResponse.json(
+          { error: 'Trop de tentatives de modification de mot de passe. Patientez quelques minutes.' },
+          { status: 429, headers: { 'Cache-Control': 'no-store' } }
+        );
+      }
+
       if (!current_admin_password || typeof current_admin_password !== 'string') {
         return NextResponse.json(
           { error: 'Le mot de passe Admin actuel est obligatoire pour modifier vos accès.' },
@@ -108,6 +119,13 @@ export async function PATCH(request: Request) {
 
       const isCurrentValid = await verifyCurrentAdminPassword(current_admin_password);
       if (!isCurrentValid) {
+        await recordLoginFailure(clientIp);
+        await recordAdminAuditLog(
+          'admin_password_change_failed',
+          '1',
+          'Tentative de changement de mot de passe avec mot de passe actuel erroné',
+          clientIp
+        );
         return NextResponse.json(
           { error: 'Mot de passe Admin actuel incorrect.' },
           { status: 403, headers: { 'Cache-Control': 'no-store' } }
@@ -147,6 +165,8 @@ export async function PATCH(request: Request) {
     const cleanSlogan = slogan !== undefined ? sanitizeText(slogan, 240) || null : null;
     const cleanSubSlogan = sub_slogan !== undefined ? sanitizeText(sub_slogan, 240) || null : null;
     const cleanPhone = phone !== undefined ? sanitizeText(phone, 55) || null : null;
+    const hasPhone2 = Object.prototype.hasOwnProperty.call(body, 'phone_2');
+    const cleanPhone2 = hasPhone2 ? sanitizeText(phone_2, 55) : null;
     const cleanWaDigits =
       whatsapp !== undefined ? String(whatsapp).replace(/[^0-9]/g, '').slice(0, 20) || null : null;
     const cleanAddress = address !== undefined ? sanitizeText(address, 240) || null : null;
@@ -162,6 +182,7 @@ export async function PATCH(request: Request) {
           slogan = COALESCE(${cleanSlogan}, slogan),
           sub_slogan = COALESCE(${cleanSubSlogan}, sub_slogan),
           phone = COALESCE(${cleanPhone}, phone),
+          phone_2 = COALESCE(${cleanPhone2}, phone_2),
           whatsapp = COALESCE(${cleanWaDigits}, whatsapp),
           address = COALESCE(${cleanAddress}, address),
           opening_hours = COALESCE(${cleanHours}, opening_hours),
@@ -170,14 +191,13 @@ export async function PATCH(request: Request) {
       `;
 
       const rows = (await sql`
-        SELECT id, restaurant_name, slogan, sub_slogan, phone, whatsapp, address, opening_hours
+        SELECT id, restaurant_name, slogan, sub_slogan, phone, COALESCE(phone_2, '') AS phone_2, whatsapp, address, opening_hours
         FROM restaurant_settings
         WHERE id = 1
       `) as RestaurantSettings[];
       if (rows[0]) {
         global._settingsCache = { data: rows[0], ts: Date.now() };
       }
-      const clientIp = getClientIp(request);
       await recordAdminAuditLog(
         'settings_updated',
         '1',
@@ -195,6 +215,7 @@ export async function PATCH(request: Request) {
       if (cleanSlogan) mem.slogan = cleanSlogan;
       if (cleanSubSlogan) mem.sub_slogan = cleanSubSlogan;
       if (cleanPhone) mem.phone = cleanPhone;
+      if (cleanPhone2 !== null) mem.phone_2 = cleanPhone2;
       if (cleanWaDigits) mem.whatsapp = cleanWaDigits;
       if (cleanAddress) mem.address = cleanAddress;
       if (cleanHours) mem.opening_hours = cleanHours;

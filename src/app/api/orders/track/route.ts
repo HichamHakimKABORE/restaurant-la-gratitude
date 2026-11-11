@@ -15,14 +15,21 @@ function maskPhone(phone: string): string {
   return p.slice(0, 5) + ' •• •• ' + p.slice(-2);
 }
 
-function sanitizeTrackingOrder(order: any) {
+function maskCustomerName(name: string): string {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'Client';
+  if (parts.length === 1) return `${parts[0].slice(0, 2)}•••`;
+  return `${parts[0]} ${parts[1][0]}.`;
+}
+
+function sanitizeTrackingOrder(order: Order) {
   return {
     id: order.id,
     order_code: order.order_code,
-    customer_name: order.customer_name,
+    customer_name: maskCustomerName(order.customer_name || ''),
     customer_phone: maskPhone(order.customer_phone || ''),
     order_type: order.order_type,
-    order_detail: order.order_detail,
+    order_detail: order.order_type === 'Livraison' ? 'Livraison (masqué par confidentialité)' : order.order_detail,
     payment_method: order.payment_method,
     items_json: order.items_json,
     total_cfa: order.total_cfa,

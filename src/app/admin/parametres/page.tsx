@@ -12,6 +12,7 @@ export default function AdminParametresPage() {
     'Une cuisine savoureuse, un service de qualité !'
   );
   const [restPhone, setRestPhone] = useState('+226 02 80 99 06');
+  const [restPhone2, setRestPhone2] = useState('');
   const [restAddress, setRestAddress] = useState(
     'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso'
   );
@@ -28,14 +29,18 @@ export default function AdminParametresPage() {
 
   useEffect(() => {
     fetch('/api/settings', { cache: 'no-store' })
-      .then(r => r.json())
+      .then(async r => {
+        if (!r.ok) return null;
+        return r.json();
+      })
       .then(data => {
-        if (data.settings) {
+        if (data?.settings) {
           setRestName(data.settings.restaurant_name || 'Restaurant La Gratitude');
           setRestSlogan(
             data.settings.slogan || 'Une cuisine savoureuse, un service de qualité !'
           );
           setRestPhone(data.settings.phone || '+226 02 80 99 06');
+          setRestPhone2(data.settings.phone_2 || '');
           setRestAddress(
             data.settings.address ||
               'Zagtouli, route de Bobo, Ouagadougou - Burkina Faso'
@@ -81,16 +86,23 @@ export default function AdminParametresPage() {
       }
     }
 
+    if (!restPhone.trim()) {
+      showToast('Le numéro de téléphone principal est obligatoire.');
+      return;
+    }
+
     setSaving(true);
     try {
+
       const normalizedWa = normalizeBurkinaWhatsApp(restPhone);
       const payload: Record<string, unknown> = {
-        restaurant_name: restName,
-        slogan: restSlogan,
-        phone: restPhone,
+        restaurant_name: restName.trim(),
+        slogan: restSlogan.trim(),
+        phone: restPhone.trim(),
+        phone_2: restPhone2.trim(),
         whatsapp: normalizedWa,
-        address: restAddress,
-        opening_hours: restHours
+        address: restAddress.trim(),
+        opening_hours: restHours.trim()
       };
 
       if (hasEmail && hasPwd) {
@@ -166,16 +178,41 @@ export default function AdminParametresPage() {
             </div>
 
             <div>
-              <label className="font-bold text-stone-700 block mb-1">
-                Téléphone &amp; WhatsApp
-              </label>
-              <input
-                type="text"
-                value={restPhone}
-                onChange={e => setRestPhone(e.target.value)}
-                maxLength={55}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
-              />
+              <span className="font-bold text-stone-700 block mb-2">
+                Téléphones &amp; WhatsApp
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-stone-600 block mb-1">
+                    Numéro 1 (Principal &amp; WhatsApp)
+                  </label>
+                  <input
+                    type="text"
+                    value={restPhone}
+                    onChange={e => setRestPhone(e.target.value)}
+                    placeholder="+226 02 80 99 06"
+                    maxLength={55}
+                    required
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-stone-600 block mb-1">
+                    Numéro 2 (Secondaire, optionnel)
+                  </label>
+                  <input
+                    type="text"
+                    value={restPhone2}
+                    onChange={e => setRestPhone2(e.target.value)}
+                    placeholder="+226 XX XX XX XX"
+                    maxLength={55}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 bg-stone-50 font-bold"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-stone-500 mt-1.5">
+                Les deux numéros renseignés seront affichés sur le site, les reçus et les menus. Le numéro 1 reste le lien WhatsApp principal.
+              </p>
             </div>
 
             <div>
