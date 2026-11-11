@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon, CompassIcon } from './Icons';
+import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon, CompassIcon, CloseIcon } from './Icons';
 import RestaurantGallerySlider from './RestaurantGallerySlider';
 import { useCart } from './CartContext';
 import { formatPhoneList, toTelHref } from '@/lib/phone';
@@ -11,6 +11,7 @@ import { formatPhoneList, toTelHref } from '@/lib/phone';
 export default function ClientShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { settings } = useCart();
+  const [callMenuOpen, setCallMenuOpen] = useState(false);
   const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
@@ -213,15 +214,78 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             <span>Contact &amp; GPS</span>
           </Link>
 
-          <a
-            href={toTelHref(phoneList[0])}
-            className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
-          >
-            <PhoneIcon className="w-4 h-4 shrink-0" />
-            <span>Appeler</span>
-          </a>
+          {phoneList.length > 1 ? (
+            <button
+              type="button"
+              onClick={() => setCallMenuOpen(prev => !prev)}
+              aria-expanded={callMenuOpen}
+              aria-haspopup="dialog"
+              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
+            >
+              <PhoneIcon className="w-4 h-4 shrink-0" />
+              <span>Appeler</span>
+            </button>
+          ) : (
+            <a
+              href={toTelHref(phoneList[0])}
+              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[10px] sm:text-xs font-extrabold whitespace-nowrap shadow transition"
+            >
+              <PhoneIcon className="w-4 h-4 shrink-0" />
+              <span>Appeler</span>
+            </a>
+          )}
         </div>
       </nav>
+
+      {/* SÉLECTEUR DE NUMÉRO SI 2 NUMÉROS SONT CONFIGURÉS */}
+      {callMenuOpen && phoneList.length > 1 && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-[1px] flex items-end sm:items-center justify-center p-4 pb-20 sm:pb-4 print:hidden"
+          onClick={() => setCallMenuOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choisir un numéro à appeler"
+        >
+          <div
+            className="w-full max-w-sm bg-[#fffaf2] border-2 border-[#d99b26] rounded-2xl shadow-2xl p-4 space-y-3"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-[#ead8be] pb-2">
+              <div className="flex items-center gap-2 text-[#881313] font-extrabold text-sm">
+                <PhoneIcon className="w-4 h-4 shrink-0" />
+                <span>Choisir le numéro à appeler</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCallMenuOpen(false)}
+                aria-label="Fermer"
+                className="p-1.5 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100 transition"
+              >
+                <CloseIcon className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {phoneList.map((num, idx) => (
+                <a
+                  key={num}
+                  href={toTelHref(num)}
+                  onClick={() => setCallMenuOpen(false)}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#15803d] hover:brightness-110 text-white font-extrabold text-sm shadow flex items-center justify-between gap-3 transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <PhoneIcon className="w-4 h-4 shrink-0" />
+                    <span>{num}</span>
+                  </span>
+                  <span className="text-[11px] bg-white/20 px-2 py-0.5 rounded-full">
+                    {idx === 0 ? 'Principal' : 'Secondaire'}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
