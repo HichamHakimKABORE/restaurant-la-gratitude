@@ -7,41 +7,8 @@ import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CameraIcon, CloseIcon, PencilIcon } from '@/components/Icons';
 import { matchesDishSearch, type Dish } from '@/lib/db';
-
-function compressImageToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 560;
-        let w = img.width;
-        let h = img.height;
-        if (w > h && w > maxDim) {
-          h = Math.round((h * maxDim) / w);
-          w = maxDim;
-        } else if (h > maxDim) {
-          w = Math.round((w * maxDim) / h);
-          h = maxDim;
-        }
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.78));
-        } else {
-          reject(new Error('Canvas context error'));
-        }
-      };
-      img.onerror = reject;
-      img.src = ev.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+import { compressImageFileToBase64 } from '@/lib/client-image';
+import { safeCssImageUrl } from '@/lib/validation';
 
 export default function AdminPlatsPage() {
   const router = useRouter();
@@ -59,6 +26,8 @@ export default function AdminPlatsPage() {
   const [newDisplayOrder, setNewDisplayOrder] = useState('10');
   const [newPhotoData, setNewPhotoData] = useState<string>('');
   const [mounted, setMounted] = useState(false);
+  const [savingDish, setSavingDish] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -77,7 +46,7 @@ export default function AdminPlatsPage() {
     if (!file) return;
     try {
       showToast('Compression et envoi de la photo...');
-      const base64 = await compressImageToBase64(file);
+      const base64 = await compressImageFileToBase64(file, 560);
       const res = await fetch('/api/dishes', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -99,27 +68,35 @@ export default function AdminPlatsPage() {
       }
       if (data.dishes) setDishes(data.dishes);
       showToast(`Photo de "${dish.name}" mise à jour !`);
-    } catch (e) {
-      console.error(e);
-      showToast('Erreur lors du chargement de la photo');
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Erreur lors du chargement de la photo';
+      showToast(msg);
     }
   };
 
   const handleDelete = async (id: number, name: string) => {
+    if (deletingId !== null) return;
     if (!confirm(`Supprimer le plat "${name}" ?`)) return;
-    const res = await fetch(`/api/dishes?id=${id}`, { method: 'DELETE' });
-    if (res.status === 401) {
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/dishes?id=${id}`, { method: 'DELETE' });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Suppression impossible.');
+        return;
+      }
+      if (data.dishes) setDishes(data.dishes);
+      showToast(`${name} supprimé`);
+    } catch {
+      showToast('Erreur réseau lors de la suppression.');
+    } finally {
+      setDeletingId(null);
     }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showToast(data.error || 'Suppression impossible.');
-      return;
-    }
-    if (data.dishes) setDishes(data.dishes);
-    showToast(`${name} supprimé`);
   };
 
   const openCreateModal = () => {
@@ -152,18 +129,53 @@ export default function AdminPlatsPage() {
 
   const handleSaveDish = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newName.trim()) return;
+    if (savingDish || !newName.trim()) return;
     const optsArray = newOptions
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
 
-    if (editingDish) {
+    setSavingDish(true);
+    try {
+      if (editingDish) {
+        const res = await fetch('/api/dishes', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingDish.id,
+            name: newName,
+            category: newCategory,
+            price: Number(newPrice),
+            availability_mode: newMode,
+            display_order: Number(newDisplayOrder || 10),
+            options_json: optsArray,
+            description: newDescription,
+            ...(newPhotoData
+              ? { image_url: newPhotoData, image_quadrant: 'quad-full' }
+              : {})
+          })
+        });
+        if (res.status === 401) {
+          showToast('Session expirée. Veuillez vous reconnecter.');
+          router.push('/admin/login');
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          showToast(data.error || 'Modification impossible.');
+          return;
+        }
+        if (data.dishes) setDishes(data.dishes);
+        setAddModalOpen(false);
+        setEditingDish(null);
+        showToast(`Plat "${newName}" modifié avec succès !`);
+        return;
+      }
+
       const res = await fetch('/api/dishes', {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: editingDish.id,
           name: newName,
           category: newCategory,
           price: Number(newPrice),
@@ -171,9 +183,8 @@ export default function AdminPlatsPage() {
           display_order: Number(newDisplayOrder || 10),
           options_json: optsArray,
           description: newDescription,
-          ...(newPhotoData
-            ? { image_url: newPhotoData, image_quadrant: 'quad-full' }
-            : {})
+          image_url: newPhotoData || '/images/dishes_grid_1.jpg',
+          image_quadrant: newPhotoData ? 'quad-full' : 'quad-tl'
         })
       });
       if (res.status === 401) {
@@ -183,46 +194,19 @@ export default function AdminPlatsPage() {
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        showToast(data.error || 'Modification impossible.');
+        showToast(data.error || 'Ajout impossible.');
         return;
       }
       if (data.dishes) setDishes(data.dishes);
+      setNewName('');
+      setNewPhotoData('');
       setAddModalOpen(false);
-      setEditingDish(null);
-      showToast(`Plat "${newName}" modifié avec succès !`);
-      return;
+      showToast('Nouveau plat ajouté !');
+    } catch {
+      showToast('Erreur réseau lors de l’enregistrement.');
+    } finally {
+      setSavingDish(false);
     }
-
-    const res = await fetch('/api/dishes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: newName,
-        category: newCategory,
-        price: Number(newPrice),
-        availability_mode: newMode,
-        display_order: Number(newDisplayOrder || 10),
-        options_json: optsArray,
-        description: newDescription,
-        image_url: newPhotoData || '/images/dishes_grid_1.jpg',
-        image_quadrant: newPhotoData ? 'quad-full' : 'quad-tl'
-      })
-    });
-    if (res.status === 401) {
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
-    }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      showToast(data.error || 'Ajout impossible.');
-      return;
-    }
-    if (data.dishes) setDishes(data.dishes);
-    setNewName('');
-    setNewPhotoData('');
-    setAddModalOpen(false);
-    showToast('Nouveau plat ajouté !');
   };
 
   const filtered = dishes.filter(d => {
@@ -358,7 +342,7 @@ export default function AdminPlatsPage() {
                 <div className="w-16 h-16 rounded-xl overflow-hidden border border-amber-400 shrink-0">
                   <div
                     className={`w-full h-full dish-photo ${editingDish.image_quadrant}`}
-                    style={{ backgroundImage: `url('${editingDish.image_url}')` }}
+                    style={{ backgroundImage: `url('${safeCssImageUrl(editingDish.image_url)}')` }}
                   />
                 </div>
               ) : null}
@@ -372,11 +356,11 @@ export default function AdminPlatsPage() {
                   if (file) {
                     try {
                       showToast('Compression de la photo...');
-                      const b64 = await compressImageToBase64(file);
+                      const b64 = await compressImageFileToBase64(file, 560);
                       setNewPhotoData(b64);
                       showToast('Photo prête à être enregistrée !');
-                    } catch {
-                      showToast('Format de photo non supporté.');
+                    } catch (err: unknown) {
+                      showToast(err instanceof Error ? err.message : 'Format de photo non supporté.');
                     }
                   }
                 }}
@@ -422,9 +406,10 @@ export default function AdminPlatsPage() {
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-extrabold text-xs shadow"
+            disabled={savingDish}
+            className="px-4 py-2 rounded-xl bg-[#881313] hover:bg-[#680e0e] disabled:opacity-60 text-white font-extrabold text-xs shadow"
           >
-            Enregistrer
+            {savingDish ? 'Enregistrement...' : 'Enregistrer'}
           </button>
         </div>
       </form>
@@ -489,7 +474,7 @@ export default function AdminPlatsPage() {
                 >
                   <div
                     className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                    style={{ backgroundImage: `url('${dish.image_url}')` }}
+                    style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                   />
                   <span className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition">
                     <CameraIcon className="w-3.5 h-3.5" />
@@ -551,8 +536,9 @@ export default function AdminPlatsPage() {
                 </button>
                 <button
                   type="button"
+                  disabled={deletingId === dish.id}
                   onClick={() => handleDelete(dish.id, dish.name)}
-                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition"
+                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 disabled:opacity-50 text-rose-700 font-bold text-[11px] transition"
                   title="Supprimer ce plat"
                 >
                   <CloseIcon className="w-3.5 h-3.5" />

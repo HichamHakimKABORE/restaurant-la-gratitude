@@ -15,6 +15,7 @@ export default function AdminRapportMenusPage() {
   const [filterStartDate, setFilterStartDate] = useState<string>('');
   const [filterEndDate, setFilterEndDate] = useState<string>('');
   const [isArchivingNow, setIsArchivingNow] = useState(false);
+  const [deletingDate, setDeletingDate] = useState<string | null>(null);
 
   const fetchReports = async () => {
     try {
@@ -23,15 +24,19 @@ export default function AdminRapportMenusPage() {
         router.push('/admin/login');
         return;
       }
+      if (!res.ok) {
+        showToast('Impossible de charger les rapports.');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data.reports)) {
-        setReports(data.reports);
-        if (selectedDates.length === 0) {
-          setSelectedDates(data.reports.map((r: DailyMenuRecord) => r.menu_date));
-        }
+        const list = data.reports as DailyMenuRecord[];
+        setReports(list);
+        setSelectedDates(prev => (prev.length === 0 ? list.map(r => r.menu_date) : prev));
       }
     } catch (err) {
       console.error('Error fetching reports:', err);
+      showToast('Erreur réseau lors du chargement des rapports.');
     }
   };
 
@@ -71,18 +76,31 @@ export default function AdminRapportMenusPage() {
   const handleDeleteReport = async (dateStr: string, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+    if (deletingDate) return;
     if (!confirm(`Supprimer définitivement le rapport du ${dateStr} ?`)) return;
-    const res = await fetch(`/api/menu-reports?date=${encodeURIComponent(dateStr)}`, {
-      method: 'DELETE'
-    });
-    if (res.status === 401) {
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+    setDeletingDate(dateStr);
+    try {
+      const res = await fetch(`/api/menu-reports?date=${encodeURIComponent(dateStr)}`, {
+        method: 'DELETE'
+      });
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Impossible de supprimer ce rapport.');
+        return;
+      }
+      setReports(prev => prev.filter(r => r.menu_date !== dateStr));
+      setSelectedDates(prev => prev.filter(d => d !== dateStr));
+      showToast(`Rapport du ${dateStr} supprimé.`);
+    } catch {
+      showToast('Erreur réseau lors de la suppression.');
+    } finally {
+      setDeletingDate(null);
     }
-    setReports(prev => prev.filter(r => r.menu_date !== dateStr));
-    setSelectedDates(prev => prev.filter(d => d !== dateStr));
-    showToast(`Rapport du ${dateStr} supprimé.`);
   };
 
   const stats = useMemo(() => {
@@ -127,6 +145,11 @@ export default function AdminRapportMenusPage() {
       if (res.status === 401) {
         showToast('Session expirée. Veuillez vous reconnecter.');
         router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        showToast(data.error || 'Impossible d’archiver le menu du jour.');
         return;
       }
 

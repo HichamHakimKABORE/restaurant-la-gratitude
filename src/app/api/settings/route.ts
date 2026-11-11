@@ -15,7 +15,8 @@ import {
 } from '@/lib/auth-server';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
-import { sanitizeText } from '@/lib/validation';
+import { sanitizeText, validateAdminIdentifier } from '@/lib/validation';
+import { readJsonObjectBody } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -65,17 +66,21 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine de requête non autorisée (CSRF).' }, { status: 403 });
-  }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+    return NextResponse.json(
+      { error: 'Origine de requête non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Session expirée. Veuillez vous reconnecter.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
+  const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
+  if (!parsed.ok) return parsed.response;
   try {
-    const body = await request.json();
+    const body = parsed.data;
     const {
       restaurant_name,
       slogan,
@@ -97,7 +102,7 @@ export async function PATCH(request: Request) {
       if (!current_admin_password || typeof current_admin_password !== 'string') {
         return NextResponse.json(
           { error: 'Le mot de passe Admin actuel est obligatoire pour modifier vos accès.' },
-          { status: 400 }
+          { status: 400, headers: { 'Cache-Control': 'no-store' } }
         );
       }
 
@@ -105,24 +110,24 @@ export async function PATCH(request: Request) {
       if (!isCurrentValid) {
         return NextResponse.json(
           { error: 'Mot de passe Admin actuel incorrect.' },
-          { status: 403 }
+          { status: 403, headers: { 'Cache-Control': 'no-store' } }
         );
       }
 
-      const emailTrim = (new_admin_email || '').trim();
-      const pwdTrim = (new_admin_password || '').trim();
+      const emailTrim = validateAdminIdentifier(new_admin_email);
+      const pwdTrim = typeof new_admin_password === 'string' ? new_admin_password.trim() : '';
 
       if (!emailTrim || !pwdTrim) {
         return NextResponse.json(
-          { error: 'Veuillez saisir à la fois le nouvel identifiant et le nouveau mot de passe.' },
-          { status: 400 }
+          { error: 'Saisissez un identifiant valide (3 à 120 caractères, sans espace) et un nouveau mot de passe.' },
+          { status: 400, headers: { 'Cache-Control': 'no-store' } }
         );
       }
 
       if (pwdTrim.length < MIN_ADMIN_PASSWORD_LENGTH) {
         return NextResponse.json(
           { error: `Le nouveau mot de passe doit comporter au moins ${MIN_ADMIN_PASSWORD_LENGTH} caractères.` },
-          { status: 400 }
+          { status: 400, headers: { 'Cache-Control': 'no-store' } }
         );
       }
 
@@ -130,7 +135,7 @@ export async function PATCH(request: Request) {
       if (!updated) {
         return NextResponse.json(
           { error: 'Impossible de modifier les identifiants (base de données indisponible).' },
-          { status: 500 }
+          { status: 500, headers: { 'Cache-Control': 'no-store' } }
         );
       }
 
@@ -180,7 +185,10 @@ export async function PATCH(request: Request) {
         clientIp
       );
 
-      return NextResponse.json({ ok: true, source: 'neon', settings: rows[0] });
+      return NextResponse.json(
+        { ok: true, source: 'neon', settings: rows[0] },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       const mem = getMemorySettings();
       if (cleanName) mem.restaurant_name = cleanName;
@@ -190,10 +198,16 @@ export async function PATCH(request: Request) {
       if (cleanWaDigits) mem.whatsapp = cleanWaDigits;
       if (cleanAddress) mem.address = cleanAddress;
       if (cleanHours) mem.opening_hours = cleanHours;
-      return NextResponse.json({ ok: true, source: 'memory', settings: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', settings: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('PATCH /api/settings error:', error);
-    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update settings' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }

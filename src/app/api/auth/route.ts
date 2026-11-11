@@ -8,9 +8,10 @@ import {
   setAdminSession,
   verifyAdminCredentials
 } from '@/lib/auth-server';
-import { ensureNeonSchema } from '@/lib/db';
+import { ensureNeonSchema, recordAdminAuditLog } from '@/lib/db';
 import { getClientIp, rateLimit } from '@/lib/rate-limit';
 import { isAllowedOrigin } from '@/lib/csrf';
+import { readJsonObjectBody } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -22,43 +23,34 @@ export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
     return NextResponse.json(
       { ok: false, error: 'Origine non autorisée (CSRF).' },
-      { status: 403 }
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
     );
   }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 16 * 1024) {
-    return NextResponse.json(
-      { ok: false, error: 'Requête trop volumineuse.' },
-      { status: 413 }
-    );
-  }
+  const parsed = await readJsonObjectBody(request, 16 * 1024, 'Requête trop volumineuse.');
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.data;
+
   try {
-    let body: Record<string, unknown>;
-    try {
-      body = (await request.json()) as Record<string, unknown>;
-    } catch {
-      return NextResponse.json(
-        { ok: false, error: 'Corps de requête invalide.' },
-        { status: 400 }
-      );
-    }
+    const clientIp = getClientIp(request);
 
     if (body.action === 'logout') {
+      if (await hasAdminSession()) {
+        await recordAdminAuditLog('admin_logout', null, 'Déconnexion administrateur', clientIp).catch(() => {});
+      }
       clearAdminSession();
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
-
-    const clientIp = getClientIp(request);
 
     // 1re barrière : limiteur rapide en mémoire.
     const limit = rateLimit(`login:${clientIp}`, 8, 15 * 60_000);
     if (!limit.allowed) {
+      await recordAdminAuditLog('admin_login_blocked', null, 'Limite de tentatives en mémoire atteinte', clientIp).catch(() => {});
       return NextResponse.json(
         {
           ok: false,
           error: `Trop de tentatives de connexion. Réessayez dans ${limit.retryAfter} secondes.`
         },
-        { status: 429 }
+        { status: 429, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -68,12 +60,13 @@ export async function POST(request: Request) {
     try {
       const counts = await getLoginFailureCounts(clientIp);
       if (counts.ip >= MAX_FAILURES_PER_IP) {
+        await recordAdminAuditLog('admin_login_blocked', null, 'Blocage IP en base (429)', clientIp).catch(() => {});
         return NextResponse.json(
           {
             ok: false,
             error: 'Trop de tentatives de connexion depuis cet appareil. Réessayez dans 15 minutes.'
           },
-          { status: 429 }
+          { status: 429, headers: { 'Cache-Control': 'no-store' } }
         );
       }
       if (counts.total >= HIGH_GLOBAL_FAILURE_THRESHOLD) {
@@ -93,11 +86,12 @@ export async function POST(request: Request) {
       } catch (err) {
         console.warn('[AUTH] Enregistrement de l’échec impossible :', err);
       }
+      await recordAdminAuditLog('admin_login_failed', null, 'Échec de connexion administrateur', clientIp).catch(() => {});
       // Ralentit le bruteforce même quand le limiteur est contourné.
       await new Promise(resolve => setTimeout(resolve, 350));
       return NextResponse.json(
         { ok: false, error: 'Identifiant ou mot de passe incorrect.' },
-        { status: 401 }
+        { status: 401, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -106,12 +100,13 @@ export async function POST(request: Request) {
     } catch {}
 
     await setAdminSession();
+    await recordAdminAuditLog('admin_login_success', null, 'Connexion administrateur réussie', clientIp).catch(() => {});
     return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('Auth error:', error);
     return NextResponse.json(
       { ok: false, error: 'Erreur serveur.' },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 }

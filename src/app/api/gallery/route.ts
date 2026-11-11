@@ -10,6 +10,7 @@ import { isAdminRequest } from '@/lib/auth-server';
 import { sanitizeText, validateImageSource } from '@/lib/validation';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
+import { readJsonObjectBody } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -57,32 +58,38 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
-  }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Non autorisé.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
+  const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
+  if (!parsed.ok) return parsed.response;
   try {
-    const body = await request.json();
+    const body = parsed.data;
     const { title, image_url, display_order } = body;
-
-    if (!image_url || !image_url.trim()) {
-      return NextResponse.json({ error: 'Image requise' }, { status: 400 });
-    }
 
     const checkImg = validateImageSource(image_url);
     if (!checkImg.ok) {
-      return NextResponse.json({ error: checkImg.error || 'Image non autorisée.' }, { status: 400 });
+      return NextResponse.json(
+        { error: checkImg.error || 'Image non autorisée.' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
     const cleanTitle = sanitizeText(title, 180) || 'Photo Restaurant La Gratitude';
     const orderNum = display_order !== undefined ? Number(display_order) : 50;
     if (!Number.isInteger(orderNum) || orderNum < 0 || orderNum > 99999) {
-      return NextResponse.json({ error: 'Ordre d’affichage invalide.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Ordre d’affichage invalide.' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
     const sql = await ensureNeonSchema();
@@ -104,7 +111,10 @@ export async function POST(request: Request) {
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
       await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${cleanTitle}`, getClientIp(request));
-      return NextResponse.json({ ok: true, source: 'neon', images: rows });
+      return NextResponse.json(
+        { ok: true, source: 'neon', images: rows },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       const mem = getMemoryGallery();
       const newImg: GalleryImage = {
@@ -115,27 +125,37 @@ export async function POST(request: Request) {
         created_at: new Date().toISOString()
       };
       mem.unshift(newImg);
-      return NextResponse.json({ ok: true, source: 'memory', images: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', images: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('POST /api/gallery error:', error);
-    return NextResponse.json({ error: 'Failed to add image' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to add image' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }
 
 export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
-  }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Non autorisé.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
+  const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
+  if (!parsed.ok) return parsed.response;
   try {
-    const body = await request.json();
+    const body = parsed.data;
     const { id, title, display_order } = body;
     const imgId = Number(id);
     if (!Number.isInteger(imgId) || imgId <= 0) {
@@ -185,7 +205,10 @@ export async function PATCH(request: Request) {
         cleanTitle ? `Mise à jour photo: ${cleanTitle}` : `Mise à jour ordre photo ID ${imgId}`,
         getClientIp(request)
       );
-      return NextResponse.json({ ok: true, source: 'neon', images: rows });
+      return NextResponse.json(
+        { ok: true, source: 'neon', images: rows },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       const mem = getMemoryGallery();
       const img = mem.find(i => i.id === imgId);
@@ -193,26 +216,41 @@ export async function PATCH(request: Request) {
         if (cleanTitle !== null) img.title = cleanTitle;
         if (cleanOrder !== null) img.display_order = cleanOrder;
       }
-      return NextResponse.json({ ok: true, source: 'memory', images: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', images: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('PATCH /api/gallery error:', error);
-    return NextResponse.json({ error: 'Failed to update image' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update image' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }
 
 export async function DELETE(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Non autorisé.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   try {
     const { searchParams } = new URL(request.url);
     const id = Number(searchParams.get('id'));
     if (!Number.isInteger(id) || id <= 0) {
-      return NextResponse.json({ error: 'Identifiant de photo invalide.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Identifiant de photo invalide.' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
     const sql = await ensureNeonSchema();
@@ -227,15 +265,24 @@ export async function DELETE(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
-      return NextResponse.json({ ok: true, source: 'neon', images: rows });
+      return NextResponse.json(
+        { ok: true, source: 'neon', images: rows },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       const mem = getMemoryGallery();
       const idx = mem.findIndex(i => i.id === id);
       if (idx !== -1) mem.splice(idx, 1);
-      return NextResponse.json({ ok: true, source: 'memory', images: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', images: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('DELETE /api/gallery error:', error);
-    return NextResponse.json({ error: 'Failed to delete image' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete image' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }

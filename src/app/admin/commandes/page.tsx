@@ -11,6 +11,7 @@ export default function AdminCommandesPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderFilter, setOrderFilter] = useState<string>('Toutes');
+  const [busyOrderId, setBusyOrderId] = useState<number | null>(null);
   const { showToast } = useCart();
 
   const loadOrders = () => {
@@ -21,12 +22,18 @@ export default function AdminCommandesPage() {
           router.push('/admin/login');
           return null;
         }
+        if (!r.ok) {
+          showToast('Impossible de charger les commandes.');
+          return null;
+        }
         return r.json();
       })
       .then(d => {
         if (d?.orders) setOrders(d.orders);
       })
-      .catch(() => {});
+      .catch(() => {
+        showToast('Erreur réseau lors du chargement des commandes.');
+      });
   };
 
   useEffect(() => {
@@ -37,69 +44,93 @@ export default function AdminCommandesPage() {
     order: Order,
     status: Order['status']
   ) => {
-    const res = await fetch('/api/orders', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: order.id,
-        status,
-        version: order.status_version
-      })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 401) {
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+    if (busyOrderId === order.id) return;
+    setBusyOrderId(order.id);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: order.id,
+          status,
+          version: order.status_version
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        showToast(data.error || 'Mise à jour impossible.');
+        if (res.status === 409) loadOrders();
+        return;
+      }
+      if (data.orders) setOrders(data.orders);
+      showToast(`Statut mis à jour : ${status}`);
+    } catch {
+      showToast('Erreur réseau lors de la mise à jour du statut.');
+    } finally {
+      setBusyOrderId(null);
     }
-    if (!res.ok) {
-      showToast(data.error || 'Mise à jour impossible.');
-      if (res.status === 409) loadOrders();
-      return;
-    }
-    if (data.orders) setOrders(data.orders);
-    showToast(`Statut mis à jour : ${status}`);
   };
 
   const handleMarkPaid = async (order: Order) => {
-    const res = await fetch('/api/orders', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: order.id, action: 'mark_paid' })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 401) {
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+    if (busyOrderId === order.id) return;
+    setBusyOrderId(order.id);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: order.id, action: 'mark_paid' })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        showToast(data.error || 'Impossible de marquer la commande comme payée.');
+        return;
+      }
+      if (data.orders) setOrders(data.orders);
+      showToast(`Commande ${order.order_code} marquée payée`);
+    } catch {
+      showToast('Erreur réseau lors de la mise à jour du paiement.');
+    } finally {
+      setBusyOrderId(null);
     }
-    if (!res.ok) {
-      showToast(data.error || 'Impossible de marquer la commande comme payée.');
-      return;
-    }
-    if (data.orders) setOrders(data.orders);
-    showToast(`Commande ${order.order_code} marquée payée`);
   };
 
   const handleDeleteOrder = async (id: number, code: string) => {
+    if (busyOrderId === id) return;
     const confirmed = window.confirm(
       `Supprimer définitivement la commande ${code} ? Cette action est irréversible.`
     );
     if (!confirmed) return;
 
-    const res = await fetch(`/api/orders?id=${id}`, { method: 'DELETE' });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 401) {
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+    setBusyOrderId(id);
+    try {
+      const res = await fetch(`/api/orders?id=${id}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401) {
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      if (!res.ok) {
+        showToast(data.error || 'Suppression impossible.');
+        return;
+      }
+      if (data.orders) setOrders(data.orders);
+      showToast(`Commande ${code} supprimée`);
+    } catch {
+      showToast('Erreur réseau lors de la suppression.');
+    } finally {
+      setBusyOrderId(null);
     }
-    if (!res.ok) {
-      showToast(data.error || 'Suppression impossible.');
-      return;
-    }
-    if (data.orders) setOrders(data.orders);
-    showToast(`Commande ${code} supprimée`);
   };
 
   const getClientWhatsAppUrl = (order: Order) => {
@@ -270,7 +301,7 @@ export default function AdminCommandesPage() {
                   <a
                     href={getClientWhatsAppUrl(order)}
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener,noreferrer"
                     className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[#16a34a] text-white font-bold text-xs shadow"
                     title="Notifier le client sur WhatsApp"
                   >

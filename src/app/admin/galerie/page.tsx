@@ -7,6 +7,7 @@ import AdminShell from '@/components/AdminShell';
 import { CameraIcon, CloseIcon, PencilIcon, CheckIcon, StarIcon } from '@/components/Icons';
 import { useCart } from '@/components/CartContext';
 import { type GalleryImage } from '@/lib/db';
+import { compressImageFileToBase64 } from '@/lib/client-image';
 
 const SUGGESTIONS = [
   'Restaurant La Gratitude — Zagtouli',
@@ -18,41 +19,6 @@ const SUGGESTIONS = [
   'L’équipe chaleureuse du Restaurant La Gratitude',
   'Monument des Martyrs & Fierté burkinabè'
 ];
-
-function compressImageToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const maxDim = 760;
-        let w = img.width;
-        let h = img.height;
-        if (w > h && w > maxDim) {
-          h = Math.round((h * maxDim) / w);
-          w = maxDim;
-        } else if (h > maxDim) {
-          w = Math.round((w * maxDim) / h);
-          h = maxDim;
-        }
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, w, h);
-          resolve(canvas.toDataURL('image/jpeg', 0.78));
-        } else {
-          reject(new Error('Erreur canvas'));
-        }
-      };
-      img.onerror = reject;
-      img.src = ev.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function AdminGaleriePage() {
   const router = useRouter();
@@ -72,8 +38,17 @@ export default function AdminGaleriePage() {
   const syncGalleryCache = (list: GalleryImage[]) => {
     setImages(list);
     try {
-      sessionStorage.setItem('gratitude_gallery_cache_v2', JSON.stringify(list));
-    } catch {}
+      const serialized = JSON.stringify(list);
+      if (serialized.length < 2_500_000) {
+        sessionStorage.setItem('gratitude_gallery_cache_v2', serialized);
+      } else {
+        sessionStorage.removeItem('gratitude_gallery_cache_v2');
+      }
+    } catch {
+      try {
+        sessionStorage.removeItem('gratitude_gallery_cache_v2');
+      } catch {}
+    }
   };
 
   const loadGallery = async () => {
@@ -90,11 +65,17 @@ export default function AdminGaleriePage() {
 
     try {
       const res = await fetch('/api/gallery', { cache: 'no-store' });
+      if (!res.ok) {
+        showToast('Impossible de charger la galerie.');
+        return;
+      }
       const data = await res.json();
       if (Array.isArray(data.images)) {
         syncGalleryCache(data.images);
       }
-    } catch {} finally {
+    } catch {
+      showToast('Erreur réseau lors du chargement de la galerie.');
+    } finally {
       setLoadingGallery(false);
     }
   };
@@ -118,11 +99,11 @@ export default function AdminGaleriePage() {
     if (!file) return;
     try {
       showToast('Traitement de la photo...');
-      const b64 = await compressImageToBase64(file);
+      const b64 = await compressImageFileToBase64(file, 760);
       setPreviewData(b64);
       showToast('Photo prête à être publiée !');
-    } catch {
-      showToast('Erreur lors du traitement de la photo');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Erreur lors du traitement de la photo');
     }
   };
 

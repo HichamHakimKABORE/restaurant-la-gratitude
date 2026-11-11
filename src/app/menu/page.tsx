@@ -5,6 +5,7 @@ import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { PhoneIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
+import { safeCssImageUrl } from '@/lib/validation';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Toute la Carte', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -129,7 +130,7 @@ export default function NotreMenuPage() {
                   <div className="h-32 sm:h-44 overflow-hidden relative bg-stone-100">
                     <div
                       className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                      style={{ backgroundImage: `url('${dish.image_url}')` }}
+                      style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                     />
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/70 text-amber-300 font-bold text-[10px] sm:text-xs whitespace-nowrap">
                       {dish.category}

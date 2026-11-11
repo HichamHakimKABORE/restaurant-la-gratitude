@@ -15,6 +15,7 @@ import { isAdminRequest } from '@/lib/auth-server';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
 import { sanitizeNotes, sanitizeText } from '@/lib/validation';
+import { readJsonObjectBody } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -29,7 +30,10 @@ function isValidDateStr(val: unknown): val is string {
 
 export async function GET(request: Request) {
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Non autorisé.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   try {
     const { searchParams } = new URL(request.url);
@@ -39,7 +43,7 @@ export async function GET(request: Request) {
     if ((startDate && !isValidDateStr(startDate)) || (endDate && !isValidDateStr(endDate))) {
       return NextResponse.json(
         { error: 'Format de date invalide (attendu: AAAA-MM-JJ).' },
-        { status: 400 }
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
       );
     }
 
@@ -82,20 +86,31 @@ export async function GET(request: Request) {
           FROM daily_menu_history
           WHERE menu_date >= ${startDate}::date AND menu_date <= ${endDate}::date
           ORDER BY menu_date DESC
+          LIMIT 366
         `;
       } else {
         rows = await sql`
           SELECT id, TO_CHAR(menu_date, 'YYYY-MM-DD') AS menu_date, dishes_json, total_dishes, notes, created_at
           FROM daily_menu_history
           ORDER BY menu_date DESC
+          LIMIT 180
         `;
       }
 
-      const orderStats = await sql`
-        SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS order_date, COUNT(*)::int AS count, COALESCE(SUM(total_cfa), 0)::int AS revenue
-        FROM orders
-        GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
-      `;
+      const orderStats =
+        startDate && endDate
+          ? await sql`
+              SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS order_date, COUNT(*)::int AS count, COALESCE(SUM(total_cfa), 0)::int AS revenue
+              FROM orders
+              WHERE created_at >= ${startDate}::date AND created_at < (${endDate}::date + INTERVAL '1 day')
+              GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+            `
+          : await sql`
+              SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS order_date, COUNT(*)::int AS count, COALESCE(SUM(total_cfa), 0)::int AS revenue
+              FROM orders
+              WHERE created_at >= NOW() - INTERVAL '400 days'
+              GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+            `;
 
       const statsMap = new Map<string, { count: number; revenue: number }>();
       for (const st of orderStats) {
@@ -113,7 +128,7 @@ export async function GET(request: Request) {
         revenue_cfa: statsMap.get(r.menu_date)?.revenue || 0
       }));
 
-      return NextResponse.json({ reports });
+      return NextResponse.json({ reports }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     // Memory fallback
@@ -137,26 +152,33 @@ export async function GET(request: Request) {
       revenue_cfa: statsMap.get(h.menu_date)?.revenue || 0
     }));
 
-    return NextResponse.json({ reports });
+    return NextResponse.json({ reports }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('API menu-reports GET error:', error);
-    return NextResponse.json({ reports: getMemoryMenuHistory() });
+    return NextResponse.json(
+      { reports: getMemoryMenuHistory() },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }
 
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
-  }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Session expirée. Veuillez vous reconnecter.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
+  const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
+  if (!parsed.ok) return parsed.response;
   try {
-    const body = await request.json();
+    const body = parsed.data;
     const todayStr = getLogicalMenuDate();
     const menuDate = body.menu_date || todayStr;
     if (!isValidDateStr(menuDate)) {
@@ -191,7 +213,10 @@ export async function POST(request: Request) {
 
       invalidateMenuHistoryCache();
       await recordAdminAuditLog('menu_report_saved', menuDate, `Rapport enregistré (${totalDishes} plats)`, getClientIp(request));
-      return NextResponse.json({ success: true, message: 'Rapport du jour enregistré avec succès' });
+      return NextResponse.json(
+        { success: true, message: 'Rapport du jour enregistré avec succès' },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
     // Memory fallback
@@ -215,28 +240,40 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, message: 'Rapport du jour enregistré avec succès' });
+    return NextResponse.json(
+      { success: true, message: 'Rapport du jour enregistré avec succès' },
+      { headers: { 'Cache-Control': 'no-store' } }
+    );
   } catch (error) {
     console.error('API menu-reports POST error:', error);
     return NextResponse.json(
       { success: false, error: 'Impossible d’enregistrer le rapport.' },
-      { status: 500 }
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
     );
   }
 }
 
 export async function DELETE(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Session expirée. Veuillez vous reconnecter.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   try {
     const { searchParams } = new URL(request.url);
     const menuDate = searchParams.get('date');
     if (!menuDate || !isValidDateStr(menuDate)) {
-      return NextResponse.json({ error: 'Date invalide (AAAA-MM-JJ requis).' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Date invalide (AAAA-MM-JJ requis).' },
+        { status: 400, headers: { 'Cache-Control': 'no-store' } }
+      );
     }
 
     const sql = await ensureNeonSchema();
@@ -245,15 +282,18 @@ export async function DELETE(request: Request) {
     if (sql) {
       await sql`DELETE FROM daily_menu_history WHERE menu_date = ${menuDate}::date`;
       await recordAdminAuditLog('menu_report_deleted', menuDate, `Suppression rapport date ${menuDate}`, getClientIp(request));
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
     } else {
       const history = getMemoryMenuHistory();
       const idx = history.findIndex(h => h.menu_date === menuDate);
       if (idx !== -1) history.splice(idx, 1);
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true }, { headers: { 'Cache-Control': 'no-store' } });
     }
   } catch (error: any) {
     console.error('API menu-reports DELETE error:', error);
-    return NextResponse.json({ error: 'Erreur lors de la suppression' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Erreur lors de la suppression' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }

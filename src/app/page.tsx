@@ -6,6 +6,7 @@ import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
+import { safeCssImageUrl } from '@/lib/validation';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Tous', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
@@ -150,7 +151,7 @@ export default function AccueilClientPage() {
                 <div
                   key={currentDish.id}
                   className={`w-full h-full dish-photo transition-all duration-700 group-hover:scale-105 ${currentDish.image_quadrant}`}
-                  style={{ backgroundImage: `url('${currentDish.image_url}')` }}
+                  style={{ backgroundImage: `url('${safeCssImageUrl(currentDish.image_url)}')` }}
                 />
 
                 <div className="absolute top-1 right-1 px-1.5 py-0.5 rounded-full bg-[#801313]/95 text-white font-extrabold text-[9px] sm:text-[10px] border border-amber-300 shadow whitespace-nowrap">
@@ -317,7 +318,7 @@ export default function AccueilClientPage() {
                     <div className="h-28 sm:h-32 overflow-hidden relative bg-stone-100">
                       <div
                         className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                        style={{ backgroundImage: `url('${dish.image_url}')` }}
+                        style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                       />
                     </div>
 
@@ -463,7 +464,7 @@ export default function AccueilClientPage() {
             <a
               href={`https://wa.me/${whatsappNum}`}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener,noreferrer"
               className="w-full py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
             >
               <WhatsAppIcon className="w-4 h-4 shrink-0" />
@@ -524,7 +525,7 @@ export default function AccueilClientPage() {
         <a
           href={`https://wa.me/${whatsappNum}`}
           target="_blank"
-          rel="noreferrer"
+          rel="noopener,noreferrer"
           className="bg-[#f3e5d0] hover:bg-[#ebd5b3] border-2 border-[#d6be9c] rounded-2xl p-4 flex flex-col items-center text-center gap-2 shadow-sm transition"
         >
           <span className="w-12 h-12 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow">

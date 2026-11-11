@@ -270,3 +270,25 @@ export function validateImageSource(value: unknown): ImageValidationResult {
 
   return { ok: false, error: 'Format d’image non autorisé (JPG, PNG, WEBP ou GIF).' };
 }
+
+/**
+ * Nettoie une URL d'image avant injection dans CSS `background-image: url('...')`.
+ * Empêche toute rupture de règle CSS (apostrophes, parenthèses, sauts de ligne, schémas actifs).
+ */
+export function safeCssImageUrl(
+  value: unknown,
+  fallback = '/images/dishes_grid_1.jpg'
+): string {
+  const checked = validateImageSource(value);
+  return checked.ok ? checked.value : fallback;
+}
+
+/**
+ * Valide un identifiant administrateur (nom d'utilisateur ou e-mail) :
+ * 3 à 120 caractères, aucun espace ni caractère de contrôle.
+ */
+export function validateAdminIdentifier(raw: unknown): string | null {
+  const cleaned = sanitizeText(raw, 120);
+  if (!/^\S{3,120}$/.test(cleaned)) return null;
+  return cleaned;
+}

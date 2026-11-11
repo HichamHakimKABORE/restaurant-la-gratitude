@@ -9,10 +9,14 @@ import { SESSION_COOKIE, readSessionPayload } from '@/lib/session';
  */
 async function isTokenNotRevoked(issuedAtMs: number): Promise<boolean> {
   const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl || !dbUrl.trim()) return true;
+  if (!dbUrl || !dbUrl.trim()) {
+    return process.env.NODE_ENV !== 'production';
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3500);
   try {
     const cleanUrl = dbUrl.replace('&channel_binding=require', '');
-    const sql = neon(cleanUrl);
+    const sql = neon(cleanUrl, { fetchOptions: { signal: controller.signal } });
     const rows = await sql`
       SELECT session_valid_after
       FROM restaurant_settings
@@ -23,6 +27,8 @@ async function isTokenNotRevoked(issuedAtMs: number): Promise<boolean> {
     return issuedAtMs >= validAfter;
   } catch {
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

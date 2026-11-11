@@ -331,22 +331,7 @@ export default function AdminShell({
             navLinks[4]  // Galerie
           ].map(item => {
             const isActive = pathname === item.href;
-            if (authorized !== true) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#f3e7d7] text-[#2b1810] p-4">
-        <div className="bg-white/95 backdrop-blur-sm rounded-2xl border-2 border-[#881313] p-8 shadow-xl max-w-sm w-full text-center space-y-3">
-          <div className="font-extrabold text-sm text-[#881313]">
-            Contrôle des autorisations...
-          </div>
-          <p className="text-xs text-stone-600">
-            Vérification de la session auprès du serveur sécurisé.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
+            return (
               <Link
                 key={item.href}
                 href={item.href}

@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { INITIAL_DISHES, INITIAL_SETTINGS, type Dish, type RestaurantSettings } from '@/lib/db';
 import { CheckIcon, CloseIcon, PhoneIcon, WhatsAppIcon } from './Icons';
 import { RESTAURANT_PHONE_DISPLAY, RESTAURANT_PHONE_TEL, RESTAURANT_WHATSAPP } from '@/lib/constants';
+import { safeCssImageUrl } from '@/lib/validation';
 
 export interface CartItem extends Dish {
   cartKey: string;
@@ -62,6 +63,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [modalQty, setModalQty] = useState<number>(1);
   const [selectionList, setSelectionList] = useState<CartItem[]>([]);
   const lastLocalWriteRef = useRef<number>(0);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Toute modification locale (Admin) marque l'heure d'écriture pour qu'un ancien
   // rafraîchissement automatique en cours n'écrase pas les cases cochées à l'instant.
@@ -87,6 +89,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     const startedAt = Date.now();
     try {
       const res = await fetch('/api/dishes', { cache: 'no-store' });
+      if (!res.ok) return;
       const data = await res.json();
       // Ignore une réponse partie avant (ou juste autour) d'une modification Admin locale
       if (lastLocalWriteRef.current >= startedAt - 3000) return;
@@ -130,7 +133,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     // Chargement des paramètres dynamiques du restaurant (/api/settings)
     fetch('/api/settings', { cache: 'no-store' })
-      .then(r => r.json())
+      .then(r => (r.ok ? r.json() : null))
       .then(d => {
         if (d?.settings) {
           setSettings(d.settings);
@@ -142,6 +145,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('focus', onVisibilityOrFocus);
       document.removeEventListener('visibilitychange', onVisibilityOrFocus);
       clearInterval(pollTimer);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     };
   }, []);
 
@@ -156,7 +160,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2800);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 2800);
   };
 
   const openDishSelector = (dish: Dish) => {
@@ -342,7 +347,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <div className="relative h-44 bg-stone-900">
               <div
                 className={`w-full h-full dish-photo ${modalDish.image_quadrant}`}
-                style={{ backgroundImage: `url('${modalDish.image_url}')` }}
+                style={{ backgroundImage: `url('${safeCssImageUrl(modalDish.image_url)}')` }}
               />
               <button
                 onClick={() => setModalDish(null)}
@@ -490,7 +495,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 <a
                   href={getWhatsAppDirectUrl(modalDish, selectedOpt, modalQty)}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener,noreferrer"
                   className="w-full py-2.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
                 >
                   <WhatsAppIcon className="w-4 h-4 shrink-0" />

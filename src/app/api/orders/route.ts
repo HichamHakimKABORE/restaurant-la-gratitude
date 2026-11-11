@@ -9,6 +9,7 @@ import { isAdminRequest } from '@/lib/auth-server';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
 import { normalizeOrderStatus, sanitizeText } from '@/lib/validation';
+import { readJsonObjectBody } from '@/lib/request-body';
 import { canTransition } from '@/lib/order-service';
 
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
                created_at, updated_at
         FROM orders
         ORDER BY id DESC
+        LIMIT 300
       `) as Order[];
       return NextResponse.json(
         { source: 'neon', orders: rows },
@@ -78,6 +80,7 @@ async function readAllOrders(sql: unknown): Promise<Order[]> {
            created_at, updated_at
     FROM orders
     ORDER BY id DESC
+    LIMIT 300
   `;
 }
 
@@ -85,21 +88,14 @@ export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
     return jsonError('Origine non autorisée (CSRF).', 403);
   }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 64 * 1024) {
-    return jsonError('Requête trop volumineuse.', 413);
-  }
   if (!(await isAdminRequest(request))) {
     return jsonError('Non autorisé.', 401);
   }
+  const parsed = await readJsonObjectBody(request, 64 * 1024, 'Requête trop volumineuse.');
+  if (!parsed.ok) return parsed.response;
 
   try {
-    let body: Record<string, unknown>;
-    try {
-      body = (await request.json()) as Record<string, unknown>;
-    } catch {
-      return jsonError('Corps de requête invalide.', 400);
-    }
+    const body = parsed.data;
 
     const id = Number(body.id);
     if (!Number.isInteger(id) || id <= 0) {

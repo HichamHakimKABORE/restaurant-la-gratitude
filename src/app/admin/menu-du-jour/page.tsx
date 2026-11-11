@@ -7,11 +7,14 @@ import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, CloseIcon, WhatsAppIcon, PrinterIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, getLogicalMenuDate, type Dish, type StockStatus } from '@/lib/db';
+import { safeCssImageUrl } from '@/lib/validation';
 
 export default function AdminMenuDuJourPage() {
   const router = useRouter();
   const { dishes, setDishes, settings, showToast } = useCart();
   const [isSavingHistory, setIsSavingHistory] = useState(false);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [updatingDishId, setUpdatingDishId] = useState<number | null>(null);
 
   // Séparation stricte : SEULS les plats avec availability_mode === 'daily'
   // figurent dans la liste du Menu du Jour, triés d'abord par Riz, ensuite Soupes, etc.
@@ -76,8 +79,10 @@ export default function AdminMenuDuJourPage() {
   };
 
   const handleResetDailyMenu = async () => {
+    if (isBulkUpdating) return;
     if (!confirm('Voulez-vous décocher tous les plats du Menu du Jour ?')) return;
     const prevDishes = dishes;
+    setIsBulkUpdating(true);
     setDishes(prev =>
       prev.map(d =>
         d.availability_mode === 'daily'
@@ -85,29 +90,38 @@ export default function AdminMenuDuJourPage() {
           : d
       )
     );
-    const res = await fetch('/api/dishes', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reset_daily' })
-    });
-    if (res.status === 401) {
+    try {
+      const res = await fetch('/api/dishes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset_daily' })
+      });
+      if (res.status === 401) {
+        setDishes(prevDishes);
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDishes(prevDishes);
+        showToast(data.error || 'Mise à jour impossible.');
+        return;
+      }
+      if (data.dishes) setDishes(data.dishes);
+      showToast('Menu du Jour réinitialisé (0 plat coché).');
+    } catch {
       setDishes(prevDishes);
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+      showToast('Erreur réseau lors de la réinitialisation.');
+    } finally {
+      setIsBulkUpdating(false);
     }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setDishes(prevDishes);
-      showToast(data.error || 'Mise à jour impossible.');
-      return;
-    }
-    if (data.dishes) setDishes(data.dishes);
-    showToast('Menu du Jour réinitialisé (0 plat coché).');
   };
 
   const handleCheckAllDailyMenu = async () => {
+    if (isBulkUpdating) return;
     const prevDishes = dishes;
+    setIsBulkUpdating(true);
     setDishes(prev =>
       prev.map(d =>
         d.availability_mode === 'daily'
@@ -115,25 +129,32 @@ export default function AdminMenuDuJourPage() {
           : d
       )
     );
-    const res = await fetch('/api/dishes', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'check_all_daily' })
-    });
-    if (res.status === 401) {
+    try {
+      const res = await fetch('/api/dishes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check_all_daily' })
+      });
+      if (res.status === 401) {
+        setDishes(prevDishes);
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDishes(prevDishes);
+        showToast(data.error || 'Mise à jour impossible.');
+        return;
+      }
+      if (data.dishes) setDishes(data.dishes);
+      showToast('Tous les plats du Menu du Jour ont été cochés (Prêt) !');
+    } catch {
       setDishes(prevDishes);
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+      showToast('Erreur réseau lors de la mise à jour.');
+    } finally {
+      setIsBulkUpdating(false);
     }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setDishes(prevDishes);
-      showToast(data.error || 'Mise à jour impossible.');
-      return;
-    }
-    if (data.dishes) setDishes(data.dishes);
-    showToast('Tous les plats du Menu du Jour ont été cochés (Prêt) !');
   };
 
   const buildWhatsAppDailyText = () => {
@@ -173,8 +194,10 @@ export default function AdminMenuDuJourPage() {
   };
 
   const setStatus = async (dish: Dish, status: StockStatus) => {
+    if (updatingDishId === dish.id) return;
     const isAvail = status !== 'soldout';
     const prevDishes = dishes;
+    setUpdatingDishId(dish.id);
     setDishes(prev =>
       prev.map(d =>
         d.id === dish.id
@@ -182,37 +205,44 @@ export default function AdminMenuDuJourPage() {
           : d
       )
     );
-    const res = await fetch('/api/dishes', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: dish.id,
-        stock_status: status,
-        is_available_today: isAvail
-      })
-    });
-    if (res.status === 401) {
+    try {
+      const res = await fetch('/api/dishes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: dish.id,
+          stock_status: status,
+          is_available_today: isAvail
+        })
+      });
+      if (res.status === 401) {
+        setDishes(prevDishes);
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDishes(prevDishes);
+        showToast(data.error || 'Mise à jour impossible.');
+        return;
+      }
+      if (data.dishes) setDishes(data.dishes);
+      showToast(
+        `${dish.name} : ${
+          status === 'available'
+            ? 'Coché (Disponible)'
+            : status === 'low'
+            ? 'Marqué Presque fini'
+            : 'Retiré du menu du jour'
+        }`
+      );
+    } catch {
       setDishes(prevDishes);
-      showToast('Session expirée. Veuillez vous reconnecter.');
-      router.push('/admin/login');
-      return;
+      showToast('Erreur réseau lors de la mise à jour du plat.');
+    } finally {
+      setUpdatingDishId(null);
     }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      setDishes(prevDishes);
-      showToast(data.error || 'Mise à jour impossible.');
-      return;
-    }
-    if (data.dishes) setDishes(data.dishes);
-    showToast(
-      `${dish.name} : ${
-        status === 'available'
-          ? 'Coché (Disponible)'
-          : status === 'low'
-          ? 'Marqué Presque fini'
-          : 'Retiré du menu du jour'
-      }`
-    );
   };
 
   return (
@@ -266,7 +296,7 @@ export default function AdminMenuDuJourPage() {
                     <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl overflow-hidden shrink-0 border border-amber-400">
                       <div
                         className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                        style={{ backgroundImage: `url('${dish.image_url}')` }}
+                        style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                       />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -352,15 +382,17 @@ export default function AdminMenuDuJourPage() {
           <div className="grid grid-cols-2 gap-2 w-full">
             <button
               type="button"
+              disabled={isBulkUpdating}
               onClick={handleCheckAllDailyMenu}
-              className="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-xs transition"
+              className="py-2 px-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 disabled:opacity-60 text-emerald-800 border border-emerald-300 font-extrabold text-xs transition"
             >
               Tout cocher (Prêt)
             </button>
             <button
               type="button"
+              disabled={isBulkUpdating}
               onClick={handleResetDailyMenu}
-              className="py-2 px-2 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 font-bold text-xs transition"
+              className="py-2 px-2 rounded-xl bg-white hover:bg-rose-50 disabled:opacity-60 text-rose-700 border border-rose-300 font-bold text-xs transition"
             >
               Tout décocher
             </button>

@@ -14,6 +14,7 @@ import { isAdminRequest } from '@/lib/auth-server';
 import { sanitizeText, validateImageSource } from '@/lib/validation';
 import { isAllowedOrigin } from '@/lib/csrf';
 import { getClientIp } from '@/lib/rate-limit';
+import { readJsonObjectBody } from '@/lib/request-body';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -102,15 +103,18 @@ export async function GET() {
 
     const sql = await ensureNeonSchema();
     if (sql) {
-      const settingsDateRows = await sql`SELECT daily_menu_date FROM restaurant_settings WHERE id = 1`;
-      const currentMenuDate = settingsDateRows[0]?.daily_menu_date || '';
-      if (currentMenuDate !== todayStr) {
+      const flipped = await sql`
+        UPDATE restaurant_settings
+        SET daily_menu_date = ${todayStr}
+        WHERE id = 1 AND COALESCE(daily_menu_date, '') <> ${todayStr}
+        RETURNING id
+      `;
+      if (flipped.length > 0) {
         await sql`
           UPDATE dishes
           SET is_available_today = false, stock_status = 'soldout'
           WHERE availability_mode = 'daily' AND is_available_today = true
         `;
-        await sql`UPDATE restaurant_settings SET daily_menu_date = ${todayStr} WHERE id = 1`;
       }
       const rows = (await sql`
         SELECT id, slug, name, category, price, availability_mode, is_available_today, stock_status, options_json, image_url, image_quadrant, description, display_order
@@ -135,17 +139,21 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
-  }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Session expirée. Veuillez vous reconnecter.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
+  const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
+  if (!parsed.ok) return parsed.response;
   try {
-    const body = await request.json();
+    const body = parsed.data;
     const sql = await ensureNeonSchema();
     const todayStr = getLogicalMenuDate();
 
@@ -169,7 +177,10 @@ export async function PATCH(request: Request) {
           targetAvail ? 'Menu du Jour : tout coché' : 'Menu du Jour : tout décoché',
           getClientIp(request)
         );
-        return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
+        return NextResponse.json(
+          { ok: true, source: 'neon', dishes: rows },
+          { headers: { 'Cache-Control': 'no-store' } }
+        );
       } else {
         invalidateDishesCache();
         const mem = getMemoryDishes();
@@ -179,7 +190,10 @@ export async function PATCH(request: Request) {
             d.stock_status = targetStatus;
           }
         }
-        return NextResponse.json({ ok: true, source: 'memory', dishes: mem });
+        return NextResponse.json(
+          { ok: true, source: 'memory', dishes: mem },
+          { headers: { 'Cache-Control': 'no-store' } }
+        );
       }
     }
 
@@ -242,11 +256,13 @@ export async function PATCH(request: Request) {
     const cleanDescription = description !== undefined ? sanitizeText(description, 600) : null;
     const cleanOptions = options_json !== undefined ? sanitizeDishOptions(options_json) : null;
 
-    if (image_url) {
+    let cleanImageUrl: string | null = null;
+    if (image_url !== undefined) {
       const checkImg = validateImageSource(image_url);
       if (!checkImg.ok) {
         return NextResponse.json({ error: checkImg.error || 'Image non valide.' }, { status: 400 });
       }
+      cleanImageUrl = checkImg.value;
     }
 
     if (sql) {
@@ -255,12 +271,12 @@ export async function PATCH(request: Request) {
         SET
           name = COALESCE(${cleanName}, name),
           price = COALESCE(${cleanPrice}, price),
-          category = COALESCE(${category ?? null}, category),
-          availability_mode = COALESCE(${availability_mode ?? null}, availability_mode),
+          category = COALESCE(${category !== undefined ? String(category) : null}, category),
+          availability_mode = COALESCE(${availability_mode !== undefined ? String(availability_mode) : null}, availability_mode),
           is_available_today = COALESCE(${typeof is_available_today === 'boolean' ? is_available_today : null}, is_available_today),
-          stock_status = COALESCE(${stock_status ?? null}, stock_status),
-          image_url = COALESCE(${image_url ?? null}, image_url),
-          image_quadrant = COALESCE(${image_quadrant ?? null}, image_quadrant),
+          stock_status = COALESCE(${stock_status !== undefined ? String(stock_status) : null}, stock_status),
+          image_url = COALESCE(${cleanImageUrl}, image_url),
+          image_quadrant = COALESCE(${image_quadrant !== undefined ? String(image_quadrant) : null}, image_quadrant),
           description = COALESCE(${cleanDescription}, description),
           display_order = COALESCE(${cleanOrder}, display_order),
           options_json = COALESCE(${cleanOptions ? JSON.stringify(cleanOptions) : null}::jsonb, options_json)
@@ -274,45 +290,58 @@ export async function PATCH(request: Request) {
       await autoSyncTodayMenuReport(sql, rows, todayStr);
       await recordAdminAuditLog('dish_updated', dishId, cleanName ? `Mise à jour: ${cleanName}` : 'Mise à jour plat', getClientIp(request));
 
-      return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
+      return NextResponse.json(
+        { ok: true, source: 'neon', dishes: rows },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       invalidateDishesCache();
       const mem = getMemoryDishes();
       const target = mem.find(d => d.id === dishId);
       if (target) {
         if (typeof is_available_today === 'boolean') target.is_available_today = is_available_today;
-        if (stock_status !== undefined) target.stock_status = stock_status;
+        if (stock_status !== undefined) target.stock_status = String(stock_status) as Dish['stock_status'];
         if (cleanName !== null) target.name = cleanName;
         if (cleanPrice !== null) target.price = cleanPrice;
-        if (category !== undefined) target.category = category;
-        if (availability_mode !== undefined) target.availability_mode = availability_mode;
-        if (image_url !== undefined) target.image_url = image_url;
-        if (image_quadrant !== undefined) target.image_quadrant = image_quadrant;
+        if (category !== undefined) target.category = String(category) as Dish['category'];
+        if (availability_mode !== undefined) target.availability_mode = String(availability_mode) as Dish['availability_mode'];
+        if (cleanImageUrl !== null) target.image_url = cleanImageUrl;
+        if (image_quadrant !== undefined) target.image_quadrant = String(image_quadrant) as Dish['image_quadrant'];
         if (cleanDescription !== null) target.description = cleanDescription;
         if (cleanOptions !== null) target.options_json = cleanOptions;
         if (cleanOrder !== null) target.display_order = cleanOrder;
       }
-      return NextResponse.json({ ok: true, source: 'memory', dishes: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', dishes: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('PATCH /api/dishes error:', error);
-    return NextResponse.json({ error: 'Failed to update dish' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update dish' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }
 
 export async function POST(request: Request) {
   if (!isAllowedOrigin(request)) {
-    return NextResponse.json({ error: 'Origine non autorisée (CSRF).' }, { status: 403 });
-  }
-  const contentLength = Number(request.headers.get('content-length') || 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ error: 'Requête trop volumineuse (max 1 Mo).' }, { status: 413 });
+    return NextResponse.json(
+      { error: 'Origine non autorisée (CSRF).' },
+      { status: 403, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
   if (!(await isAdminRequest(request))) {
-    return NextResponse.json({ error: 'Session expirée. Veuillez vous reconnecter.' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Session expirée. Veuillez vous reconnecter.' },
+      { status: 401, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
+  const parsed = await readJsonObjectBody(request, 1024 * 1024, 'Requête trop volumineuse (max 1 Mo).');
+  if (!parsed.ok) return parsed.response;
   try {
-    const body = await request.json();
+    const body = parsed.data;
     const {
       name,
       category,
@@ -356,11 +385,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ordre d’affichage invalide.' }, { status: 400 });
     }
 
-    if (image_url) {
+    let finalImageUrl = '/images/dishes_grid_1.jpg';
+    if (image_url !== undefined && image_url !== null && image_url !== '') {
       const checkImg = validateImageSource(image_url);
       if (!checkImg.ok) {
         return NextResponse.json({ error: checkImg.error || 'Image non valide.' }, { status: 400 });
       }
+      finalImageUrl = checkImg.value;
     }
 
     const baseSlug =
@@ -391,7 +422,7 @@ export async function POST(request: Request) {
           true,
           'available',
           ${JSON.stringify(opts)}::jsonb,
-          ${image_url || '/images/dishes_grid_1.jpg'},
+          ${finalImageUrl},
           ${quad},
           ${cleanDescription},
           ${orderNum}
@@ -406,7 +437,10 @@ export async function POST(request: Request) {
         await autoSyncTodayMenuReport(sql, rows, todayStr);
       }
       await recordAdminAuditLog('dish_created', slug, `Création plat: ${cleanName} (${roundedPrice} FCFA)`, getClientIp(request));
-      return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
+      return NextResponse.json(
+        { ok: true, source: 'neon', dishes: rows },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       invalidateDishesCache();
       const mem = getMemoryDishes();
@@ -420,13 +454,16 @@ export async function POST(request: Request) {
         is_available_today: true,
         stock_status: 'available',
         options_json: opts,
-        image_url: image_url || '/images/dishes_grid_1.jpg',
+        image_url: finalImageUrl,
         image_quadrant: quad as Dish['image_quadrant'],
         description: cleanDescription,
         display_order: orderNum
       };
       mem.push(newDish);
-      return NextResponse.json({ ok: true, source: 'memory', dishes: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', dishes: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('POST /api/dishes error:', error);
@@ -456,16 +493,25 @@ export async function DELETE(request: Request) {
       const rows = (await sql`SELECT * FROM dishes ORDER BY display_order ASC, id ASC`) as Dish[];
       global._dishesCache = { data: rows, ts: Date.now(), date: todayStr };
       await autoSyncTodayMenuReport(sql, rows, todayStr);
-      return NextResponse.json({ ok: true, source: 'neon', dishes: rows });
+      return NextResponse.json(
+        { ok: true, source: 'neon', dishes: rows },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     } else {
       invalidateDishesCache();
       const mem = getMemoryDishes();
       const idx = mem.findIndex(d => d.id === id);
       if (idx !== -1) mem.splice(idx, 1);
-      return NextResponse.json({ ok: true, source: 'memory', dishes: mem });
+      return NextResponse.json(
+        { ok: true, source: 'memory', dishes: mem },
+        { headers: { 'Cache-Control': 'no-store' } }
+      );
     }
   } catch (error) {
     console.error('DELETE /api/dishes error:', error);
-    return NextResponse.json({ error: 'Failed to delete dish' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete dish' },
+      { status: 500, headers: { 'Cache-Control': 'no-store' } }
+    );
   }
 }

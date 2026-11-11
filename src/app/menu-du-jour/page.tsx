@@ -6,6 +6,7 @@ import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { PhoneIcon, ChefHatIcon, BoltIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, type Dish } from '@/lib/db';
+import { safeCssImageUrl } from '@/lib/validation';
 
 export default function MenuDuJourPage() {
   const { dishes, loadingDishes, settings, openDishSelector } = useCart();
@@ -111,7 +112,7 @@ export default function MenuDuJourPage() {
                       <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden shrink-0 border-2 border-[#d99b26] shadow relative">
                         <div
                           className={`w-full h-full dish-photo ${dish.image_quadrant}`}
-                          style={{ backgroundImage: `url('${dish.image_url}')` }}
+                          style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                         />
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
