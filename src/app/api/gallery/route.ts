@@ -156,7 +156,7 @@ export async function PATCH(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
-      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${title || 'Sans titre'}`, getClientIp(request));
+      await recordAdminAuditLog('gallery_updated', id, `Mise à jour photo: ${title || 'Sans titre'}`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();
@@ -197,7 +197,6 @@ export async function DELETE(request: Request) {
         ORDER BY display_order ASC, id DESC
       `) as GalleryImage[];
       global._galleryCache = { data: rows, ts: Date.now() };
-      await recordAdminAuditLog('gallery_added', null, `Photo ajoutée: ${title || 'Sans titre'}`, getClientIp(request));
       return NextResponse.json({ ok: true, source: 'neon', images: rows });
     } else {
       const mem = getMemoryGallery();
