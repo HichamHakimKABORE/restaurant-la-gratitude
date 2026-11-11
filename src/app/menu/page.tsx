@@ -4,14 +4,12 @@ import React, { useState } from 'react';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
 import { PhoneIcon } from '@/components/Icons';
-import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
+import { matchesDishSearch } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
 import { formatPhoneList, toTelHref } from '@/lib/phone';
 
 const CATEGORY_TABS = [
   { key: 'Tous', label: 'Toute la Carte', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
-  { key: 'SurCommande', label: 'Plats sur Commande', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
-  { key: 'MenuDuJour', label: 'Menu du Jour', img: '/images/dishes_grid_1.jpg', quad: 'quad-tr' },
   { key: 'Pizzas', label: 'Pizzas', img: '/images/dishes_grid_2.jpg', quad: 'quad-bl' },
   { key: 'Poulets', label: 'Poulets', img: '/images/dishes_grid_2.jpg', quad: 'quad-br' },
   { key: 'Grillades', label: 'Grillades', img: '/images/dishes_grid_2.jpg', quad: 'quad-tl' },
@@ -28,23 +26,12 @@ export default function NotreMenuPage() {
 
   const phoneList = formatPhoneList(settings.phone, settings.phone_2);
 
-  const onOrderDishes = dishes.filter(d => d.availability_mode !== 'daily');
-  const activeDailyDishes = sortDailyMenuDishes(
-    dishes.filter(d => d.availability_mode === 'daily' && d.is_available_today)
-  );
-
-  // Sur 'Toute la Carte' : on affiche les Plats sur Commande en premier, suivis des plats du Menu du Jour préparés aujourd'hui.
-  // Sur 'MenuDuJour' : on affiche uniquement les plats du jour préparés aujourd'hui.
-  const baseList = (() => {
-    if (selectedCategory === 'SurCommande') return onOrderDishes;
-    if (selectedCategory === 'MenuDuJour') return activeDailyDishes;
-    if (selectedCategory === 'Tous') return [...onOrderDishes, ...activeDailyDishes];
-    return dishes.filter(
-      d =>
-        d.category === selectedCategory &&
-        (d.availability_mode !== 'daily' || d.is_available_today)
-    );
-  })();
+  // La Carte présente l'ensemble des produits proposés par le restaurant,
+  // toutes catégories confondues, indépendamment du Menu du Jour.
+  const baseList =
+    selectedCategory === 'Tous'
+      ? dishes
+      : dishes.filter(d => d.category === selectedCategory);
 
   const visibleDishes = baseList.filter(d => matchesDishSearch(d, search));
 
@@ -54,7 +41,7 @@ export default function NotreMenuPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-200 pb-3">
           <div>
             <h2 className="text-xl sm:text-2xl font-extrabold text-[#2b1810]">
-              Notre Carte — Plats sur Commande &amp; Spécialités
+              Notre Carte — Tous nos Plats &amp; Spécialités
             </h2>
             <p className="text-xs sm:text-sm text-stone-600">
               Pour commander un plat, cliquez dessus ou appelez directement le{' '}
@@ -108,19 +95,17 @@ export default function NotreMenuPage() {
         {visibleDishes.length === 0 ? (
           <div className="p-6 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2">
             <p className="font-extrabold text-sm text-[#881313]">
-              {selectedCategory === 'MenuDuJour'
-                ? 'Le Menu du Jour est actuellement en préparation en cuisine.'
-                : 'Aucun plat ne correspond à votre recherche.'}
+              Aucun plat ne correspond à votre recherche.
             </p>
             <button
               type="button"
               onClick={() => {
-                setSelectedCategory('SurCommande');
+                setSelectedCategory('Tous');
                 setSearch('');
               }}
               className="px-4 py-2 rounded-xl bg-[#881313] text-white font-extrabold text-xs shadow"
             >
-              Afficher les Plats sur Commande
+              Afficher toute la carte
             </button>
           </div>
         ) : (
