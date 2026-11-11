@@ -129,7 +129,7 @@ export default function NotreMenuPage() {
               <article
                 key={dish.id}
                 onClick={() => openDishSelector(dish)}
-                className="group cursor-pointer bg-[#fffcf7] rounded-2xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-xl transition flex flex-col justify-between"
+                className="group min-w-0 cursor-pointer bg-[#fffcf7] rounded-2xl border border-[#e6d5c3] hover:border-[#881313] overflow-hidden shadow-sm hover:shadow-xl transition flex flex-col justify-between"
               >
                 <div>
                   <div className="h-32 sm:h-44 overflow-hidden relative bg-stone-100">
@@ -156,12 +156,12 @@ export default function NotreMenuPage() {
                   </div>
                 </div>
 
-                <div className="p-2.5 sm:p-3.5 pt-2 border-t border-stone-100 flex items-center justify-between gap-1.5">
-                  <span className="font-extrabold text-xs sm:text-base text-[#991b1b] whitespace-nowrap shrink-0">
+                <div className="p-2.5 sm:p-3.5 pt-2 border-t border-stone-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+                  <span className="font-extrabold text-xs sm:text-base text-[#991b1b] whitespace-nowrap">
                     {formatCFA(dish.price)}
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2 sm:px-3 py-1 rounded-lg bg-[#881313] group-hover:bg-[#16a34a] text-white font-extrabold text-[11px] sm:text-xs transition whitespace-nowrap shrink-0">
-                    <PhoneIcon className="w-3 h-3 shrink-0 hidden xs:inline" />
+                  <span className="w-full sm:w-auto inline-flex items-center justify-center gap-1 px-2 sm:px-3 py-1.5 sm:py-1 rounded-lg bg-[#881313] group-hover:bg-[#16a34a] text-white font-extrabold text-[11px] sm:text-xs transition whitespace-nowrap">
+                    <PhoneIcon className="w-3 h-3 shrink-0" />
                     <span>+ Commander</span>
                   </span>
                 </div>
