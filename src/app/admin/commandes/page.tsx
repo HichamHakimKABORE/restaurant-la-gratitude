@@ -301,7 +301,7 @@ export default function AdminCommandesPage() {
                   <a
                     href={getClientWhatsAppUrl(order)}
                     target="_blank"
-                    rel="noopener,noreferrer"
+                    rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-[#16a34a] text-white font-bold text-xs shadow"
                     title="Notifier le client sur WhatsApp"
                   >

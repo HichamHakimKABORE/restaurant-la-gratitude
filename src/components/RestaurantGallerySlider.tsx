@@ -141,7 +141,7 @@ export default function RestaurantGallerySlider() {
                 <CloseIcon className="w-4 h-4" />
               </button>
               <img
-                src={selectedImage.image_url}
+                src={safeCssImageUrl(selectedImage.image_url)}
                 alt={selectedImage.title || 'Restaurant La Gratitude'}
                 className="w-full max-h-[75vh] object-contain bg-black"
               />

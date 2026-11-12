@@ -319,7 +319,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             <a
               href={getSelectionOnlyWhatsAppUrl()}
               target="_blank"
-              rel="noopener,noreferrer"
+              rel="noopener noreferrer"
               className="px-3 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
             >
               <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
@@ -503,7 +503,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 <a
                   href={getWhatsAppDirectUrl(modalDish, selectedOpt, modalQty)}
                   target="_blank"
-                  rel="noopener,noreferrer"
+                  rel="noopener noreferrer"
                   className="w-full py-2.5 px-4 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
                 >
                   <WhatsAppIcon className="w-4 h-4 shrink-0" />

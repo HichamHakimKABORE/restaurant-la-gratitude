@@ -8,6 +8,7 @@ import { CameraIcon, CloseIcon, PencilIcon, CheckIcon, StarIcon } from '@/compon
 import { useCart } from '@/components/CartContext';
 import { type GalleryImage } from '@/lib/db';
 import { compressImageFileToBase64 } from '@/lib/client-image';
+import { safeCssImageUrl } from '@/lib/validation';
 
 const SUGGESTIONS = [
   'Restaurant La Gratitude — Zagtouli',
@@ -398,7 +399,7 @@ export default function AdminGaleriePage() {
                     title="Cliquer pour changer la description"
                   >
                     <img
-                      src={img.image_url}
+                      src={safeCssImageUrl(img.image_url)}
                       alt={img.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
@@ -480,7 +481,7 @@ export default function AdminGaleriePage() {
 
               <div className="h-36 sm:h-48 w-full rounded-xl overflow-hidden border-2 border-[#d99b26] shadow-inner bg-stone-100">
                 <img
-                  src={editingImage.image_url}
+                  src={safeCssImageUrl(editingImage.image_url)}
                   alt={editingImage.title}
                   className="w-full h-full object-cover"
                 />
