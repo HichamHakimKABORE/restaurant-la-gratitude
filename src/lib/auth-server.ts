@@ -123,7 +123,7 @@ export async function revokeAllAdminSessions(): Promise<void> {
   if (!sql) return;
   await sql`
     UPDATE restaurant_settings
-    SET session_valid_after = ${Date.now()}
+    SET session_valid_after = ${Date.now() + 1}
     WHERE id = 1
   `;
 }

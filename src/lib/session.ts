@@ -164,7 +164,12 @@ export function readSessionCookie(
   const match = cookieHeader.match(
     new RegExp(`(?:^|;\\s*)${SESSION_COOKIE}=([^;]+)`)
   );
-  return match ? decodeURIComponent(match[1]) : undefined;
+  if (!match) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return undefined;
+  }
 }
 
 /** Vérifie qu'une requête API provient bien de l'administrateur connecté. */
