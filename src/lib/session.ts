@@ -33,7 +33,7 @@ function fromBase64Url(value: string): Uint8Array {
 
 function getSecret(): string | null {
   const customSecret = process.env.ADMIN_SESSION_SECRET;
-  if (customSecret && customSecret.trim().length >= 16) {
+  if (customSecret && customSecret.trim().length >= 8) {
     return `la-gratitude-session-hmac:${customSecret.trim()}`;
   }
   const password = process.env.ADMIN_PASSWORD || '';
@@ -46,7 +46,7 @@ function getSecret(): string | null {
       return null;
     }
     console.warn(
-      '[SESSION] ADMIN_SESSION_SECRET non défini (ou < 16 caractères) : ajoutez-le dans Vercel pour renforcer les sessions.'
+      '[SESSION] ADMIN_SESSION_SECRET non défini (ou < 8 caractères) : ajoutez-le dans Vercel pour renforcer les sessions.'
     );
   }
   if (!password && !dbUrl) {
