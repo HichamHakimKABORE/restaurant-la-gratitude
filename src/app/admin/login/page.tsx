@@ -26,13 +26,15 @@ export default function AdminLoginPage() {
         localStorage.removeItem('admin_logged_out');
         const params = new URLSearchParams(window.location.search);
         const next = params.get('next');
-        const safeNext =
-          next &&
-          next.startsWith('/admin') &&
-          !next.startsWith('//') &&
-          !next.includes('\\')
-            ? next
-            : '/admin';
+        let safeNext = '/admin';
+        if (next && !next.startsWith('//') && !next.includes('\\') && !/[\r\n]/.test(next)) {
+          try {
+            const resolved = new URL(next, 'http://localhost');
+            if (resolved.origin === 'http://localhost' && resolved.pathname.startsWith('/admin')) {
+              safeNext = `${resolved.pathname}${resolved.search}`;
+            }
+          } catch {}
+        }
         router.push(safeNext);
       } else {
         setError(data.error || 'Identifiant ou mot de passe incorrect.');

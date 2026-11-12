@@ -115,6 +115,8 @@ export async function GET() {
           SET is_available_today = false, stock_status = 'soldout'
           WHERE availability_mode = 'daily' AND is_available_today = true
         `;
+        invalidateDishesCache();
+        invalidateMenuHistoryCache();
       }
       const rows = (await sql`
         SELECT id, slug, name, category, price, availability_mode, is_available_today, stock_status, options_json, image_url, image_quadrant, description, display_order

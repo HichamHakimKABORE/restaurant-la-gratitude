@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { type GalleryImage } from '@/lib/db';
+import { safeCssImageUrl } from '@/lib/validation';
 import { CameraIcon, CloseIcon } from './Icons';
 
 const GALLERY_MEMORY_TTL_MS = 60_000;
@@ -101,7 +102,7 @@ export default function RestaurantGallerySlider() {
               className="cursor-pointer w-36 h-24 sm:w-60 sm:h-40 rounded-lg sm:rounded-xl overflow-hidden shrink-0 border-2 border-[#eab308]/60 sm:hover:border-[#881313] shadow-sm relative group/card bg-stone-100 transition-all duration-300"
             >
               <img
-                src={img.image_url}
+                src={safeCssImageUrl(img.image_url)}
                 alt={img.title || 'Restaurant La Gratitude'}
                 className="w-full h-full object-cover group-hover/card:scale-105 transition duration-300"
                 loading="lazy"

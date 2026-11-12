@@ -105,11 +105,27 @@ async function getSessionValidAfter(): Promise<number> {
   const cached = global._adminValidAfterCache;
   if (cached && Date.now() - cached.ts < VALID_AFTER_CACHE_MS) return cached.value;
   const sql = await ensureNeonSchema();
-  if (!sql) return 0;
+  if (!sql) {
+    if (process.env.DATABASE_URL?.trim()) {
+      throw new Error('Base de données indisponible pour vérifier la session.');
+    }
+    return 0;
+  }
   const rows = await sql`SELECT session_valid_after FROM restaurant_settings WHERE id = 1`;
   const value = Number(rows[0]?.session_valid_after || 0);
   global._adminValidAfterCache = { value, ts: Date.now() };
   return value;
+}
+
+export async function revokeAllAdminSessions(): Promise<void> {
+  global._adminValidAfterCache = undefined;
+  const sql = await ensureNeonSchema();
+  if (!sql) return;
+  await sql`
+    UPDATE restaurant_settings
+    SET session_valid_after = ${Date.now()}
+    WHERE id = 1
+  `;
 }
 
 export async function isValidAdminToken(token?: string | null): Promise<boolean> {
@@ -139,7 +155,12 @@ export async function hasAdminSession(): Promise<boolean> {
 
 async function getCustomCredentials(): Promise<{ email: string; hash: string } | null> {
   const sql = await ensureNeonSchema();
-  if (!sql) return null;
+  if (!sql) {
+    if (process.env.DATABASE_URL?.trim()) {
+      throw new Error('Base de données indisponible pour vérifier les identifiants.');
+    }
+    return null;
+  }
   const rows = await sql`
     SELECT admin_custom_email, admin_custom_password_hash
     FROM restaurant_settings

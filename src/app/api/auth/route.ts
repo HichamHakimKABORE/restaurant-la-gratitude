@@ -5,6 +5,7 @@ import {
   getLoginFailureCounts,
   hasAdminSession,
   recordLoginFailure,
+  revokeAllAdminSessions,
   setAdminSession,
   verifyAdminCredentials
 } from '@/lib/auth-server';
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
 
     if (body.action === 'logout') {
       if (await hasAdminSession()) {
+        await revokeAllAdminSessions().catch(() => {});
         await recordAdminAuditLog('admin_logout', null, 'Déconnexion administrateur', clientIp).catch(() => {});
       }
       clearAdminSession();
