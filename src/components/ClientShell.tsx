@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChefHatIcon, StarIcon, ThumbUpIcon, HeartIcon, WhatsAppIcon, MapPinIcon, PhoneIcon, CompassIcon, CloseIcon } from './Icons';
@@ -12,6 +12,12 @@ export default function ClientShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const { settings } = useCart();
   const [callMenuOpen, setCallMenuOpen] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const activePath = pendingPath && pendingPath !== pathname ? pendingPath : pathname;
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
   const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';
 
@@ -27,7 +33,8 @@ export default function ClientShell({ children }: { children: React.ReactNode })
             <img
               src="/images/logo_gratitude.jpg"
               alt=""
-              className="w-full h-full rounded-full object-cover opacity-55 saturate-125 contrast-125 mix-blend-multiply"
+              className="w-full h-full rounded-full object-cover opacity-30"
+              decoding="async"
             />
           </div>
         </div>
@@ -175,9 +182,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
         <div className="max-w-4xl mx-auto grid grid-cols-5 gap-1 sm:gap-2">
           <Link
             href="/"
+            onClick={() => setPendingPath('/')}
             prefetch={true}
             className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
-              pathname === '/' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
+              activePath === '/' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -188,9 +196,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
           <Link
             href="/menu"
+            onClick={() => setPendingPath('/menu')}
             prefetch={true}
             className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
-              pathname === '/menu' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
+              activePath === '/menu' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -201,9 +210,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
           <Link
             href="/menu-du-jour"
+            onClick={() => setPendingPath('/menu-du-jour')}
             prefetch={true}
             className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
-              pathname === '/menu-du-jour' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
+              activePath === '/menu-du-jour' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
@@ -214,9 +224,10 @@ export default function ClientShell({ children }: { children: React.ReactNode })
 
           <Link
             href="/contact"
+            onClick={() => setPendingPath('/contact')}
             prefetch={true}
             className={`touch-manipulation flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-bold transition whitespace-nowrap active:scale-95 ${
-              pathname === '/contact' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
+              activePath === '/contact' ? 'bg-[#eab308] text-[#2b1810] shadow' : 'text-amber-100 sm:hover:bg-white/10'
             }`}
           >
             <CompassIcon className="w-4 h-4 shrink-0" />

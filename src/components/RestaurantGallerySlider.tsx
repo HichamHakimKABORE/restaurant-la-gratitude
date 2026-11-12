@@ -106,6 +106,7 @@ export default function RestaurantGallerySlider() {
                 alt={img.title || 'Restaurant La Gratitude'}
                 className="w-full h-full object-cover group-hover/card:scale-105 transition duration-300"
                 loading="lazy"
+                decoding="async"
               />
 
               {img.title && (
