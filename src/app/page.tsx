@@ -464,7 +464,7 @@ export default function AccueilClientPage() {
             <a
               href={`https://wa.me/${whatsappNum}`}
               target="_blank"
-              rel="noopener,noreferrer"
+              rel="noopener noreferrer"
               className="w-full py-2.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#1ebe57] text-white font-bold text-xs shadow flex items-center justify-center gap-2 whitespace-nowrap transition"
             >
               <WhatsAppIcon className="w-4 h-4 shrink-0" />
@@ -532,7 +532,7 @@ export default function AccueilClientPage() {
         <a
           href={`https://wa.me/${whatsappNum}`}
           target="_blank"
-          rel="noopener,noreferrer"
+          rel="noopener noreferrer"
           className="bg-[#f3e5d0] sm:hover:bg-[#ebd5b3] active:scale-95 border border-[#d6be9c] rounded-xl p-1.5 sm:p-2.5 flex flex-col items-center justify-center text-center gap-1 shadow-sm transition"
         >
           <span className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow shrink-0">

@@ -291,7 +291,7 @@ export default function ContactPage() {
                 <a
                   href={`https://wa.me/${whatsappNum}`}
                   target="_blank"
-                  rel="noopener,noreferrer"
+                  rel="noopener noreferrer"
                   className="px-3.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs shadow inline-flex items-center gap-1.5 transition"
                 >
                   <WhatsAppIcon className="w-3.5 h-3.5" />

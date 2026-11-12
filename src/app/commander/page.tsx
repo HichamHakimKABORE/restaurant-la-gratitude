@@ -67,7 +67,7 @@ export default function CommanderParTelephonePage() {
           <a
             href={`https://wa.me/${whatsappNum}`}
             target="_blank"
-            rel="noopener,noreferrer"
+            rel="noopener noreferrer"
             className="py-3.5 px-5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs sm:text-sm shadow-lg inline-flex items-center justify-center gap-2 whitespace-nowrap transition"
           >
             <WhatsAppIcon className="w-4 h-4 shrink-0" />

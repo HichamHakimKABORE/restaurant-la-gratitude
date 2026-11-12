@@ -91,7 +91,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
                 <a
                   href={`https://wa.me/${whatsappNum}`}
                   target="_blank"
-                  rel="noopener,noreferrer"
+                  rel="noopener noreferrer"
                   className="w-5 h-5 rounded-full bg-[#25D366] hover:bg-[#1ebe57] text-white flex items-center justify-center shadow transition shrink-0"
                   title="WhatsApp"
                 >

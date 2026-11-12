@@ -38,7 +38,7 @@ export default function MesCommandesRedirectPage() {
           <a
             href={`https://wa.me/${whatsappNum}`}
             target="_blank"
-            rel="noopener,noreferrer"
+            rel="noopener noreferrer"
             className="px-5 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs sm:text-sm shadow inline-flex items-center gap-2 whitespace-nowrap transition"
           >
             <WhatsAppIcon className="w-4 h-4 shrink-0" />
