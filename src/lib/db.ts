@@ -144,11 +144,11 @@ export const INITIAL_DISHES: Dish[] = [
   { id: 16, slug: 'omelette-jambon-fromage', name: 'Omelette jambon fromage', category: 'Plats', price: 2000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec pain baguette', 'Bien cuite'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette moelleuse garnie de jambon et fromage fondant.', display_order: 16 },
   { id: 17, slug: 'omelette-espagnole', name: 'Omelette espagnole chorizo', category: 'Plats', price: 2000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Au chorizo doux', 'Au chorizo fort'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette généreuse au chorizo, poivrons et oignons.', display_order: 17 },
   { id: 18, slug: 'omelette-nature', name: 'Omelette nature', category: 'Plats', price: 1000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Oignons & tomates', 'Nature simple'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette classique aux œufs frais.', display_order: 18 },
-  { id: 19, slug: 'sandwich-gratitude', name: 'Sandwich Gratitude', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Complet', 'Sans mayonnaise'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich complet spécial La Gratitude.', display_order: 19 },
-  { id: 20, slug: 'sandwich-poisson', name: 'Sandwich Poisson', category: 'Plats', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec piment', 'Sans piment'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Baguette garnie au poisson savoureux.', display_order: 20 },
-  { id: 21, slug: 'sandwich-viande', name: 'Sandwich Viande', category: 'Plats', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec piment', 'Sans piment'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Baguette garnie à la viande grillée.', display_order: 21 },
-  { id: 39, slug: 'sandwich-compose', name: 'Sandwich Composé', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Complet', 'Sans mayonnaise'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich frais aux crudités composées et œuf.', display_order: 22 },
-  { id: 40, slug: 'sandwich-fromage', name: 'Sandwich Fromage', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec crudités', 'Simple'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich généreux au fromage fondant.', display_order: 23 },
+  { id: 19, slug: 'sandwich-gratitude', name: 'Sandwich Gratitude', category: 'Plats', price: 1000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Complet', 'Sans mayonnaise'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich complet spécial La Gratitude.', display_order: 19 },
+  { id: 20, slug: 'sandwich-poisson', name: 'Sandwich Poisson', category: 'Plats', price: 500, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec piment', 'Sans piment'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Baguette garnie au poisson savoureux.', display_order: 20 },
+  { id: 21, slug: 'sandwich-viande', name: 'Sandwich Viande', category: 'Plats', price: 500, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec piment', 'Sans piment'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Baguette garnie à la viande grillée.', display_order: 21 },
+  { id: 39, slug: 'sandwich-compose', name: 'Sandwich Composé', category: 'Plats', price: 1000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Complet', 'Sans mayonnaise'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich frais aux crudités composées et œuf.', display_order: 22 },
+  { id: 40, slug: 'sandwich-fromage', name: 'Sandwich Fromage', category: 'Plats', price: 1000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec crudités', 'Simple'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich généreux au fromage fondant.', display_order: 23 },
   { id: 22, slug: 'cafe-espresso', name: 'Café Espresso', category: 'Boissons', price: 750, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Court', 'Allongé'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Café espresso intense fraîchement extrait.', display_order: 24 },
   { id: 23, slug: 'cappuccino', name: 'Cappuccino', category: 'Boissons', price: 500, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec sucre', 'Sans sucre'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Café espresso coiffé d’une mousse de lait onctueuse.', display_order: 25 },
   { id: 24, slug: 'the-lipton', name: 'Thé Lipton', category: 'Boissons', price: 300, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Citron', 'Menthe', 'Nature'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Thé chaud Lipton servi au choix citron, menthe ou nature.', display_order: 26 },
@@ -156,6 +156,7 @@ export const INITIAL_DISHES: Dish[] = [
   { id: 25, slug: 'jus-bissap', name: 'Jus de Bissap', category: 'Boissons', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Glacé', 'À température'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tr', description: 'Jus de bissap rouge maison bien frais.', display_order: 28 },
   { id: 42, slug: 'jus-gingembre', name: 'Jus de Gingembre', category: 'Boissons', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Bien relevé', 'Doux'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tr', description: 'Gnamakoudji maison au gingembre frais.', display_order: 29 },
   { id: 43, slug: 'jus-pain-de-singe', name: 'Jus de Pain de singe (Tedo)', category: 'Boissons', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Glacé', 'À température'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tr', description: 'Jus onctueux de fruit de baobab (Tedo) préparé maison.', display_order: 30 },
+  { id: 53, slug: 'gapal', name: 'Gapal', category: 'Boissons', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Glacé', 'À température'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tr', description: 'Gapal traditionnel frais au petit mil et lait caillé.', display_order: 31 },
 
   // MENUS DISPONIBLES (TOUJOURS DISPONIBLES PAR DÉFAUT)
   { id: 26, slug: 'pizza-gratitude', name: 'Pizza Gratitude', category: 'Pizzas', price: 6000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Supplément fromage', 'Avec huile piquante', 'Classique'], image_url: '/images/dishes_grid_2.jpg', image_quadrant: 'quad-bl', description: 'La pizza royale signature du Chef, richement garnie et cuite au four.', display_order: 31 },
@@ -190,8 +191,8 @@ export const INITIAL_ORDERS: Order[] = [];
  * 2. Soupes
  * 3. Tô & Plats Traditionnels
  * 4. Grillades & Accompagnements
- * 5. Omelettes & Sandwichs
- * 6. Boissons & Cafés
+ * 5. Boissons & Jus Naturels
+ * 6. Autres Plats du Jour
  */
 function isTraditionalDishName(name: string): boolean {
   const n = (name || '').toLowerCase();
@@ -216,10 +217,10 @@ export function getDailyMenuGroupLabel(dish: { name: string; category?: string }
   if (c === 'grillades' || n.includes('brochette') || n.includes('alloco') || n.includes('frite') || n.includes('pomme')) {
     return '4. Grillades & Accompagnements';
   }
-  if (c === 'boissons' || n.includes('café') || n.includes('cappuccino') || n.includes('thé') || n.includes('jus')) {
-    return '6. Boissons & Cafés';
+  if (c === 'boissons' || n.includes('jus') || n.includes('gapal')) {
+    return '5. Boissons & Jus Naturels';
   }
-  return '5. Omelettes & Sandwichs';
+  return '6. Autres Plats du Jour';
 }
 
 export function getDailyMenuSortRank(dish: { name: string; category?: string; display_order?: number; id?: number }): number {
@@ -229,8 +230,8 @@ export function getDailyMenuSortRank(dish: { name: string; category?: string; di
   if (c === 'soupes' || n.includes('soupe')) return 20;
   if (isTraditionalDishName(dish.name)) return 30;
   if (c === 'grillades' || n.includes('brochette') || n.includes('alloco') || n.includes('frite') || n.includes('pomme')) return 40;
-  if (c === 'boissons' || n.includes('café') || n.includes('cappuccino') || n.includes('thé') || n.includes('jus')) return 60;
-  return 50;
+  if (c === 'boissons' || n.includes('jus') || n.includes('gapal')) return 50;
+  return 60;
 }
 
 export function sortDailyMenuDishes<T extends { name: string; category?: string; display_order?: number; id?: number }>(
@@ -592,6 +593,7 @@ export async function ensureNeonSchema() {
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS phone_2 VARCHAR(60) DEFAULT ''`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_cleanup_v1 BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS menu_split_v1 BOOLEAN DEFAULT FALSE`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_cleanup_v2 BOOLEAN DEFAULT FALSE`;
 
       // Journal des échecs de connexion Admin (limitation des essais partagée entre serveurs)
       await sql`
@@ -617,10 +619,11 @@ export async function ensureNeonSchema() {
       await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_action_idx ON admin_audit_logs(action, created_at DESC)`;
 
       // Initialisation unique de la galerie photos (ne réinsère jamais les photos si l'admin les supprime ensuite)
-      const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized, daily_menu_cleanup_v1, menu_split_v1 FROM restaurant_settings WHERE id = 1`;
+      const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized, daily_menu_cleanup_v1, menu_split_v1, daily_menu_cleanup_v2 FROM restaurant_settings WHERE id = 1`;
       const isGalleryInit = Boolean(settingsInitRows[0]?.gallery_initialized);
       const isDailyCleanupDone = Boolean(settingsInitRows[0]?.daily_menu_cleanup_v1);
       const isMenuSplitDone = Boolean(settingsInitRows[0]?.menu_split_v1);
+      const isDailyCleanupV2Done = Boolean(settingsInitRows[0]?.daily_menu_cleanup_v2);
       if (!isDailyCleanupDone) {
         await sql`
           UPDATE dishes
@@ -667,6 +670,32 @@ export async function ensureNeonSchema() {
           `;
         }
         await sql`UPDATE restaurant_settings SET menu_split_v1 = TRUE WHERE id = 1`;
+        global._dishesCache = undefined;
+      }
+      if (!isDailyCleanupV2Done) {
+        await sql`
+          UPDATE dishes
+          SET availability_mode = 'always',
+              is_available_today = true,
+              stock_status = 'available'
+          WHERE LOWER(name) LIKE '%omelette%'
+             OR LOWER(name) LIKE '%sandwich%'
+             OR LOWER(name) LIKE '%café%'
+             OR LOWER(name) LIKE '%cafe%'
+             OR LOWER(name) LIKE '%cappuccino%'
+             OR LOWER(name) LIKE '%lipton%'
+             OR LOWER(name) LIKE '%nescaf%'
+             OR LOWER(name) LIKE 'thé%'
+        `;
+        const gapalDish = INITIAL_DISHES.find(d => d.slug === 'gapal');
+        if (gapalDish) {
+          await sql`
+            INSERT INTO dishes (slug, name, category, price, availability_mode, is_available_today, stock_status, options_json, image_url, image_quadrant, description, display_order)
+            VALUES (${gapalDish.slug}, ${gapalDish.name}, ${gapalDish.category}, ${gapalDish.price}, ${gapalDish.availability_mode}, ${gapalDish.is_available_today}, ${gapalDish.stock_status}, ${JSON.stringify(gapalDish.options_json)}::jsonb, ${gapalDish.image_url}, ${gapalDish.image_quadrant}, ${gapalDish.description}, ${gapalDish.display_order})
+            ON CONFLICT (slug) DO NOTHING
+          `;
+        }
+        await sql`UPDATE restaurant_settings SET daily_menu_cleanup_v2 = TRUE WHERE id = 1`;
         global._dishesCache = undefined;
       }
       if (!isGalleryInit) {
