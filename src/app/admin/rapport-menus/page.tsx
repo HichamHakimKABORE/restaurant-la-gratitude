@@ -425,7 +425,7 @@ export default function AdminRapportMenusPage() {
                 Rapport Officiel des Menus du Jour
               </h2>
               <p className="text-xs text-stone-600">
-                {settings.address || 'Zagtouli, route de Bobo — Ouagadougou, Burkina Faso'} • Tél : {settings.phone || '+226 02 80 99 06'}
+                {settings.address || 'Zagtouli, route de Bobo — Ouagadougou, Burkina Faso'} • Tél : {joinPhoneNumbers(settings.phone, settings.phone_2)}
               </p>
             </div>
           </div>

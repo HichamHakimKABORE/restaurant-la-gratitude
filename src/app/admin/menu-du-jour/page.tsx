@@ -470,7 +470,7 @@ export default function AdminMenuDuJourPage() {
         )}
 
         <div className="pt-3 border-t border-[#dec6a7] text-center text-xs font-bold text-stone-600">
-          {settings.slogan || 'Une cuisine savoureuse, un service de qualité !'} — Commandes au {settings.phone || '+226 02 80 99 06'}
+          {settings.slogan || 'Une cuisine savoureuse, un service de qualité !'} — Commandes au {joinPhoneNumbers(settings.phone, settings.phone_2)}
         </div>
       </div>
     </AdminShell>

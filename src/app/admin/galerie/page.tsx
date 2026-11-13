@@ -9,6 +9,7 @@ import { useCart } from '@/components/CartContext';
 import { type GalleryImage } from '@/lib/db';
 import { compressImageFileToBase64 } from '@/lib/client-image';
 import { safeCssImageUrl } from '@/lib/validation';
+import { invalidateClientGalleryCache } from '@/components/RestaurantGallerySlider';
 
 const SUGGESTIONS = [
   'Restaurant La Gratitude — Zagtouli',
@@ -37,6 +38,7 @@ export default function AdminGaleriePage() {
   const { showToast } = useCart();
 
   const syncGalleryCache = (list: GalleryImage[]) => {
+    invalidateClientGalleryCache();
     setImages(list);
     try {
       const serialized = JSON.stringify(list);

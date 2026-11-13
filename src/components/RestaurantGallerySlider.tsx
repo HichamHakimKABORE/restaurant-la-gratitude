@@ -9,6 +9,10 @@ import { CameraIcon, CloseIcon } from './Icons';
 const GALLERY_MEMORY_TTL_MS = 60_000;
 let moduleGalleryCache: { images: GalleryImage[]; ts: number } | null = null;
 
+export function invalidateClientGalleryCache(): void {
+  moduleGalleryCache = null;
+}
+
 export default function RestaurantGallerySlider() {
   const [images, setImages] = useState<GalleryImage[]>(
     () => moduleGalleryCache?.images || []
