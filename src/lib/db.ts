@@ -378,7 +378,7 @@ export function invalidateMenuHistoryCache() {
   global._menuHistoryCache = undefined;
 }
 
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 
 export async function ensureNeonSchema() {
   const sql = getNeonClient();
