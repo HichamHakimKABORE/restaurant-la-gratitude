@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { PhoneIcon } from '@/components/Icons';
+import { PhoneIcon, CloseIcon } from '@/components/Icons';
 import { matchesDishSearch } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
 import { formatPhoneList, toTelHref } from '@/lib/phone';
@@ -56,13 +56,25 @@ export default function NotreMenuPage() {
             </p>
           </div>
 
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un plat, pizza, poulet..."
-            className="w-full sm:w-72 px-3 py-1.5 sm:py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs sm:text-sm"
-          />
+          <div className="relative w-full sm:w-72">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un plat, pizza, poulet..."
+              className="w-full pl-3 pr-8 py-1.5 sm:py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs sm:text-sm"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="touch-manipulation absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center"
+                title="Effacer la recherche"
+              >
+                <CloseIcon className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Category Tabs */}
@@ -126,6 +138,23 @@ export default function NotreMenuPage() {
                     <span className="absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded-full bg-black/70 text-amber-300 font-bold text-[9px] sm:text-[10px] whitespace-nowrap">
                       {dish.category}
                     </span>
+                    {dish.availability_mode === 'daily' && (
+                      <span
+                        className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full font-extrabold text-[9px] shadow-sm whitespace-nowrap ${
+                          dish.is_available_today
+                            ? dish.stock_status === 'low'
+                              ? 'bg-amber-400 text-[#2b1810]'
+                              : 'bg-emerald-600 text-white'
+                            : 'bg-stone-800/85 text-stone-200'
+                        }`}
+                      >
+                        {dish.is_available_today
+                          ? dish.stock_status === 'low'
+                            ? 'Presque fini'
+                            : 'Prêt'
+                          : 'Non préparé'}
+                      </span>
+                    )}
                   </div>
                   <div className="p-2 sm:p-2.5 space-y-0.5">
                     <h3 className="font-extrabold text-xs sm:text-sm text-[#2b1810] line-clamp-1">

@@ -7,6 +7,7 @@ import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { CheckIcon, BoltIcon, CloseIcon, WhatsAppIcon, PrinterIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getDailyMenuGroupLabel, getLogicalMenuDate, type Dish, type StockStatus } from '@/lib/db';
+import { buildDailyMenuWhatsAppText } from '@/lib/menu-share';
 import { safeCssImageUrl } from '@/lib/validation';
 import { printWithAutoDocumentTitle } from '@/lib/pdf-report';
 import { joinPhoneNumbers } from '@/lib/phone';
@@ -159,34 +160,13 @@ export default function AdminMenuDuJourPage() {
     }
   };
 
-  const buildWhatsAppDailyText = () => {
-    const active = dailyDishes.filter(d => d.is_available_today);
-    const dateFr = new Date().toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: '2-digit',
-      month: 'long'
-    });
-    const lines = [
-      `*RESTAURANT LA GRATITUDE — ZAGTOULI*`,
-      `*MENU DU JOUR (${dateFr})* :`,
-      ``
-    ];
-    for (const d of active) {
-      lines.push(`- *${d.name}* : ${formatCFA(d.price)}`);
-    }
-    lines.push(``);
-    lines.push(`*Commandes & Réservations :* ${joinPhoneNumbers(settings.phone, settings.phone_2)}`);
-    lines.push(`*Zagtouli, route de Bobo — Ouagadougou*`);
-    return lines.join('\n');
-  };
-
   const handleCopyWhatsAppMenu = async () => {
     const active = dailyDishes.filter(d => d.is_available_today);
     if (active.length === 0) {
       showToast('Cochez au moins un plat avant de partager le Menu du Jour.');
       return;
     }
-    const text = buildWhatsAppDailyText();
+    const text = buildDailyMenuWhatsAppText(dishes, settings);
     try {
       await navigator.clipboard.writeText(text);
       showToast('Texte du Menu du Jour copié ! Prêt à coller sur WhatsApp.');

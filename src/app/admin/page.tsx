@@ -5,11 +5,12 @@ import Link from 'next/link';
 import AdminShell from '@/components/AdminShell';
 import { formatCFA, useCart } from '@/components/CartContext';
 import { sortDailyMenuDishes } from '@/lib/db';
-import { CheckIcon, PhoneIcon } from '@/components/Icons';
+import { CheckIcon, PhoneIcon, WhatsAppIcon, CameraIcon } from '@/components/Icons';
 import { formatPhoneList } from '@/lib/phone';
+import { buildDailyMenuWhatsAppText } from '@/lib/menu-share';
 
 export default function AdminDashboardOverviewPage() {
-  const { dishes, settings } = useCart();
+  const { dishes, settings, showToast } = useCart();
   const phoneList = formatPhoneList(settings.phone, settings.phone_2);
 
   const dailyCatalogDishes = dishes.filter(d => d.availability_mode === 'daily');
@@ -17,6 +18,20 @@ export default function AdminDashboardOverviewPage() {
     dailyCatalogDishes.filter(d => d.is_available_today)
   );
   const onOrderDishes = dishes.filter(d => d.availability_mode !== 'daily');
+
+  const handleCopyWhatsAppMenu = async () => {
+    if (activeDailyDishes.length === 0) {
+      showToast('Cochez au moins un plat dans le Menu du Jour avant de copier.');
+      return;
+    }
+    const text = buildDailyMenuWhatsAppText(dishes, settings);
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Menu du Jour copié ! Prêt à coller sur WhatsApp.');
+    } catch {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <AdminShell
@@ -119,21 +134,36 @@ export default function AdminDashboardOverviewPage() {
           <div className="grid grid-cols-1 gap-2.5 pt-1">
             <Link
               href="/admin/menu-du-jour"
-              className="py-2.5 px-3 rounded-xl bg-[#881313] hover:bg-[#680e0e] text-white font-extrabold text-xs text-center shadow transition"
+              className="touch-manipulation py-2.5 px-3 rounded-xl bg-[#881313] hover:bg-[#680e0e] active:scale-95 text-white font-extrabold text-xs text-center shadow transition"
             >
               1. Cocher le Menu du Jour
             </Link>
+            <button
+              type="button"
+              onClick={handleCopyWhatsAppMenu}
+              className="touch-manipulation py-2.5 px-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-95 text-white font-extrabold text-xs text-center shadow inline-flex items-center justify-center gap-1.5 transition"
+            >
+              <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>Copier le Menu du Jour (WhatsApp)</span>
+            </button>
             <Link
               href="/admin/plats"
-              className="py-2.5 px-3 rounded-xl bg-[#eab308] hover:brightness-105 text-[#2b1810] font-extrabold text-xs text-center shadow transition"
+              className="touch-manipulation py-2.5 px-3 rounded-xl bg-[#eab308] hover:brightness-105 active:scale-95 text-[#2b1810] font-extrabold text-xs text-center shadow transition"
             >
               2. Gérer les Plats &amp; Plats sur Commande
             </Link>
             <Link
-              href="/admin/rapport-menus"
-              className="py-2.5 px-3 rounded-xl bg-white hover:bg-stone-100 text-[#2b1810] border border-stone-300 font-extrabold text-xs text-center shadow-sm transition"
+              href="/admin/galerie"
+              className="touch-manipulation py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-95 text-[#2b1810] border border-amber-300 font-extrabold text-xs text-center shadow-sm inline-flex items-center justify-center gap-1.5 transition"
             >
-              3. Rapports &amp; Export PDF des Menus
+              <CameraIcon className="w-3.5 h-3.5 text-[#881313] shrink-0" />
+              <span>3. Gérer la Galerie Photos</span>
+            </Link>
+            <Link
+              href="/admin/rapport-menus"
+              className="touch-manipulation py-2.5 px-3 rounded-xl bg-white hover:bg-stone-100 active:scale-95 text-[#2b1810] border border-stone-300 font-extrabold text-xs text-center shadow-sm transition"
+            >
+              4. Rapports &amp; Export PDF des Menus
             </Link>
           </div>
         </div>

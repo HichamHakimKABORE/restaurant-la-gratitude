@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ClientShell from '@/components/ClientShell';
 import { useCart, formatCFA } from '@/components/CartContext';
-import { CheckIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon } from '@/components/Icons';
+import { CheckIcon, BoltIcon, MapPinIcon, PhoneIcon, CompassIcon, WhatsAppIcon, ChefHatIcon, CloseIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, matchesDishSearch } from '@/lib/db';
 import { safeCssImageUrl } from '@/lib/validation';
 import { formatPhoneList, toTelHref } from '@/lib/phone';
@@ -247,13 +247,25 @@ export default function AccueilClientPage() {
             </div>
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
-              <input
-                type="text"
-                value={homeSearch}
-                onChange={e => setHomeSearch(e.target.value)}
-                placeholder="Rechercher un plat, pizza..."
-                className="flex-1 sm:w-48 px-3 py-1.5 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium"
-              />
+              <div className="relative flex-1 sm:w-48">
+                <input
+                  type="text"
+                  value={homeSearch}
+                  onChange={e => setHomeSearch(e.target.value)}
+                  placeholder="Rechercher un plat, pizza..."
+                  className="w-full pl-3 pr-7 py-1.5 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium"
+                />
+                {homeSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setHomeSearch('')}
+                    className="touch-manipulation absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center"
+                    title="Effacer la recherche"
+                  >
+                    <CloseIcon className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
               <Link href="/menu" className="hidden sm:inline text-xs font-extrabold text-[#881313] hover:underline whitespace-nowrap">
                 Ouvrir toute la carte →
               </Link>
@@ -321,6 +333,23 @@ export default function AccueilClientPage() {
                         className={`w-full h-full dish-photo ${dish.image_quadrant}`}
                         style={{ backgroundImage: `url('${safeCssImageUrl(dish.image_url)}')` }}
                       />
+                      {dish.availability_mode === 'daily' && (
+                        <span
+                          className={`absolute top-1 left-1 px-1.5 py-0.5 rounded-full font-extrabold text-[9px] shadow-sm whitespace-nowrap ${
+                            dish.is_available_today
+                              ? dish.stock_status === 'low'
+                                ? 'bg-amber-400 text-[#2b1810]'
+                                : 'bg-emerald-600 text-white'
+                              : 'bg-stone-800/85 text-stone-200'
+                          }`}
+                        >
+                          {dish.is_available_today
+                            ? dish.stock_status === 'low'
+                              ? 'Presque fini'
+                              : 'Prêt'
+                            : 'Non préparé'}
+                        </span>
+                      )}
                     </div>
 
                     <div className="p-1.5 sm:p-2 space-y-0.5">

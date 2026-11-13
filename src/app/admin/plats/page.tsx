@@ -29,6 +29,61 @@ export default function AdminPlatsPage() {
   const [savingDish, setSavingDish] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [uploadingDishId, setUploadingDishId] = useState<number | null>(null);
+  const [togglingModeId, setTogglingModeId] = useState<number | null>(null);
+
+  const handleToggleAvailabilityMode = async (dish: Dish) => {
+    if (togglingModeId !== null) return;
+    const nextMode: Dish['availability_mode'] =
+      dish.availability_mode === 'daily' ? 'always' : 'daily';
+    const nextAvail = nextMode === 'always';
+    const nextStock = nextMode === 'always' ? 'available' : 'soldout';
+    const prevDishes = dishes;
+
+    setTogglingModeId(dish.id);
+    setDishes(prev =>
+      prev.map(d =>
+        d.id === dish.id
+          ? { ...d, availability_mode: nextMode, is_available_today: nextAvail, stock_status: nextStock }
+          : d
+      )
+    );
+
+    try {
+      const res = await fetch('/api/dishes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: dish.id,
+          availability_mode: nextMode,
+          is_available_today: nextAvail,
+          stock_status: nextStock
+        })
+      });
+      if (res.status === 401) {
+        setDishes(prevDishes);
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDishes(prevDishes);
+        showToast(data.error || 'Changement de liste impossible.');
+        return;
+      }
+      if (data.dishes) setDishes(data.dishes);
+      showToast(
+        nextMode === 'daily'
+          ? `"${dish.name}" ajouté au Menu du Jour.`
+          : `"${dish.name}" déplacé dans La Carte uniquement.`
+      );
+    } catch {
+      setDishes(prevDishes);
+      showToast('Erreur réseau lors du changement de liste.');
+    } finally {
+      setTogglingModeId(null);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -428,17 +483,29 @@ export default function AdminPlatsPage() {
       {/* Barre de filtres et bouton d'ajout compacts */}
       <div className="space-y-2.5">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un plat..."
-            className="flex-1 sm:flex-none sm:w-64 px-3 py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium min-w-[160px]"
-          />
+          <div className="relative flex-1 sm:flex-none sm:w-64 min-w-[160px]">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Rechercher un plat..."
+              className="w-full pl-3 pr-7 py-2 rounded-xl border border-stone-300 bg-stone-50 text-xs font-medium"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="touch-manipulation absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center"
+                title="Effacer la recherche"
+              >
+                <CloseIcon className="w-3 h-3" />
+              </button>
+            )}
+          </div>
 
           <button
             onClick={openCreateModal}
-            className="px-3.5 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow whitespace-nowrap shrink-0"
+            className="touch-manipulation px-3.5 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] active:scale-95 text-white font-extrabold text-xs shadow whitespace-nowrap shrink-0 transition"
           >
             + Ajouter un plat
           </button>
@@ -506,15 +573,19 @@ export default function AdminPlatsPage() {
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold whitespace-nowrap ${
+                    <button
+                      type="button"
+                      disabled={togglingModeId === dish.id}
+                      onClick={() => handleToggleAvailabilityMode(dish)}
+                      className={`touch-manipulation px-1.5 py-0.5 rounded text-[10px] font-extrabold whitespace-nowrap active:scale-95 disabled:opacity-50 transition ${
                         isDaily
-                          ? 'bg-amber-100 text-[#881313]'
-                          : 'bg-stone-800 text-white'
+                          ? 'bg-amber-100 hover:bg-amber-200 text-[#881313] border border-amber-300'
+                          : 'bg-stone-800 hover:bg-stone-700 text-white'
                       }`}
+                      title={isDaily ? 'Cliquer pour passer en Carte uniquement' : 'Cliquer pour ajouter au Menu du Jour'}
                     >
-                      {isDaily ? 'Menu du Jour' : 'Sur commande'}
-                    </span>
+                      {isDaily ? 'Menu du Jour ⇄' : 'Sur commande ⇄'}
+                    </button>
                     <span className="text-[11px] text-stone-500 font-semibold">
                       • {dish.category}
                     </span>

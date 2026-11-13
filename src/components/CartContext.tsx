@@ -63,6 +63,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [selectedOpt, setSelectedOpt] = useState<string>('');
   const [modalQty, setModalQty] = useState<number>(1);
   const [selectionList, setSelectionList] = useState<CartItem[]>([]);
+  const [selectionExpanded, setSelectionExpanded] = useState<boolean>(false);
   const lastLocalWriteRef = useRef<number>(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -152,11 +153,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!modalDish) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setModalDish(null);
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [modalDish]);
 
   const showToast = (msg: string) => {
@@ -199,12 +209,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     showToast(`${qty}x ${dish.name} ajouté à votre sélection d’appel !`);
   };
 
+  const updateSelectionQty = (cartKey: string, delta: number) => {
+    setSelectionList(prev => {
+      const next = prev
+        .map(item => (item.cartKey === cartKey ? { ...item, qty: item.qty + delta } : item))
+        .filter(item => item.qty > 0);
+      if (next.length === 0) setSelectionExpanded(false);
+      return next;
+    });
+  };
+
   const removeSelectionItem = (cartKey: string) => {
-    setSelectionList(prev => prev.filter(item => item.cartKey !== cartKey));
+    setSelectionList(prev => {
+      const next = prev.filter(item => item.cartKey !== cartKey);
+      if (next.length === 0) setSelectionExpanded(false);
+      return next;
+    });
   };
 
   const clearSelectionList = () => {
     setSelectionList([]);
+    setSelectionExpanded(false);
   };
 
   const getWhatsAppDirectUrl = (dish: Dish, opt: string, qty: number) => {
@@ -293,48 +318,104 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       {/* BARRE FLOTTANTE DE SÉLECTION MULTI-PLATS (Visible quand le client a retenu des plats et fermé la fenêtre) */}
       {!modalDish && selectionList.length > 0 && (
-        <div className="fixed bottom-[58px] sm:bottom-[64px] left-2 right-2 z-[90] max-w-xl mx-auto bg-gradient-to-r from-[#2b1810] via-[#431407] to-[#2b1810] text-white border-2 border-[#eab308] rounded-2xl p-2.5 sm:p-3 shadow-2xl flex flex-wrap items-center justify-between gap-2 print:hidden">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-[11px] whitespace-nowrap">
-                {selectionTotalItems} {selectionTotalItems > 1 ? 'plats choisis' : 'plat choisi'}
-              </span>
-              <span className="font-extrabold text-xs sm:text-sm text-[#facc15] whitespace-nowrap">
-                {formatCFA(selectionTotalPrice)}
-              </span>
-              <button
-                type="button"
-                onClick={clearSelectionList}
-                className="text-[10px] text-rose-300 hover:text-rose-200 underline ml-1"
-              >
-                Vider
-              </button>
+        <div className="fixed bottom-[58px] sm:bottom-[64px] left-2 right-2 z-[90] max-w-xl mx-auto bg-gradient-to-r from-[#2b1810] via-[#431407] to-[#2b1810] text-white border-2 border-[#eab308] rounded-2xl p-2.5 sm:p-3 shadow-2xl space-y-2 print:hidden">
+          {selectionExpanded && (
+            <div className="bg-black/35 rounded-xl p-2 space-y-1.5 max-h-44 overflow-y-auto border border-amber-400/30">
+              {selectionList.map(item => (
+                <div key={item.cartKey} className="flex items-center justify-between gap-2 text-xs">
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-white truncate block">
+                      {item.name}
+                      {item.selectedOption ? ` (${item.selectedOption})` : ''}
+                    </span>
+                    <span className="text-[10px] text-amber-200">
+                      {formatCFA(item.price * item.qty)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => updateSelectionQty(item.cartKey, -1)}
+                      className="touch-manipulation w-6 h-6 rounded-lg bg-white/15 hover:bg-white/25 active:scale-95 font-extrabold text-white flex items-center justify-center"
+                      title="Diminuer la quantité"
+                    >
+                      −
+                    </button>
+                    <span className="font-extrabold w-5 text-center text-xs">{item.qty}</span>
+                    <button
+                      type="button"
+                      onClick={() => updateSelectionQty(item.cartKey, 1)}
+                      className="touch-manipulation w-6 h-6 rounded-lg bg-white/15 hover:bg-white/25 active:scale-95 font-extrabold text-white flex items-center justify-center"
+                      title="Augmenter la quantité"
+                    >
+                      +
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSelectionItem(item.cartKey)}
+                      className="touch-manipulation w-6 h-6 rounded-lg bg-rose-600/80 hover:bg-rose-600 active:scale-95 text-white flex items-center justify-center ml-0.5"
+                      title="Retirer ce plat"
+                    >
+                      <CloseIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            <p className="text-[11px] text-amber-100 truncate mt-0.5">
-              {selectionList.map(it => `${it.qty}x ${it.name}`).join(' + ')}
-            </p>
-          </div>
+          )}
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <a
-              href={getSelectionOnlyWhatsAppUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-3 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
-            >
-              <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
-              <span>WhatsApp</span>
-            </a>
-            {activePhoneList.map((num, idx) => (
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2 py-0.5 rounded-full bg-[#eab308] text-[#2b1810] font-extrabold text-[11px] whitespace-nowrap">
+                  {selectionTotalItems} {selectionTotalItems > 1 ? 'plats choisis' : 'plat choisi'}
+                </span>
+                <span className="font-extrabold text-xs sm:text-sm text-[#facc15] whitespace-nowrap">
+                  {formatCFA(selectionTotalPrice)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectionExpanded(v => !v)}
+                  className="touch-manipulation text-[10px] text-amber-200 hover:text-white underline font-bold"
+                >
+                  {selectionExpanded ? 'Masquer' : 'Modifier'}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearSelectionList}
+                  className="touch-manipulation text-[10px] text-rose-300 hover:text-rose-200 underline"
+                >
+                  Vider
+                </button>
+              </div>
+              {!selectionExpanded && (
+                <p className="text-[11px] text-amber-100 truncate mt-0.5">
+                  {selectionList.map(it => `${it.qty}x ${it.name}`).join(' + ')}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
               <a
-                key={num}
-                href={toTelHref(num)}
-                className="px-3 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
+                href={getSelectionOnlyWhatsAppUrl()}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="touch-manipulation px-3 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:scale-95 text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
               >
-                <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
-                <span>{activePhoneList.length > 1 ? `N° ${idx + 1}` : 'Appeler'}</span>
+                <WhatsAppIcon className="w-3.5 h-3.5 shrink-0" />
+                <span>WhatsApp</span>
               </a>
-            ))}
+              {activePhoneList.map((num, idx) => (
+                <a
+                  key={num}
+                  href={toTelHref(num)}
+                  className="touch-manipulation px-3 py-2 rounded-xl bg-[#881313] hover:bg-[#a81c1c] active:scale-95 text-white font-extrabold text-xs shadow inline-flex items-center gap-1.5 whitespace-nowrap transition"
+                >
+                  <PhoneIcon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{activePhoneList.length > 1 ? `N° ${idx + 1}` : 'Appeler'}</span>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -342,7 +423,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       {/* FENÊTRE DE COMMANDE PAR TÉLÉPHONE DU PLAT CHOISI */}
       {modalDish && (
         <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overscroll-none"
           onClick={() => setModalDish(null)}
         >
           <div
