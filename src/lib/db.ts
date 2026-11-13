@@ -140,16 +140,16 @@ export const INITIAL_DISHES: Dish[] = [
   { id: 12, slug: 'alloco', name: 'Alloco doré', category: 'Grillades', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec sauce piment', 'Sans piment'], image_url: '/images/dishes_grid_2.jpg', image_quadrant: 'quad-tr', description: 'Bananes plantains mûres frites accompagnées de piment.', display_order: 12 },
   { id: 13, slug: 'pommes-sautees', name: 'Pommes sautées', category: 'Grillades', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['À l’ail & persil', 'Nature'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-bl', description: 'Pommes de terre sautées à l’ail et fines herbes.', display_order: 13 },
   { id: 14, slug: 'frites', name: 'Assiette de Frites', category: 'Grillades', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Ketchup / Mayonnaise', 'Nature'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-bl', description: 'Frites croustillantes dorées maison.', display_order: 14 },
-  { id: 15, slug: 'omelette-gratitude', name: 'Omelette Gratitude', category: 'Plats', price: 2000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Baveuse', 'Bien cuite'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette signature du Chef richement garnie.', display_order: 15 },
-  { id: 16, slug: 'omelette-jambon-fromage', name: 'Omelette jambon fromage', category: 'Plats', price: 2000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec pain baguette', 'Bien cuite'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette moelleuse garnie de jambon et fromage fondant.', display_order: 16 },
-  { id: 17, slug: 'omelette-espagnole', name: 'Omelette espagnole chorizo', category: 'Plats', price: 2000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Au chorizo doux', 'Au chorizo fort'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette généreuse au chorizo, poivrons et oignons.', display_order: 17 },
-  { id: 18, slug: 'omelette-nature', name: 'Omelette nature', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Oignons & tomates', 'Nature simple'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette classique aux œufs frais.', display_order: 18 },
+  { id: 15, slug: 'omelette-gratitude', name: 'Omelette Gratitude', category: 'Plats', price: 2000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Baveuse', 'Bien cuite'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette signature du Chef richement garnie.', display_order: 15 },
+  { id: 16, slug: 'omelette-jambon-fromage', name: 'Omelette jambon fromage', category: 'Plats', price: 2000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec pain baguette', 'Bien cuite'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette moelleuse garnie de jambon et fromage fondant.', display_order: 16 },
+  { id: 17, slug: 'omelette-espagnole', name: 'Omelette espagnole chorizo', category: 'Plats', price: 2000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Au chorizo doux', 'Au chorizo fort'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette généreuse au chorizo, poivrons et oignons.', display_order: 17 },
+  { id: 18, slug: 'omelette-nature', name: 'Omelette nature', category: 'Plats', price: 1000, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Oignons & tomates', 'Nature simple'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Omelette classique aux œufs frais.', display_order: 18 },
   { id: 19, slug: 'sandwich-gratitude', name: 'Sandwich Gratitude', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Complet', 'Sans mayonnaise'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich complet spécial La Gratitude.', display_order: 19 },
   { id: 20, slug: 'sandwich-poisson-viande', name: 'Sandwich poisson / viande', category: 'Plats', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Viande', 'Poisson'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Baguette garnie au choix de poisson ou de viande.', display_order: 20 },
   { id: 21, slug: 'sandwich-fromage-compose', name: 'Sandwich fromage / composé', category: 'Plats', price: 1000, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Sandwich Composé', 'Sandwich Fromage'], image_url: '/images/dishes_grid_3.jpg', image_quadrant: 'quad-br', description: 'Sandwich frais au fromage ou crudités composées.', display_order: 21 },
-  { id: 22, slug: 'cafe-espresso', name: 'Café Espresso', category: 'Boissons', price: 750, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Court', 'Allongé'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Café espresso intense fraîchement extrait.', display_order: 22 },
-  { id: 23, slug: 'cappuccino', name: 'Cappuccino', category: 'Boissons', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Avec sucre', 'Sans sucre'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Café espresso coiffé d’une mousse de lait onctueuse.', display_order: 23 },
-  { id: 24, slug: 'lipton-nescafe', name: 'Thé Lipton / Nescafé', category: 'Boissons', price: 300, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Thé Lipton Citron/Menthe', 'Nescafé Simple', 'Nescafé au Lait'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Thé chaud Lipton ou Nescafé.', display_order: 24 },
+  { id: 22, slug: 'cafe-espresso', name: 'Café Espresso', category: 'Boissons', price: 750, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Court', 'Allongé'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Café espresso intense fraîchement extrait.', display_order: 22 },
+  { id: 23, slug: 'cappuccino', name: 'Cappuccino', category: 'Boissons', price: 500, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Avec sucre', 'Sans sucre'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Café espresso coiffé d’une mousse de lait onctueuse.', display_order: 23 },
+  { id: 24, slug: 'lipton-nescafe', name: 'Thé Lipton / Nescafé', category: 'Boissons', price: 300, availability_mode: 'always', is_available_today: true, stock_status: 'available', options_json: ['Thé Lipton Citron/Menthe', 'Nescafé Simple', 'Nescafé au Lait'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tl', description: 'Thé chaud Lipton ou Nescafé.', display_order: 24 },
   { id: 25, slug: 'jus-naturel', name: 'Jus naturel (Bissap / Gingembre)', category: 'Boissons', price: 500, availability_mode: 'daily', is_available_today: false, stock_status: 'soldout', options_json: ['Bissap rouge glacé', 'Gingembre (Gnamakoudji)', 'Pain de singe (Tedo)'], image_url: '/images/dishes_grid_4.jpg', image_quadrant: 'quad-tr', description: 'Jus locaux glacés préparés maison.', display_order: 25 },
 
   // MENUS DISPONIBLES (TOUJOURS DISPONIBLES PAR DÉFAUT)
@@ -179,12 +179,26 @@ export const INITIAL_ORDERS: Order[] = [];
  * 5. Omelettes & Sandwichs
  * 6. Boissons & Cafés
  */
+function isTraditionalDishName(name: string): boolean {
+  const n = (name || '').toLowerCase();
+  const norm = stripAccents(name || '');
+  return (
+    n.includes('tô') ||
+    norm.startsWith('to ') ||
+    norm === 'to' ||
+    norm.includes('boulvanka') ||
+    norm.includes('attieke') ||
+    norm.includes('athieke') ||
+    norm.includes('atthieke')
+  );
+}
+
 export function getDailyMenuGroupLabel(dish: { name: string; category?: string }): string {
   const n = (dish.name || '').toLowerCase();
   const c = (dish.category || '').toLowerCase();
   if (n.includes('riz')) return '1. Plats de Riz';
   if (c === 'soupes' || n.includes('soupe')) return '2. Soupes';
-  if (n.includes('tô') || n.startsWith('to ') || n.includes('boulvanka')) return '3. Tô & Plats Traditionnels';
+  if (isTraditionalDishName(dish.name)) return '3. Tô & Plats Traditionnels';
   if (c === 'grillades' || n.includes('brochette') || n.includes('alloco') || n.includes('frite') || n.includes('pomme')) {
     return '4. Grillades & Accompagnements';
   }
@@ -199,7 +213,7 @@ export function getDailyMenuSortRank(dish: { name: string; category?: string; di
   const c = (dish.category || '').toLowerCase();
   if (n.includes('riz')) return 10;
   if (c === 'soupes' || n.includes('soupe')) return 20;
-  if (n.includes('tô') || n.startsWith('to ') || n.includes('boulvanka')) return 30;
+  if (isTraditionalDishName(dish.name)) return 30;
   if (c === 'grillades' || n.includes('brochette') || n.includes('alloco') || n.includes('frite') || n.includes('pomme')) return 40;
   if (c === 'boissons' || n.includes('café') || n.includes('cappuccino') || n.includes('thé') || n.includes('jus')) return 60;
   return 50;
@@ -562,6 +576,7 @@ export async function ensureNeonSchema() {
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS gallery_initialized BOOLEAN DEFAULT FALSE`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS session_valid_after BIGINT DEFAULT 0`;
       await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS phone_2 VARCHAR(60) DEFAULT ''`;
+      await sql`ALTER TABLE restaurant_settings ADD COLUMN IF NOT EXISTS daily_menu_cleanup_v1 BOOLEAN DEFAULT FALSE`;
 
       // Journal des échecs de connexion Admin (limitation des essais partagée entre serveurs)
       await sql`
@@ -587,8 +602,33 @@ export async function ensureNeonSchema() {
       await sql`CREATE INDEX IF NOT EXISTS admin_audit_logs_action_idx ON admin_audit_logs(action, created_at DESC)`;
 
       // Initialisation unique de la galerie photos (ne réinsère jamais les photos si l'admin les supprime ensuite)
-      const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized FROM restaurant_settings WHERE id = 1`;
+      const settingsInitRows = await sql`SELECT daily_menu_date, gallery_initialized, daily_menu_cleanup_v1 FROM restaurant_settings WHERE id = 1`;
       const isGalleryInit = Boolean(settingsInitRows[0]?.gallery_initialized);
+      const isDailyCleanupDone = Boolean(settingsInitRows[0]?.daily_menu_cleanup_v1);
+      if (!isDailyCleanupDone) {
+        await sql`
+          UPDATE dishes
+          SET availability_mode = 'always',
+              is_available_today = true,
+              stock_status = 'available'
+          WHERE slug IN (
+            'omelette-gratitude',
+            'omelette-jambon-fromage',
+            'omelette-espagnole',
+            'omelette-nature',
+            'cafe-espresso',
+            'cappuccino',
+            'lipton-nescafe'
+          )
+          OR LOWER(name) LIKE '%omelette%'
+          OR LOWER(name) LIKE '%café%'
+          OR LOWER(name) LIKE '%cafe%'
+          OR LOWER(name) LIKE '%cappuccino%'
+          OR LOWER(name) LIKE '%lipton%'
+        `;
+        await sql`UPDATE restaurant_settings SET daily_menu_cleanup_v1 = TRUE WHERE id = 1`;
+        global._dishesCache = undefined;
+      }
       if (!isGalleryInit) {
         const galCountRows = await sql`SELECT COUNT(*)::int AS cnt FROM restaurant_gallery`;
         const galCount = galCountRows[0]?.cnt ?? 0;
