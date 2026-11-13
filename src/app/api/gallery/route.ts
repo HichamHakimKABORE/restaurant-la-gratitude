@@ -156,13 +156,32 @@ export async function PATCH(request: Request) {
   if (!parsed.ok) return parsed.response;
   try {
     const body = parsed.data;
-    const { id, title, display_order, swap_with_id } = body;
-    const imgId = Number(id);
-    if (!Number.isInteger(imgId) || imgId <= 0) {
+    const { id, title, display_order, swap_with_id, order_ids } = body;
+
+    let cleanOrderIds: number[] | null = null;
+    if (order_ids !== undefined) {
+      if (!Array.isArray(order_ids) || order_ids.length === 0 || order_ids.length > 200) {
+        return NextResponse.json({ error: 'Liste d’ordre invalide.' }, { status: 400 });
+      }
+      const seen = new Set<number>();
+      const parsedIds: number[] = [];
+      for (const rawId of order_ids) {
+        const numId = Number(rawId);
+        if (!Number.isInteger(numId) || numId <= 0 || seen.has(numId)) {
+          return NextResponse.json({ error: 'Identifiant de photo invalide dans la liste.' }, { status: 400 });
+        }
+        seen.add(numId);
+        parsedIds.push(numId);
+      }
+      cleanOrderIds = parsedIds;
+    }
+
+    const imgId = cleanOrderIds ? 0 : Number(id);
+    if (!cleanOrderIds && (!Number.isInteger(imgId) || imgId <= 0)) {
       return NextResponse.json({ error: 'Identifiant de photo invalide.' }, { status: 400 });
     }
 
-    const swapWithId = swap_with_id !== undefined ? Number(swap_with_id) : null;
+    const swapWithId = !cleanOrderIds && swap_with_id !== undefined ? Number(swap_with_id) : null;
     if (swapWithId !== null && (!Number.isInteger(swapWithId) || swapWithId <= 0 || swapWithId === imgId)) {
       return NextResponse.json({ error: 'Identifiant d’échange invalide.' }, { status: 400 });
     }
@@ -185,63 +204,100 @@ export async function PATCH(request: Request) {
     invalidateGalleryCache();
 
     if (sql) {
-      if (swapWithId !== null) {
+      if (cleanOrderIds !== null) {
+        const updates = cleanOrderIds.map((photoId, idx) => ({ id: photoId, ord: idx + 1 }));
+        await Promise.all([
+          sql`
+            UPDATE restaurant_gallery AS g
+            SET display_order = v.ord
+            FROM jsonb_to_recordset(${JSON.stringify(updates)}::jsonb) AS v(id int, ord int)
+            WHERE g.id = v.id AND g.display_order IS DISTINCT FROM v.ord
+          `,
+          recordAdminAuditLog(
+            'gallery_updated',
+            cleanOrderIds[0],
+            `Réorganisation rapide de ${cleanOrderIds.length} photos`,
+            getClientIp(request)
+          )
+        ]);
+      } else if (swapWithId !== null) {
         const currentRows = (await sql`
-          SELECT id, title, image_url, display_order, created_at
+          SELECT id, display_order
           FROM restaurant_gallery
           ORDER BY display_order ASC, id DESC
-        `) as GalleryImage[];
+        `) as Array<{ id: number; display_order: number }>;
         const idxA = currentRows.findIndex(r => r.id === imgId);
         const idxB = currentRows.findIndex(r => r.id === swapWithId);
         if (idxA !== -1 && idxB !== -1) {
           const temp = currentRows[idxA];
           currentRows[idxA] = currentRows[idxB];
           currentRows[idxB] = temp;
-          for (let i = 0; i < currentRows.length; i += 1) {
-            const newOrder = i + 1;
-            if (currentRows[i].display_order !== newOrder) {
-              await sql`
-                UPDATE restaurant_gallery
-                SET display_order = ${newOrder}
-                WHERE id = ${currentRows[i].id}
-              `;
-            }
+          const updates = currentRows
+            .map((row, idx) => ({ id: row.id, ord: idx + 1, prev: row.display_order }))
+            .filter(item => item.prev !== item.ord)
+            .map(({ id: rowId, ord }) => ({ id: rowId, ord }));
+          if (updates.length > 0) {
+            await Promise.all([
+              sql`
+                UPDATE restaurant_gallery AS g
+                SET display_order = v.ord
+                FROM jsonb_to_recordset(${JSON.stringify(updates)}::jsonb) AS v(id int, ord int)
+                WHERE g.id = v.id
+              `,
+              recordAdminAuditLog(
+                'gallery_updated',
+                imgId,
+                `Mise à jour ordre photo ID ${imgId}`,
+                getClientIp(request)
+              )
+            ]);
           }
         }
-      } else {
-        if (cleanOrder === 1) {
-          await sql`
+      } else if (cleanOrder === 1) {
+        await Promise.all([
+          sql`
             UPDATE restaurant_gallery
-            SET display_order = display_order + 1
-            WHERE id <> ${imgId}
-          `;
-        }
-        await sql`
-          UPDATE restaurant_gallery
-          SET title = COALESCE(${cleanTitle}, title),
-              display_order = COALESCE(${cleanOrder}, display_order)
-          WHERE id = ${imgId}
-        `;
+            SET
+              title = CASE WHEN id = ${imgId} THEN COALESCE(${cleanTitle}, title) ELSE title END,
+              display_order = CASE WHEN id = ${imgId} THEN 1 ELSE display_order + 1 END
+          `,
+          recordAdminAuditLog(
+            'gallery_updated',
+            imgId,
+            cleanTitle ? `Mise à jour photo: ${cleanTitle}` : `Photo ID ${imgId} placée en 1re position`,
+            getClientIp(request)
+          )
+        ]);
+      } else {
+        await Promise.all([
+          sql`
+            UPDATE restaurant_gallery
+            SET title = COALESCE(${cleanTitle}, title),
+                display_order = COALESCE(${cleanOrder}, display_order)
+            WHERE id = ${imgId}
+          `,
+          recordAdminAuditLog(
+            'gallery_updated',
+            imgId,
+            cleanTitle ? `Mise à jour photo: ${cleanTitle}` : `Mise à jour ordre photo ID ${imgId}`,
+            getClientIp(request)
+          )
+        ]);
       }
-      const rows = (await sql`
-        SELECT id, title, image_url, display_order, created_at
-        FROM restaurant_gallery
-        ORDER BY display_order ASC, id DESC
-      `) as GalleryImage[];
-      global._galleryCache = { data: rows, ts: Date.now() };
-      await recordAdminAuditLog(
-        'gallery_updated',
-        imgId,
-        cleanTitle ? `Mise à jour photo: ${cleanTitle}` : `Mise à jour ordre photo ID ${imgId}`,
-        getClientIp(request)
-      );
       return NextResponse.json(
-        { ok: true, source: 'neon', images: rows },
+        { ok: true, source: 'neon' },
         { headers: { 'Cache-Control': 'no-store' } }
       );
     } else {
       const mem = getMemoryGallery();
-      if (swapWithId !== null) {
+      if (cleanOrderIds !== null) {
+        const orderMap = new Map(cleanOrderIds.map((photoId, idx) => [photoId, idx + 1]));
+        mem.forEach(item => {
+          const nextOrd = orderMap.get(item.id);
+          if (nextOrd !== undefined) item.display_order = nextOrd;
+        });
+        mem.sort((a, b) => a.display_order - b.display_order || b.id - a.id);
+      } else if (swapWithId !== null) {
         const idxA = mem.findIndex(i => i.id === imgId);
         const idxB = mem.findIndex(i => i.id === swapWithId);
         if (idxA !== -1 && idxB !== -1) {
@@ -260,7 +316,7 @@ export async function PATCH(request: Request) {
         }
       }
       return NextResponse.json(
-        { ok: true, source: 'memory', images: mem },
+        { ok: true, source: 'memory' },
         { headers: { 'Cache-Control': 'no-store' } }
       );
     }

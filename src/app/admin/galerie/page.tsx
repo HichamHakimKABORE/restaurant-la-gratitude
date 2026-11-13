@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import AdminShell from '@/components/AdminShell';
@@ -35,6 +35,9 @@ export default function AdminGaleriePage() {
   const [editTitle, setEditTitle] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [busyImageId, setBusyImageId] = useState<number | null>(null);
+  const reorderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reorderSeqRef = useRef(0);
+  const lastSavedImagesRef = useRef<GalleryImage[] | null>(null);
 
   const { showToast } = useCart();
 
@@ -86,6 +89,11 @@ export default function AdminGaleriePage() {
 
   useEffect(() => {
     loadGallery();
+    return () => {
+      if (reorderTimerRef.current) {
+        clearTimeout(reorderTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -202,94 +210,75 @@ export default function AdminGaleriePage() {
     setEditTitle(img.title || '');
   };
 
-  const handlePutFirst = async (img: GalleryImage) => {
-    if (busyImageId !== null) return;
-    setBusyImageId(img.id);
-    const prevImages = images;
+  const scheduleOrderSave = (nextImages: GalleryImage[], toastMsg: string) => {
+    if (!lastSavedImagesRef.current) {
+      lastSavedImagesRef.current = images;
+    }
+    syncGalleryCache(nextImages);
+    showToast(toastMsg);
+
+    if (reorderTimerRef.current) {
+      clearTimeout(reorderTimerRef.current);
+    }
+    const seq = ++reorderSeqRef.current;
+    const orderIds = nextImages.map(item => item.id);
+
+    reorderTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/gallery', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_ids: orderIds })
+        });
+        if (seq !== reorderSeqRef.current) return;
+        if (res.status === 401) {
+          if (lastSavedImagesRef.current) {
+            syncGalleryCache(lastSavedImagesRef.current);
+          }
+          lastSavedImagesRef.current = null;
+          showToast('Session expirée. Veuillez vous reconnecter.');
+          router.push('/admin/login');
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (lastSavedImagesRef.current) {
+            syncGalleryCache(lastSavedImagesRef.current);
+          }
+          lastSavedImagesRef.current = null;
+          showToast(data.error || 'Impossible de sauvegarder l’ordre.');
+          return;
+        }
+        lastSavedImagesRef.current = null;
+      } catch (err) {
+        if (seq !== reorderSeqRef.current) return;
+        console.error('Erreur ordre galerie:', err);
+        if (lastSavedImagesRef.current) {
+          syncGalleryCache(lastSavedImagesRef.current);
+        }
+        lastSavedImagesRef.current = null;
+        showToast('Erreur réseau lors de la sauvegarde de l’ordre.');
+      }
+    }, 220);
+  };
+
+  const handlePutFirst = (img: GalleryImage) => {
     const reordered = [
       { ...img, display_order: 1 },
       ...images.filter(i => i.id !== img.id).map((item, idx) => ({ ...item, display_order: idx + 2 }))
     ];
-    syncGalleryCache(reordered);
-
-    try {
-      const res = await fetch('/api/gallery', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: img.id,
-          title: img.title,
-          display_order: 1
-        })
-      });
-      if (res.status === 401) {
-        syncGalleryCache(prevImages);
-        showToast('Session expirée. Veuillez vous reconnecter.');
-        router.push('/admin/login');
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        syncGalleryCache(prevImages);
-        showToast(data.error || 'Impossible de modifier l’ordre.');
-        return;
-      }
-      if (Array.isArray(data.images)) {
-        syncGalleryCache(data.images);
-      }
-      showToast(`"${img.title || 'Photo'}" placée en 1re position !`);
-    } catch (err) {
-      syncGalleryCache(prevImages);
-      console.error('Erreur ordre galerie:', err);
-      showToast('Erreur lors de la mise à jour de l’ordre.');
-    } finally {
-      setBusyImageId(null);
-    }
+    scheduleOrderSave(reordered, `"${img.title || 'Photo'}" placée en 1re position !`);
   };
 
-  const handleMoveImage = async (idx: number, direction: -1 | 1) => {
+  const handleMoveImage = (idx: number, direction: -1 | 1) => {
     const targetIdx = idx + direction;
-    if (busyImageId !== null || targetIdx < 0 || targetIdx >= images.length) return;
-    const current = images[idx];
-    const target = images[targetIdx];
-    setBusyImageId(current.id);
-    const prevImages = images;
+    if (targetIdx < 0 || targetIdx >= images.length) return;
     const swapped = [...images];
-    swapped[idx] = target;
+    const current = swapped[idx];
+    swapped[idx] = swapped[targetIdx];
     swapped[targetIdx] = current;
-    syncGalleryCache(swapped.map((item, i) => ({ ...item, display_order: i + 1 })));
-
-    try {
-      const res = await fetch('/api/gallery', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: current.id,
-          swap_with_id: target.id
-        })
-      });
-      if (res.status === 401) {
-        syncGalleryCache(prevImages);
-        showToast('Session expirée. Veuillez vous reconnecter.');
-        router.push('/admin/login');
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        syncGalleryCache(prevImages);
-        showToast(data.error || 'Impossible de déplacer cette photo.');
-        return;
-      }
-      if (Array.isArray(data.images)) {
-        syncGalleryCache(data.images);
-      }
-      showToast('Ordre des photos mis à jour !');
-    } catch {
-      syncGalleryCache(prevImages);
-      showToast('Erreur réseau lors du déplacement.');
-    } finally {
-      setBusyImageId(null);
-    }
+    const normalized = swapped.map((item, i) => ({ ...item, display_order: i + 1 }));
+    scheduleOrderSave(normalized, `Position #${targetIdx + 1} enregistrée !`);
   };
 
   const handleUpdateTitle = async (e: React.FormEvent) => {
@@ -512,9 +501,8 @@ export default function AdminGaleriePage() {
                       ) : (
                         <button
                           type="button"
-                          disabled={busyImageId === img.id}
                           onClick={() => handlePutFirst(img)}
-                          className="touch-manipulation py-1.5 px-2 bg-amber-100 hover:bg-amber-200 active:scale-95 disabled:opacity-50 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
+                          className="touch-manipulation py-1.5 px-2 bg-amber-100 hover:bg-amber-200 active:scale-95 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
                           title="Placer cette photo en 1re position du carrousel"
                         >
                           <StarIcon className="w-3 h-3 text-[#881313] shrink-0" />
@@ -527,7 +515,7 @@ export default function AdminGaleriePage() {
                       <div className="grid grid-cols-2 gap-1.5">
                         <button
                           type="button"
-                          disabled={idx === 0 || busyImageId !== null}
+                          disabled={idx === 0}
                           onClick={() => handleMoveImage(idx, -1)}
                           className="touch-manipulation py-1 px-2 rounded-lg bg-stone-100 hover:bg-stone-200 active:scale-95 disabled:opacity-40 text-stone-700 font-bold text-[11px] transition"
                           title="Avancer d'une place vers le début"
@@ -536,7 +524,7 @@ export default function AdminGaleriePage() {
                         </button>
                         <button
                           type="button"
-                          disabled={idx === images.length - 1 || busyImageId !== null}
+                          disabled={idx === images.length - 1}
                           onClick={() => handleMoveImage(idx, 1)}
                           className="touch-manipulation py-1 px-2 rounded-lg bg-stone-100 hover:bg-stone-200 active:scale-95 disabled:opacity-40 text-stone-700 font-bold text-[11px] transition"
                           title="Décaler d'une place vers la fin"
