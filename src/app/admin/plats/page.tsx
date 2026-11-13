@@ -28,6 +28,7 @@ export default function AdminPlatsPage() {
   const [mounted, setMounted] = useState(false);
   const [savingDish, setSavingDish] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [uploadingDishId, setUploadingDishId] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -43,7 +44,8 @@ export default function AdminPlatsPage() {
   }, [addModalOpen]);
 
   const handlePhotoUploadForDish = async (dish: Dish, file?: File) => {
-    if (!file) return;
+    if (!file || uploadingDishId !== null) return;
+    setUploadingDishId(dish.id);
     try {
       showToast('Compression et envoi de la photo...');
       const base64 = await compressImageFileToBase64(file, 560);
@@ -71,6 +73,8 @@ export default function AdminPlatsPage() {
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Erreur lors du chargement de la photo';
       showToast(msg);
+    } finally {
+      setUploadingDishId(null);
     }
   };
 

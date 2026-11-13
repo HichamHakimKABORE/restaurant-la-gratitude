@@ -24,11 +24,20 @@ export default function AccueilClientPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('Tous');
   const [homeSearch, setHomeSearch] = useState<string>('');
   const [currentSlideIdx, setCurrentSlideIdx] = useState<number>(0);
+  const [isOpenNow, setIsOpenNow] = useState<boolean>(true);
   const { dishes, loadingDishes, settings, openDishSelector } = useCart();
 
   // Vérification de l'ouverture actuelle selon l'heure de Ouagadougou (UTC/GMT+0 : 07h00 à 23h00)
-  const currentUtcHour = new Date().getUTCHours();
-  const isOpenNow = currentUtcHour >= 7 && currentUtcHour < 23;
+  // Calculée côté client dans useEffect pour éviter tout écart d'hydratation SSR/Client à la bascule d'heure.
+  useEffect(() => {
+    const updateOpenStatus = () => {
+      const currentUtcHour = new Date().getUTCHours();
+      setIsOpenNow(currentUtcHour >= 7 && currentUtcHour < 23);
+    };
+    updateOpenStatus();
+    const timer = setInterval(updateOpenStatus, 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const phoneList = formatPhoneList(settings.phone, settings.phone_2);
   const whatsappNum = (settings.whatsapp || '22602809906').replace(/[^0-9]/g, '') || '22602809906';

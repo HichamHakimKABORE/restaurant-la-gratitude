@@ -20,6 +20,12 @@ export default function AdminShell({
   const { settings } = useCart();
   const [dbConnected, setDbConnected] = useState(true);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const activePath = pendingPath && pendingPath !== pathname ? pendingPath : pathname;
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
 
   // Isolation stricte de l'espace Admin : vérification de la session authentifiée
   useEffect(() => {
@@ -176,12 +182,14 @@ export default function AdminShell({
         <div className="lg:hidden bg-[#590b0b] border-t border-white/15 px-2 py-1.5 overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-1.5 min-w-max">
             {navLinks.map(link => {
-              const isActive = pathname === link.href;
+              const isActive = activePath === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition ${
+                  prefetch={true}
+                  onClick={() => setPendingPath(link.href)}
+                  className={`touch-manipulation flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition active:scale-95 ${
                     isActive
                       ? 'bg-[#eab308] text-[#2b1810] font-extrabold shadow'
                       : 'text-amber-100/90 hover:bg-white/10 font-semibold'
@@ -330,12 +338,14 @@ export default function AdminShell({
             navLinks[3], // Rapports PDF
             navLinks[4]  // Galerie
           ].map(item => {
-            const isActive = pathname === item.href;
+            const isActive = activePath === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl text-[10px] leading-tight transition ${
+                prefetch={true}
+                onClick={() => setPendingPath(item.href)}
+                className={`touch-manipulation flex flex-col items-center justify-center py-1 px-1 rounded-xl text-[10px] leading-tight transition active:scale-95 ${
                   isActive
                     ? 'bg-[#eab308] text-[#2b1810] font-extrabold shadow'
                     : 'text-amber-100/90 hover:bg-white/10 font-semibold'
