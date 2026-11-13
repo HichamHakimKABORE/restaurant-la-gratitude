@@ -247,6 +247,51 @@ export default function AdminGaleriePage() {
     }
   };
 
+  const handleMoveImage = async (idx: number, direction: -1 | 1) => {
+    const targetIdx = idx + direction;
+    if (busyImageId !== null || targetIdx < 0 || targetIdx >= images.length) return;
+    const current = images[idx];
+    const target = images[targetIdx];
+    setBusyImageId(current.id);
+    const prevImages = images;
+    const swapped = [...images];
+    swapped[idx] = target;
+    swapped[targetIdx] = current;
+    syncGalleryCache(swapped.map((item, i) => ({ ...item, display_order: i + 1 })));
+
+    try {
+      const res = await fetch('/api/gallery', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: current.id,
+          swap_with_id: target.id
+        })
+      });
+      if (res.status === 401) {
+        syncGalleryCache(prevImages);
+        showToast('Session expirée. Veuillez vous reconnecter.');
+        router.push('/admin/login');
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        syncGalleryCache(prevImages);
+        showToast(data.error || 'Impossible de déplacer cette photo.');
+        return;
+      }
+      if (Array.isArray(data.images)) {
+        syncGalleryCache(data.images);
+      }
+      showToast('Ordre des photos mis à jour !');
+    } catch {
+      syncGalleryCache(prevImages);
+      showToast('Erreur réseau lors du déplacement.');
+    } finally {
+      setBusyImageId(null);
+    }
+  };
+
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingImage) return;
@@ -399,10 +444,12 @@ export default function AdminGaleriePage() {
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
-              {images.map(img => (
+              {images.map((img, idx) => (
                 <div
                   key={img.id}
-                  className="bg-white rounded-2xl overflow-hidden border-2 border-stone-200 hover:border-[#881313] shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                  className={`bg-white rounded-2xl overflow-hidden border-2 shadow-sm hover:shadow-md transition flex flex-col justify-between ${
+                    idx === 0 ? 'border-[#eab308]' : 'border-stone-200 hover:border-[#881313]'
+                  }`}
                 >
                   <div
                     onClick={() => openEditModal(img)}
@@ -414,6 +461,16 @@ export default function AdminGaleriePage() {
                       alt={img.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                     />
+
+                    <span
+                      className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-[11px] font-extrabold shadow z-10 ${
+                        idx === 0
+                          ? 'bg-[#eab308] text-[#2b1810]'
+                          : 'bg-black/75 text-white'
+                      }`}
+                    >
+                      #{idx + 1}
+                    </span>
 
                     <button
                       type="button"
@@ -442,22 +499,52 @@ export default function AdminGaleriePage() {
                       <button
                         type="button"
                         onClick={() => openEditModal(img)}
-                        className="py-1.5 px-2 bg-gradient-to-r from-[#881313] to-[#6e0f0f] hover:brightness-110 text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-sm transition"
+                        className="touch-manipulation py-1.5 px-2 bg-gradient-to-r from-[#881313] to-[#6e0f0f] hover:brightness-110 active:scale-95 text-white font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 shadow-sm transition"
                       >
                         <PencilIcon className="w-3 h-3 shrink-0" />
                         <span>Modifier</span>
                       </button>
-                      <button
-                        type="button"
-                        disabled={busyImageId === img.id}
-                        onClick={() => handlePutFirst(img)}
-                        className="touch-manipulation py-1.5 px-2 bg-amber-100 hover:bg-amber-200 active:scale-95 disabled:opacity-50 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
-                        title="Placer cette photo en 1re position du carrousel"
-                      >
-                        <StarIcon className="w-3 h-3 text-[#881313] shrink-0" />
-                        <span>En 1er</span>
-                      </button>
+                      {idx === 0 ? (
+                        <span className="py-1.5 px-2 bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 select-none">
+                          <StarIcon className="w-3 h-3 text-emerald-700 shrink-0" />
+                          <span>1re photo</span>
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={busyImageId === img.id}
+                          onClick={() => handlePutFirst(img)}
+                          className="touch-manipulation py-1.5 px-2 bg-amber-100 hover:bg-amber-200 active:scale-95 disabled:opacity-50 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
+                          title="Placer cette photo en 1re position du carrousel"
+                        >
+                          <StarIcon className="w-3 h-3 text-[#881313] shrink-0" />
+                          <span>Mettre 1er</span>
+                        </button>
+                      )}
                     </div>
+
+                    {images.length > 1 && (
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <button
+                          type="button"
+                          disabled={idx === 0 || busyImageId !== null}
+                          onClick={() => handleMoveImage(idx, -1)}
+                          className="touch-manipulation py-1 px-2 rounded-lg bg-stone-100 hover:bg-stone-200 active:scale-95 disabled:opacity-40 text-stone-700 font-bold text-[11px] transition"
+                          title="Avancer d'une place vers le début"
+                        >
+                          ← Avancer
+                        </button>
+                        <button
+                          type="button"
+                          disabled={idx === images.length - 1 || busyImageId !== null}
+                          onClick={() => handleMoveImage(idx, 1)}
+                          className="touch-manipulation py-1 px-2 rounded-lg bg-stone-100 hover:bg-stone-200 active:scale-95 disabled:opacity-40 text-stone-700 font-bold text-[11px] transition"
+                          title="Décaler d'une place vers la fin"
+                        >
+                          Reculer →
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

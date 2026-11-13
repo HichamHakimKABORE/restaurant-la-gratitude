@@ -156,10 +156,15 @@ export async function PATCH(request: Request) {
   if (!parsed.ok) return parsed.response;
   try {
     const body = parsed.data;
-    const { id, title, display_order } = body;
+    const { id, title, display_order, swap_with_id } = body;
     const imgId = Number(id);
     if (!Number.isInteger(imgId) || imgId <= 0) {
       return NextResponse.json({ error: 'Identifiant de photo invalide.' }, { status: 400 });
+    }
+
+    const swapWithId = swap_with_id !== undefined ? Number(swap_with_id) : null;
+    if (swapWithId !== null && (!Number.isInteger(swapWithId) || swapWithId <= 0 || swapWithId === imgId)) {
+      return NextResponse.json({ error: 'Identifiant d’échange invalide.' }, { status: 400 });
     }
 
     const cleanTitle =
@@ -180,19 +185,44 @@ export async function PATCH(request: Request) {
     invalidateGalleryCache();
 
     if (sql) {
-      if (cleanOrder === 1) {
+      if (swapWithId !== null) {
+        const currentRows = (await sql`
+          SELECT id, title, image_url, display_order, created_at
+          FROM restaurant_gallery
+          ORDER BY display_order ASC, id DESC
+        `) as GalleryImage[];
+        const idxA = currentRows.findIndex(r => r.id === imgId);
+        const idxB = currentRows.findIndex(r => r.id === swapWithId);
+        if (idxA !== -1 && idxB !== -1) {
+          const temp = currentRows[idxA];
+          currentRows[idxA] = currentRows[idxB];
+          currentRows[idxB] = temp;
+          for (let i = 0; i < currentRows.length; i += 1) {
+            const newOrder = i + 1;
+            if (currentRows[i].display_order !== newOrder) {
+              await sql`
+                UPDATE restaurant_gallery
+                SET display_order = ${newOrder}
+                WHERE id = ${currentRows[i].id}
+              `;
+            }
+          }
+        }
+      } else {
+        if (cleanOrder === 1) {
+          await sql`
+            UPDATE restaurant_gallery
+            SET display_order = display_order + 1
+            WHERE id <> ${imgId}
+          `;
+        }
         await sql`
           UPDATE restaurant_gallery
-          SET display_order = display_order + 1
-          WHERE id <> ${imgId}
+          SET title = COALESCE(${cleanTitle}, title),
+              display_order = COALESCE(${cleanOrder}, display_order)
+          WHERE id = ${imgId}
         `;
       }
-      await sql`
-        UPDATE restaurant_gallery
-        SET title = COALESCE(${cleanTitle}, title),
-            display_order = COALESCE(${cleanOrder}, display_order)
-        WHERE id = ${imgId}
-      `;
       const rows = (await sql`
         SELECT id, title, image_url, display_order, created_at
         FROM restaurant_gallery
@@ -211,10 +241,23 @@ export async function PATCH(request: Request) {
       );
     } else {
       const mem = getMemoryGallery();
-      const img = mem.find(i => i.id === imgId);
-      if (img) {
-        if (cleanTitle !== null) img.title = cleanTitle;
-        if (cleanOrder !== null) img.display_order = cleanOrder;
+      if (swapWithId !== null) {
+        const idxA = mem.findIndex(i => i.id === imgId);
+        const idxB = mem.findIndex(i => i.id === swapWithId);
+        if (idxA !== -1 && idxB !== -1) {
+          const temp = mem[idxA];
+          mem[idxA] = mem[idxB];
+          mem[idxB] = temp;
+          mem.forEach((item, idx) => {
+            item.display_order = idx + 1;
+          });
+        }
+      } else {
+        const img = mem.find(i => i.id === imgId);
+        if (img) {
+          if (cleanTitle !== null) img.title = cleanTitle;
+          if (cleanOrder !== null) img.display_order = cleanOrder;
+        }
       }
       return NextResponse.json(
         { ok: true, source: 'memory', images: mem },
