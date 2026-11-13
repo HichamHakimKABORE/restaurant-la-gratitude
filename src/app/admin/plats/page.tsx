@@ -91,11 +91,19 @@ export default function AdminPlatsPage() {
 
   useEffect(() => {
     if (!addModalOpen) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setAddModalOpen(false);
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [addModalOpen]);
 
   const handlePhotoUploadForDish = async (dish: Dish, file?: File) => {

@@ -98,11 +98,19 @@ export default function AdminGaleriePage() {
 
   useEffect(() => {
     if (!editingImage) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setEditingImage(null);
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
   }, [editingImage]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
