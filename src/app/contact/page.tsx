@@ -38,6 +38,9 @@ export default function ContactPage() {
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
     null
   );
+  const [mapOrigin, setMapOrigin] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const [geoStatus, setGeoStatus] = useState<string>('');
   const [isTracking, setIsTracking] = useState<boolean>(false);
   const [travelMode, setTravelMode] = useState<'driving' | 'walking'>('driving');
@@ -55,16 +58,23 @@ export default function ContactPage() {
     setGeoStatus('Recherche du signal GPS de votre appareil en cours...');
     const watchId = navigator.geolocation.watchPosition(
       pos => {
-        setUserPos({
+        const nextPos = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude
+        };
+        setUserPos(nextPos);
+        setMapOrigin(prev => {
+          if (!prev) return nextPos;
+          const movedKm = calculateDistanceKm(prev.lat, prev.lng, nextPos.lat, nextPos.lng);
+          return movedKm > 0.05 ? nextPos : prev;
         });
         setGeoStatus('Position GPS verrouillée — Suivi en direct actif');
       },
       err => {
         console.warn('Geolocation error:', err);
+        setIsTracking(false);
         setGeoStatus(
-          'Autorisez l’accès à votre position GPS dans votre navigateur ou cliquez sur "Lancer la navigation Google Maps".'
+          'Autorisez l’accès à votre position GPS dans votre navigateur ou cliquez sur "Lancer le guidage vocal Google Maps".'
         );
       },
       {
@@ -78,33 +88,18 @@ export default function ContactPage() {
   }, [isTracking]);
 
   const handleStartLiveRoute = () => {
-    setIsTracking(true);
-    if (typeof window !== 'undefined' && 'geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          setUserPos({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude
-          });
-          setGeoStatus('Itinéraire calculé depuis votre position actuelle !');
-        },
-        () => {
-          // If browser blocks geolocation (e.g. non-HTTPS local IP), open Google Maps native navigation which uses Current Location automatically
-          window.open(
-            `https://www.google.com/maps/dir/?api=1&destination=${RESTAURANT_LAT},${RESTAURANT_LNG}&travelmode=${travelMode}`,
-            '_blank',
-            'noopener,noreferrer'
-          );
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    } else {
+    if (typeof window === 'undefined' || !('geolocation' in navigator)) {
       window.open(
         `https://www.google.com/maps/dir/?api=1&destination=${RESTAURANT_LAT},${RESTAURANT_LNG}&travelmode=${travelMode}`,
         '_blank',
         'noopener,noreferrer'
       );
+      return;
     }
+    if (userPos) {
+      setMapOrigin(userPos);
+    }
+    setIsTracking(true);
   };
 
   const openNativeGpsNavigation = () => {
@@ -131,9 +126,9 @@ export default function ContactPage() {
         : Math.max(3, Math.round((distanceKm / 4.8) * 60))
       : null;
 
-  // Map iframe URL: if we have the user's GPS position, embed the live route from userPos to Restaurant; otherwise center on exact GPS coordinates
-  const mapEmbedUrl = userPos
-    ? `https://maps.google.com/maps?saddr=${userPos.lat},${userPos.lng}&daddr=${RESTAURANT_LAT},${RESTAURANT_LNG}&hl=fr&output=embed`
+  // Map iframe URL: use stabilized mapOrigin so minor GPS jitter does not reload the iframe continuously
+  const mapEmbedUrl = mapOrigin
+    ? `https://maps.google.com/maps?saddr=${mapOrigin.lat},${mapOrigin.lng}&daddr=${RESTAURANT_LAT},${RESTAURANT_LNG}&hl=fr&output=embed`
     : `https://maps.google.com/maps?q=${RESTAURANT_LAT},${RESTAURANT_LNG}&hl=fr&z=17&output=embed`;
 
   return (
@@ -334,10 +329,15 @@ export default function ContactPage() {
               </span>
             </div>
 
-            {userPos && (
+            {(userPos || mapOrigin) && (
               <button
                 type="button"
-                onClick={() => setUserPos(null)}
+                onClick={() => {
+                  setIsTracking(false);
+                  setUserPos(null);
+                  setMapOrigin(null);
+                  setGeoStatus('');
+                }}
                 className="px-3 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-xs font-bold"
               >
                 Recentrer sur le restaurant

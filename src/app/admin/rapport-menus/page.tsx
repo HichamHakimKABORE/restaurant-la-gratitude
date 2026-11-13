@@ -7,6 +7,7 @@ import { formatCFA, useCart } from '@/components/CartContext';
 import { PrinterIcon, CheckIcon, ChefHatIcon, BoltIcon, CloseIcon } from '@/components/Icons';
 import { sortDailyMenuDishes, getLogicalMenuDate, type DailyMenuRecord } from '@/lib/db';
 import { downloadMenuReportsPdf, printWithAutoDocumentTitle } from '@/lib/pdf-report';
+import { joinPhoneNumbers } from '@/lib/phone';
 
 export default function AdminRapportMenusPage() {
   const router = useRouter();
