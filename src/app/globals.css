@@ -17,6 +17,11 @@ button,
   -webkit-tap-highlight-color: transparent;
 }
 
+button:disabled,
+[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
 .font-script {
   font-family: 'Kaushan Script', Georgia, serif;
 }

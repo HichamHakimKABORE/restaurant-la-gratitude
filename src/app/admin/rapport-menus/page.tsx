@@ -378,8 +378,9 @@ export default function AdminRapportMenusPage() {
                     </span>
                     <button
                       type="button"
+                      disabled={deletingDate === rep.menu_date}
                       onClick={e => handleDeleteReport(rep.menu_date, e)}
-                      className="p-1 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white transition"
+                      className="touch-manipulation p-1 rounded-lg bg-rose-50 hover:bg-rose-600 active:scale-95 disabled:opacity-50 text-rose-600 hover:text-white transition"
                       title="Supprimer ce rapport"
                     >
                       <CloseIcon className="w-3.5 h-3.5" />

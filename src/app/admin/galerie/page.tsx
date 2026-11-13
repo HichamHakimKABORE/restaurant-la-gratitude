@@ -34,6 +34,7 @@ export default function AdminGaleriePage() {
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [busyImageId, setBusyImageId] = useState<number | null>(null);
 
   const { showToast } = useCart();
 
@@ -164,7 +165,9 @@ export default function AdminGaleriePage() {
   };
 
   const handleDelete = async (id: number, title: string) => {
+    if (busyImageId !== null) return;
     if (!confirm(`Supprimer définitivement cette photo ("${title}") ?`)) return;
+    setBusyImageId(id);
     const prevImages = images;
     const optimistic = images.filter(img => img.id !== id);
     syncGalleryCache(optimistic);
@@ -189,6 +192,8 @@ export default function AdminGaleriePage() {
     } catch {
       syncGalleryCache(prevImages);
       showToast('Erreur lors de la suppression');
+    } finally {
+      setBusyImageId(null);
     }
   };
 
@@ -198,6 +203,8 @@ export default function AdminGaleriePage() {
   };
 
   const handlePutFirst = async (img: GalleryImage) => {
+    if (busyImageId !== null) return;
+    setBusyImageId(img.id);
     const prevImages = images;
     const reordered = [
       { ...img, display_order: 1 },
@@ -235,6 +242,8 @@ export default function AdminGaleriePage() {
       syncGalleryCache(prevImages);
       console.error('Erreur ordre galerie:', err);
       showToast('Erreur lors de la mise à jour de l’ordre.');
+    } finally {
+      setBusyImageId(null);
     }
   };
 
@@ -408,11 +417,12 @@ export default function AdminGaleriePage() {
 
                     <button
                       type="button"
+                      disabled={busyImageId === img.id}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(img.id, img.title);
                       }}
-                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600/90 hover:bg-rose-700 text-white flex items-center justify-center shadow transition z-10"
+                      className="touch-manipulation absolute top-2 right-2 w-7 h-7 rounded-full bg-rose-600/90 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white flex items-center justify-center shadow transition z-10"
                       title="Supprimer cette photo"
                     >
                       <CloseIcon className="w-3.5 h-3.5" />
@@ -439,8 +449,9 @@ export default function AdminGaleriePage() {
                       </button>
                       <button
                         type="button"
+                        disabled={busyImageId === img.id}
                         onClick={() => handlePutFirst(img)}
-                        className="py-1.5 px-2 bg-amber-100 hover:bg-amber-200 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
+                        className="touch-manipulation py-1.5 px-2 bg-amber-100 hover:bg-amber-200 active:scale-95 disabled:opacity-50 text-[#2b1810] border border-amber-300 font-extrabold text-[11px] rounded-xl flex items-center justify-center gap-1 transition"
                         title="Placer cette photo en 1re position du carrousel"
                       >
                         <StarIcon className="w-3 h-3 text-[#881313] shrink-0" />

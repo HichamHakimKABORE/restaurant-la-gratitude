@@ -6,6 +6,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCart } from './CartContext';
 import { PhoneIcon } from './Icons';
 
+const ADMIN_AUTH_CACHE_MS = 15_000;
+let cachedAdminAuth: { dbConnected: boolean; ts: number } | null = null;
+
 export default function AdminShell({
   title,
   subtitle,
@@ -18,8 +21,21 @@ export default function AdminShell({
   const pathname = usePathname();
   const router = useRouter();
   const { settings } = useCart();
-  const [dbConnected, setDbConnected] = useState(true);
-  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [dbConnected, setDbConnected] = useState(
+    () => cachedAdminAuth?.dbConnected ?? true
+  );
+  const [authorized, setAuthorized] = useState<boolean | null>(() => {
+    if (
+      typeof window !== 'undefined' &&
+      cachedAdminAuth &&
+      Date.now() - cachedAdminAuth.ts < ADMIN_AUTH_CACHE_MS &&
+      localStorage.getItem('admin_logged_out') !== 'true'
+    ) {
+      return true;
+    }
+    return null;
+  });
+  const [loggingOut, setLoggingOut] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const activePath = pendingPath && pendingPath !== pathname ? pendingPath : pathname;
 
@@ -27,26 +43,39 @@ export default function AdminShell({
     setPendingPath(null);
   }, [pathname]);
 
-  // Isolation stricte de l'espace Admin : vérification de la session authentifiée
+  // Isolation stricte de l'espace Admin : vérification systématique de la session auprès du serveur
   useEffect(() => {
+    let cancelled = false;
     fetch('/api/auth', { cache: 'no-store' })
       .then(r => (r.ok ? r.json() : { authenticated: false }))
       .then(d => {
+        if (cancelled) return;
         if (d.authenticated === false) {
+          cachedAdminAuth = null;
           setAuthorized(false);
           router.push('/admin/login');
         } else {
+          const isDbOk = d.database_connected !== false;
+          cachedAdminAuth = { dbConnected: isDbOk, ts: Date.now() };
           setAuthorized(true);
-          setDbConnected(d.database_connected !== false);
+          setDbConnected(isDbOk);
         }
       })
       .catch(() => {
+        if (cancelled) return;
+        cachedAdminAuth = null;
         setAuthorized(false);
         router.push('/admin/login');
       });
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    cachedAdminAuth = null;
     localStorage.setItem('admin_logged_out', 'true');
     try {
       sessionStorage.removeItem('gratitude_gallery_cache_v2');
@@ -54,12 +83,15 @@ export default function AdminShell({
     } catch {
       // ignore storage errors
     }
-    await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'logout' })
-    });
-    router.push('/admin/login');
+    try {
+      await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'logout' })
+      });
+    } finally {
+      router.push('/admin/login');
+    }
   };
 
   const navLinks = [
@@ -164,16 +196,19 @@ export default function AdminShell({
             </span>
             <Link
               href="/"
-              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#eab308] hover:brightness-110 text-[#2b1810] text-[11px] sm:text-xs font-extrabold shadow transition whitespace-nowrap"
+              prefetch={true}
+              className="touch-manipulation px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-[#eab308] hover:brightness-110 active:scale-95 text-[#2b1810] text-[11px] sm:text-xs font-extrabold shadow transition whitespace-nowrap"
             >
               Site client →
             </Link>
             <button
+              type="button"
+              disabled={loggingOut}
               onClick={handleLogout}
-              className="lg:hidden px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-rose-100 border border-white/20 text-[11px] font-bold whitespace-nowrap"
+              className="touch-manipulation lg:hidden px-2.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 disabled:opacity-50 text-rose-100 border border-white/20 text-[11px] font-bold whitespace-nowrap transition"
               title="Déconnexion sécurisée"
             >
-              Sortir
+              {loggingOut ? '...' : 'Sortir'}
             </button>
           </div>
         </div>
@@ -237,12 +272,14 @@ export default function AdminShell({
 
             <nav className="space-y-1.5 text-xs xl:text-sm">
               {navLinks.map(link => {
-                const isActive = pathname === link.href;
+                const isActive = activePath === link.href;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition ${
+                    prefetch={true}
+                    onClick={() => setPendingPath(link.href)}
+                    className={`touch-manipulation flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl transition active:scale-[0.98] ${
                       isActive
                         ? 'bg-[#eab308] text-[#2b1810] font-extrabold shadow-md'
                         : 'text-amber-50 hover:bg-white/10 font-medium'
@@ -266,8 +303,10 @@ export default function AdminShell({
 
           <div className="pt-4 mt-4 border-t border-white/15 shrink-0">
             <button
+              type="button"
+              disabled={loggingOut}
               onClick={handleLogout}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 text-xs text-rose-200 font-semibold text-left transition"
+              className="touch-manipulation w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 text-xs text-rose-200 font-semibold text-left transition"
             >
               <svg
                 className="w-4 h-4 shrink-0"

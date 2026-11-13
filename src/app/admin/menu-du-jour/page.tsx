@@ -311,8 +311,10 @@ export default function AdminMenuDuJourPage() {
 
                   <div className="grid grid-cols-3 sm:flex items-center gap-1.5 shrink-0 w-full sm:w-auto">
                     <button
+                      type="button"
+                      disabled={updatingDishId === dish.id || isBulkUpdating}
                       onClick={() => setStatus(dish, 'available')}
-                      className={`px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap ${
+                      className={`touch-manipulation px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap transition active:scale-95 disabled:opacity-60 ${
                         dish.is_available_today && dish.stock_status === 'available'
                           ? 'bg-emerald-600 text-white'
                           : 'bg-white border border-stone-300 text-stone-600'
@@ -322,8 +324,10 @@ export default function AdminMenuDuJourPage() {
                       <span>Prêt</span>
                     </button>
                     <button
+                      type="button"
+                      disabled={updatingDishId === dish.id || isBulkUpdating}
                       onClick={() => setStatus(dish, 'low')}
-                      className={`px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap ${
+                      className={`touch-manipulation px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap transition active:scale-95 disabled:opacity-60 ${
                         dish.is_available_today && dish.stock_status === 'low'
                           ? 'bg-amber-500 text-slate-950'
                           : 'bg-white border border-stone-300 text-stone-600'
@@ -333,8 +337,10 @@ export default function AdminMenuDuJourPage() {
                       <span>Presque fini</span>
                     </button>
                     <button
+                      type="button"
+                      disabled={updatingDishId === dish.id || isBulkUpdating}
                       onClick={() => setStatus(dish, 'soldout')}
-                      className={`px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap ${
+                      className={`touch-manipulation px-2 sm:px-2.5 py-1.5 sm:py-1 rounded-lg text-[11px] sm:text-xs font-bold inline-flex items-center justify-center gap-1 whitespace-nowrap transition active:scale-95 disabled:opacity-60 ${
                         !dish.is_available_today
                           ? 'bg-rose-600 text-white'
                           : 'bg-white border border-stone-300 text-stone-600'
