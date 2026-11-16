@@ -106,8 +106,8 @@ export default function RestaurantGallerySlider() {
       </div>
 
       {/* Défilement continu horizontal sans bouton Défilement actif ni texte Photo figée */}
-      <div className="overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#dec6a7] bg-[#fffcf7] p-1.5 sm:p-2.5 shadow-sm select-none">
-        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto scrollbar-none py-0.5 sm:py-1 animate-marquee">
+      <div className="w-full max-w-full overflow-hidden rounded-xl sm:rounded-2xl border-2 border-[#dec6a7] bg-[#fffcf7] p-1.5 sm:p-2.5 shadow-sm select-none">
+        <div className="flex items-center gap-2 sm:gap-3 py-0.5 sm:py-1 animate-marquee">
           {displayList.map((img, idx) => (
             <div
               key={`${img.id}-${idx}`}

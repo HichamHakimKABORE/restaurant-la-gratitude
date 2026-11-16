@@ -41,8 +41,8 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </div>
 
       {/* 1. EN-TÊTE OFFICIEL EN HAUT (Sans barre de navigation en haut — toute la navigation est en bas) */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 border-[#801313] shadow-md print:static">
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 py-1.5 flex items-center justify-between gap-1.5 sm:gap-2">
+      <header className="fixed top-0 left-0 right-0 z-50 overflow-hidden bg-gradient-to-r from-[#fffcf7] via-[#f9edd9] to-[#f3dfc1] border-b-2 border-[#801313] shadow-md print:static">
+        <div className="max-w-7xl w-full mx-auto px-2 sm:px-6 py-1.5 flex items-center justify-between gap-1 sm:gap-2">
           {/* Gauche : Logo + Nom */}
           <Link href="/" className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <img
@@ -137,7 +137,7 @@ export default function ClientShell({ children }: { children: React.ReactNode })
       </main>
 
       {/* GALERIE DÉFILANTE DES PHOTOS DU RESTAURANT */}
-      <div className="print:hidden">
+      <div className="print:hidden overflow-x-hidden max-w-full">
         <RestaurantGallerySlider />
       </div>
 
